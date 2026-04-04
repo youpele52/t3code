@@ -7,6 +7,7 @@ import {
   type CodexModelOptions,
   type ModelCapabilities,
   type ModelSelection,
+  type OpencodeModelOptions,
   type ProviderKind,
 } from "@t3tools/contracts";
 
@@ -125,6 +126,16 @@ export function normalizeCopilotModelOptionsWithCapabilities(
   const reasoningEffort = resolveEffort(caps, modelOptions?.reasoningEffort);
   return reasoningEffort
     ? { reasoningEffort: reasoningEffort as CopilotModelOptions["reasoningEffort"] }
+    : undefined;
+}
+
+export function normalizeOpencodeModelOptionsWithCapabilities(
+  caps: ModelCapabilities,
+  modelOptions: OpencodeModelOptions | null | undefined,
+): OpencodeModelOptions | undefined {
+  const reasoningEffort = resolveEffort(caps, modelOptions?.reasoningEffort);
+  return reasoningEffort
+    ? { reasoningEffort: reasoningEffort as OpencodeModelOptions["reasoningEffort"] }
     : undefined;
 }
 

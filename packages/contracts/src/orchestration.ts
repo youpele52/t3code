@@ -1,5 +1,10 @@
 import { Option, Schema, SchemaIssue, Struct } from "effect";
-import { ClaudeModelOptions, CodexModelOptions, CopilotModelOptions } from "./model";
+import {
+  ClaudeModelOptions,
+  CodexModelOptions,
+  CopilotModelOptions,
+  OpencodeModelOptions,
+} from "./model";
 import {
   ApprovalRequestId,
   CheckpointRef,
@@ -23,7 +28,7 @@ export const ORCHESTRATION_WS_METHODS = {
   replayEvents: "orchestration.replayEvents",
 } as const;
 
-export const ProviderKind = Schema.Literals(["codex", "claudeAgent", "copilot"]);
+export const ProviderKind = Schema.Literals(["codex", "claudeAgent", "copilot", "opencode"]);
 export type ProviderKind = typeof ProviderKind.Type;
 export const ProviderApprovalPolicy = Schema.Literals([
   "untrusted",
@@ -62,10 +67,18 @@ export const CopilotModelSelection = Schema.Struct({
 });
 export type CopilotModelSelection = typeof CopilotModelSelection.Type;
 
+export const OpencodeModelSelection = Schema.Struct({
+  provider: Schema.Literal("opencode"),
+  model: TrimmedNonEmptyString,
+  options: Schema.optionalKey(OpencodeModelOptions),
+});
+export type OpencodeModelSelection = typeof OpencodeModelSelection.Type;
+
 export const ModelSelection = Schema.Union([
   CodexModelSelection,
   ClaudeModelSelection,
   CopilotModelSelection,
+  OpencodeModelSelection,
 ]);
 export type ModelSelection = typeof ModelSelection.Type;
 

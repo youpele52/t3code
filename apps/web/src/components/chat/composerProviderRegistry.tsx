@@ -12,6 +12,7 @@ import {
   normalizeClaudeModelOptionsWithCapabilities,
   normalizeCopilotModelOptionsWithCapabilities,
   normalizeCodexModelOptionsWithCapabilities,
+  normalizeOpencodeModelOptionsWithCapabilities,
 } from "@t3tools/shared/model";
 
 export type ComposerProviderStateInput = {
@@ -63,7 +64,9 @@ function getProviderStateFromCapabilities(
       ? modelOptions?.codex
       : provider === "claudeAgent"
         ? modelOptions?.claudeAgent
-        : modelOptions?.copilot;
+        : provider === "opencode"
+          ? modelOptions?.opencode
+          : modelOptions?.copilot;
   const rawEffort = providerOptions
     ? "effort" in providerOptions
       ? providerOptions.effort
@@ -83,6 +86,8 @@ function getProviderStateFromCapabilities(
       caps,
       modelOptions?.claudeAgent,
     );
+  } else if (provider === "opencode") {
+    normalizedOptions = normalizeOpencodeModelOptionsWithCapabilities(caps, modelOptions?.opencode);
   } else {
     normalizedOptions = normalizeCopilotModelOptionsWithCapabilities(caps, modelOptions?.copilot);
   }
@@ -191,6 +196,38 @@ const composerProviderRegistry: Record<ProviderKind, ProviderRegistryEntry> = {
     renderTraitsPicker: ({ threadId, model, models, modelOptions, prompt, onPromptChange }) => (
       <TraitsPicker
         provider="copilot"
+        models={models}
+        threadId={threadId}
+        model={model}
+        modelOptions={modelOptions}
+        prompt={prompt}
+        onPromptChange={onPromptChange}
+      />
+    ),
+  },
+  opencode: {
+    getState: (input) => getProviderStateFromCapabilities(input),
+    renderTraitsMenuContent: ({
+      threadId,
+      model,
+      models,
+      modelOptions,
+      prompt,
+      onPromptChange,
+    }) => (
+      <TraitsMenuContent
+        provider="opencode"
+        models={models}
+        threadId={threadId}
+        model={model}
+        modelOptions={modelOptions}
+        prompt={prompt}
+        onPromptChange={onPromptChange}
+      />
+    ),
+    renderTraitsPicker: ({ threadId, model, models, modelOptions, prompt, onPromptChange }) => (
+      <TraitsPicker
+        provider="opencode"
         models={models}
         threadId={threadId}
         model={model}

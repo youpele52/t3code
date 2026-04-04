@@ -26,6 +26,8 @@ const RuntimeEventRawSource = Schema.Literals([
   "codex.sdk.thread-event",
   "copilot.sdk.session-event",
   "copilot.sdk.synthetic",
+  "opencode.sdk.session-event",
+  "opencode.sdk.synthetic",
 ]);
 export type RuntimeEventRawSource = typeof RuntimeEventRawSource.Type;
 

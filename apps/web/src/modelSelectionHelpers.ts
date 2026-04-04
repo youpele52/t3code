@@ -14,6 +14,9 @@ export function getProviderModelOptions<P extends ProviderKind>(
   if (provider === "claudeAgent") {
     return options?.claudeAgent as ProviderModelOptions[P] | undefined;
   }
+  if (provider === "opencode") {
+    return options?.opencode as ProviderModelOptions[P] | undefined;
+  }
   return options?.copilot as ProviderModelOptions[P] | undefined;
 }
 
@@ -29,6 +32,12 @@ export function createModelSelection<P extends ProviderKind>(
     >;
   }
   if (provider === "claudeAgent") {
+    return (options ? { provider, model, options } : { provider, model }) as Extract<
+      ModelSelection,
+      { provider: P }
+    >;
+  }
+  if (provider === "opencode") {
     return (options ? { provider, model, options } : { provider, model }) as Extract<
       ModelSelection,
       { provider: P }

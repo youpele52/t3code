@@ -408,7 +408,9 @@ function shouldRemoveDraft(draft: ComposerThreadDraftState): boolean {
 }
 
 function normalizeProviderKind(value: unknown): ProviderKind | null {
-  return value === "codex" || value === "claudeAgent" || value === "copilot" ? value : null;
+  return value === "codex" || value === "claudeAgent" || value === "copilot" || value === "opencode"
+    ? value
+    : null;
 }
 
 function normalizeProviderModelOptions(
@@ -507,13 +509,30 @@ function normalizeProviderModelOptions(
   const copilot =
     copilotReasoningEffort !== undefined ? { reasoningEffort: copilotReasoningEffort } : undefined;
 
-  if (!codex && !claude && !copilot) {
+  const opencodeCandidate =
+    candidate?.opencode && typeof candidate.opencode === "object"
+      ? (candidate.opencode as Record<string, unknown>)
+      : null;
+  const opencodeReasoningEffort: CodexReasoningEffort | undefined =
+    opencodeCandidate?.reasoningEffort === "low" ||
+    opencodeCandidate?.reasoningEffort === "medium" ||
+    opencodeCandidate?.reasoningEffort === "high" ||
+    opencodeCandidate?.reasoningEffort === "xhigh"
+      ? opencodeCandidate.reasoningEffort
+      : undefined;
+  const opencode =
+    opencodeReasoningEffort !== undefined
+      ? { reasoningEffort: opencodeReasoningEffort }
+      : undefined;
+
+  if (!codex && !claude && !copilot && !opencode) {
     return null;
   }
   return {
     ...(codex ? { codex } : {}),
     ...(claude ? { claudeAgent: claude } : {}),
     ...(copilot ? { copilot } : {}),
+    ...(opencode ? { opencode } : {}),
   };
 }
 
@@ -607,7 +626,7 @@ function legacyToModelSelectionByProvider(
   const result: Partial<Record<ProviderKind, ModelSelection>> = {};
   // Add entries from the options bag (for non-active providers)
   if (modelOptions) {
-    for (const provider of ["codex", "claudeAgent", "copilot"] as const) {
+    for (const provider of ["codex", "claudeAgent", "copilot", "opencode"] as const) {
       const options = modelOptions[provider];
       if (options && Object.keys(options).length > 0) {
         result[provider] = createModelSelection(
@@ -1688,7 +1707,7 @@ export const useComposerDraftStore = create<ComposerDraftStoreState>()(
           }
           const base = existing ?? createEmptyThreadDraft();
           const nextMap = { ...base.modelSelectionByProvider };
-          for (const provider of ["codex", "claudeAgent", "copilot"] as const) {
+          for (const provider of ["codex", "claudeAgent", "copilot", "opencode"] as const) {
             // Only touch providers explicitly present in the input
             if (!normalizedOpts || !(provider in normalizedOpts)) continue;
             const opts = normalizedOpts[provider];

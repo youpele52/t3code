@@ -2,6 +2,7 @@ import {
   type ClaudeModelOptions,
   type CopilotModelOptions,
   type CodexModelOptions,
+  type OpencodeModelOptions,
   type ProviderKind,
   type ProviderModelOptions,
   type ServerProviderModel,
@@ -56,6 +57,9 @@ function getRawEffort(
   if (provider === "copilot") {
     return trimOrNull((modelOptions as CopilotModelOptions | undefined)?.reasoningEffort);
   }
+  if (provider === "opencode") {
+    return trimOrNull((modelOptions as OpencodeModelOptions | undefined)?.reasoningEffort);
+  }
   return trimOrNull((modelOptions as ClaudeModelOptions | undefined)?.effort);
 }
 
@@ -82,6 +86,12 @@ function buildNextOptions(
       ...(modelOptions as CopilotModelOptions | undefined),
       ...patch,
     } as CopilotModelOptions;
+  }
+  if (provider === "opencode") {
+    return {
+      ...(modelOptions as OpencodeModelOptions | undefined),
+      ...patch,
+    } as OpencodeModelOptions;
   }
   return { ...(modelOptions as ClaudeModelOptions | undefined), ...patch } as ClaudeModelOptions;
 }

@@ -143,6 +143,29 @@ const TEST_PROVIDERS: ReadonlyArray<ServerProvider> = [
       },
     ],
   },
+  {
+    provider: "opencode",
+    enabled: true,
+    installed: true,
+    version: "1.3.13",
+    status: "ready",
+    auth: { status: "authenticated" },
+    checkedAt: new Date().toISOString(),
+    models: [
+      {
+        slug: "claude-sonnet-4-6",
+        name: "Claude Sonnet 4.6",
+        isCustom: false,
+        capabilities: {
+          reasoningEffortLevels: [effort("low"), effort("medium", true), effort("high")],
+          supportsFastMode: false,
+          supportsThinkingToggle: false,
+          contextWindowOptions: [],
+          promptInjectedEffortLevels: [],
+        },
+      },
+    ],
+  },
 ];
 
 function buildCodexProvider(models: ServerProvider["models"]): ServerProvider {

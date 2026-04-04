@@ -53,6 +53,13 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     placeholder: "your-copilot-model-slug",
     example: "gpt-5",
   },
+  opencode: {
+    provider: "opencode",
+    title: "OpenCode",
+    description: "Save additional OpenCode model slugs for the picker and `/model` command.",
+    placeholder: "your-opencode-model-slug",
+    example: "claude-sonnet-4-6",
+  },
 };
 
 export const MODEL_PROVIDER_SETTINGS = Object.values(PROVIDER_CUSTOM_MODEL_CONFIG);
@@ -178,6 +185,12 @@ export function getCustomModelOptionsByProvider(
       providers,
       "copilot",
       selectedProvider === "copilot" ? selectedModel : undefined,
+    ),
+    opencode: getAppModelOptions(
+      settings,
+      providers,
+      "opencode",
+      selectedProvider === "opencode" ? selectedModel : undefined,
     ),
   };
 }
