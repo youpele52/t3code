@@ -4,8 +4,8 @@
  * request input.
  *
  * When `modelSelection.provider` is `"claudeAgent"` the request is forwarded to
- * the Claude layer; for any other value (including the default `undefined`) it
- * falls through to the Codex layer.
+ * the Claude layer. Copilot is not implemented for git text generation yet, so
+ * it currently falls back to Codex alongside the default `undefined` route.
  *
  * @module RoutingTextGeneration
  */
