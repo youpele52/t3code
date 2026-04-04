@@ -208,6 +208,41 @@ const EMPTY_PROJECT_ENTRIES: ProjectEntry[] = [];
 const EMPTY_PROVIDERS: ServerProvider[] = [];
 const EMPTY_PENDING_USER_INPUT_ANSWERS: Record<string, PendingUserInputDraftAnswer> = {};
 
+function getModelSelectionSubProviderID(
+  selection: ModelSelection | null | undefined,
+): string | null {
+  return selection?.provider === "opencode" && typeof selection.subProviderID === "string"
+    ? selection.subProviderID
+    : null;
+}
+
+function modelSelectionsEqual(
+  left: ModelSelection | null | undefined,
+  right: ModelSelection | null | undefined,
+): boolean {
+  if (left === right) {
+    return true;
+  }
+  if (!left || !right) {
+    return left === right;
+  }
+  return (
+    left.provider === right.provider &&
+    left.model === right.model &&
+    JSON.stringify(left.options ?? null) === JSON.stringify(right.options ?? null) &&
+    getModelSelectionSubProviderID(left) === getModelSelectionSubProviderID(right)
+  );
+}
+
+function modelPickerValue(selection: ModelSelection | null | undefined): string {
+  const model = selection?.model?.trim();
+  if (!model) {
+    return "";
+  }
+  const subProviderID = getModelSelectionSubProviderID(selection);
+  return subProviderID ? `${model}::${subProviderID}` : model;
+}
+
 type ThreadPlanCatalogEntry = Pick<Thread, "id" | "proposedPlans">;
 
 const MAX_THREAD_PLAN_CATALOG_CACHE_ENTRIES = 500;
@@ -672,6 +707,8 @@ export default function ChatView({ threadId }: ChatViewProps) {
   const [planSidebarOpen, setPlanSidebarOpen] = useState(false);
   const [isComposerFooterCompact, setIsComposerFooterCompact] = useState(false);
   const [isComposerPrimaryActionsCompact, setIsComposerPrimaryActionsCompact] = useState(false);
+  /** When true, the user has explicitly unlocked the provider picker to switch providers mid-thread. Resets when the thread changes. */
+  const [providerUnlocked, setProviderUnlocked] = useState(false);
   // Tracks whether the user explicitly dismissed the sidebar for the active turn.
   const planSidebarDismissedForTurnRef = useRef<string | null>(null);
   // When set, the thread-change reset effect will open the sidebar instead of closing it.
@@ -989,9 +1026,10 @@ export default function ChatView({ threadId }: ChatViewProps) {
   const threadProvider =
     activeThread?.modelSelection.provider ?? activeProject?.defaultModelSelection?.provider ?? null;
   const hasThreadStarted = threadHasStarted(activeThread);
-  const lockedProvider: ProviderKind | null = hasThreadStarted
-    ? (sessionProvider ?? threadProvider ?? selectedProviderByThreadId ?? null)
-    : null;
+  const lockedProvider: ProviderKind | null =
+    hasThreadStarted && !providerUnlocked
+      ? (sessionProvider ?? threadProvider ?? selectedProviderByThreadId ?? null)
+      : null;
   const serverConfig = useServerConfig();
   const providerStatuses = serverConfig?.providers ?? EMPTY_PROVIDERS;
   const unlockedSelectedProvider = resolveSelectableProvider(
@@ -1008,6 +1046,14 @@ export default function ChatView({ threadId }: ChatViewProps) {
     settings,
   });
   const selectedProviderModels = getProviderModels(providerStatuses, selectedProvider);
+  const selectedDraftOrThreadModelSelection =
+    composerDraft.modelSelectionByProvider[selectedProvider] ??
+    (activeThread?.modelSelection.provider === selectedProvider
+      ? activeThread.modelSelection
+      : null) ??
+    (activeProject?.defaultModelSelection?.provider === selectedProvider
+      ? activeProject.defaultModelSelection
+      : null);
   const composerProviderState = useMemo(
     () =>
       getComposerProviderState({
@@ -1021,11 +1067,37 @@ export default function ChatView({ threadId }: ChatViewProps) {
   );
   const selectedPromptEffort = composerProviderState.promptEffort;
   const selectedModelOptionsForDispatch = composerProviderState.modelOptionsForDispatch;
-  const selectedModelSelection = useMemo<ModelSelection>(
-    () => createModelSelection(selectedProvider, selectedModel, selectedModelOptionsForDispatch),
-    [selectedModel, selectedModelOptionsForDispatch, selectedProvider],
-  );
-  const selectedModelForPicker = selectedModel;
+  const selectedModelSelection = useMemo<ModelSelection>(() => {
+    const base = createModelSelection(
+      selectedProvider,
+      selectedModel,
+      selectedModelOptionsForDispatch,
+    );
+    // Attach subProviderID for OpenCode models so the adapter can route to the
+    // correct sub-provider without a fragile runtime lookup.
+    if (selectedProvider === "opencode") {
+      const opcModels = providerStatuses.find((p) => p.provider === "opencode")?.models ?? [];
+      const currentSubProviderID = getModelSelectionSubProviderID(
+        selectedDraftOrThreadModelSelection,
+      );
+      const matched = opcModels.find(
+        (m) =>
+          m.slug === selectedModel &&
+          (currentSubProviderID === null || m.subProviderID === currentSubProviderID),
+      );
+      if (matched?.subProviderID) {
+        return { ...base, subProviderID: matched.subProviderID } as ModelSelection;
+      }
+    }
+    return base;
+  }, [
+    selectedDraftOrThreadModelSelection,
+    selectedModel,
+    selectedModelOptionsForDispatch,
+    selectedProvider,
+    providerStatuses,
+  ]);
+  const selectedModelForPicker = modelPickerValue(selectedModelSelection);
   const phase = derivePhase(activeThread?.session ?? null);
   const threadActivities = activeThread?.activities ?? EMPTY_ACTIVITIES;
   const workLogEntries = useMemo(
@@ -1410,7 +1482,14 @@ export default function ChatView({ threadId }: ChatViewProps) {
   );
   const selectedModelForPickerWithCustomFallback = useMemo(() => {
     const currentOptions = modelOptionsByProvider[selectedProvider];
-    return currentOptions.some((option) => option.slug === selectedModelForPicker)
+    return currentOptions.some(
+      (option) =>
+        modelPickerValue({
+          provider: selectedProvider,
+          model: option.slug,
+          ...(option.subProviderID ? { subProviderID: option.subProviderID } : {}),
+        } as ModelSelection) === selectedModelForPicker,
+    )
       ? selectedModelForPicker
       : (normalizeModelSlug(selectedModelForPicker, selectedProvider) ?? selectedModelForPicker);
   }, [modelOptionsByProvider, selectedModelForPicker, selectedProvider]);
@@ -1419,11 +1498,12 @@ export default function ChatView({ threadId }: ChatViewProps) {
       AVAILABLE_PROVIDER_OPTIONS.filter(
         (option) => lockedProvider === null || option.value === lockedProvider,
       ).flatMap((option) =>
-        modelOptionsByProvider[option.value].map(({ slug, name }) => ({
+        modelOptionsByProvider[option.value].map(({ slug, name, subProviderID }) => ({
           provider: option.value,
           providerLabel: option.label,
           slug,
           name,
+          subProviderID,
           searchSlug: slug.toLowerCase(),
           searchName: name.toLowerCase(),
           searchProvider: option.label.toLowerCase(),
@@ -1494,14 +1574,20 @@ export default function ChatView({ threadId }: ChatViewProps) {
           searchSlug.includes(query) || searchName.includes(query) || searchProvider.includes(query)
         );
       })
-      .map(({ provider, providerLabel, slug, name }) => ({
-        id: `model:${provider}:${slug}`,
-        type: "model",
-        provider,
-        model: slug,
-        label: name,
-        description: `${providerLabel} · ${slug}`,
-      }));
+      .map(({ provider, providerLabel, slug, name, subProviderID }) => {
+        const item: Extract<ComposerCommandItem, { type: "model" }> = {
+          id: `model:${provider}:${subProviderID ?? "default"}:${slug}`,
+          type: "model",
+          provider,
+          model: slug,
+          label: name,
+          description: `${providerLabel} · ${slug}`,
+        };
+        if (subProviderID !== undefined) {
+          item.subProviderID = subProviderID;
+        }
+        return item;
+      });
   }, [composerTrigger, searchableModelOptions, workspaceEntries]);
   const composerMenuOpen = Boolean(composerTrigger);
   const activeComposerMenuItem = useMemo(
@@ -2024,10 +2110,7 @@ export default function ChatView({ threadId }: ChatViewProps) {
 
       if (
         input.modelSelection !== undefined &&
-        (input.modelSelection.model !== serverThread.modelSelection.model ||
-          input.modelSelection.provider !== serverThread.modelSelection.provider ||
-          JSON.stringify(input.modelSelection.options ?? null) !==
-            JSON.stringify(serverThread.modelSelection.options ?? null))
+        !modelSelectionsEqual(input.modelSelection, serverThread.modelSelection)
       ) {
         await api.orchestration.dispatchCommand({
           type: "thread.meta.update",
@@ -2297,6 +2380,7 @@ export default function ChatView({ threadId }: ChatViewProps) {
   useEffect(() => {
     setExpandedWorkGroups({});
     setPullRequestDialogState(null);
+    setProviderUnlocked(false);
     if (planSidebarOpenOnNextThreadRef.current) {
       planSidebarOpenOnNextThreadRef.current = false;
       setPlanSidebarOpen(true);
@@ -3012,13 +3096,7 @@ export default function ChatView({ threadId }: ChatViewProps) {
         }
       }
       const title = truncate(titleSeed);
-      const threadCreateModelSelection: ModelSelection = createModelSelection(
-        selectedProvider,
-        selectedModel ||
-          activeProject.defaultModelSelection?.model ||
-          DEFAULT_MODEL_BY_PROVIDER.codex,
-        selectedModelSelection.options,
-      );
+      const threadCreateModelSelection: ModelSelection = selectedModelSelection;
 
       // Auto-title from first message
       if (isFirstMessage && isServerThread) {
@@ -3528,7 +3606,7 @@ export default function ChatView({ threadId }: ChatViewProps) {
   ]);
 
   const onProviderModelSelect = useCallback(
-    (provider: ProviderKind, model: string) => {
+    (provider: ProviderKind, model: string, subProviderID?: string) => {
       if (!activeThread) return;
       if (lockedProvider !== null && provider !== lockedProvider) {
         scheduleComposerFocus();
@@ -3541,9 +3619,23 @@ export default function ChatView({ threadId }: ChatViewProps) {
         providerStatuses,
         model,
       );
+      // Look up the subProviderID from the server model snapshot so the adapter
+      // can route to the correct OpenCode sub-provider without re-querying.
+      const matchedServerModel = modelOptionsByProvider[resolvedProvider]?.find(
+        (m) =>
+          m.slug === resolvedModel &&
+          (resolvedProvider !== "opencode" || m.subProviderID === subProviderID),
+      );
+      const matchedSubProviderID =
+        matchedServerModel && "subProviderID" in matchedServerModel
+          ? (matchedServerModel as { subProviderID?: string }).subProviderID
+          : undefined;
       const nextModelSelection: ModelSelection = {
         provider: resolvedProvider,
         model: resolvedModel,
+        ...(resolvedProvider === "opencode" && matchedSubProviderID
+          ? { subProviderID: matchedSubProviderID }
+          : {}),
       };
       setComposerDraftModelSelection(activeThread.id, nextModelSelection);
       setStickyComposerModelSelection(nextModelSelection);
@@ -3557,6 +3649,7 @@ export default function ChatView({ threadId }: ChatViewProps) {
       setStickyComposerModelSelection,
       providerStatuses,
       settings,
+      modelOptionsByProvider,
     ],
   );
   const setPromptFromTraits = useCallback(
@@ -3733,7 +3826,7 @@ export default function ChatView({ threadId }: ChatViewProps) {
         }
         return;
       }
-      onProviderModelSelect(item.provider, item.model);
+      onProviderModelSelect(item.provider, item.model, item.subProviderID);
       const applied = applyPromptReplacement(trigger.rangeStart, trigger.rangeEnd, "", {
         expectedText: snapshot.value.slice(trigger.rangeStart, trigger.rangeEnd),
       });
@@ -4239,6 +4332,9 @@ export default function ChatView({ threadId }: ChatViewProps) {
                               }
                             : {})}
                           onProviderModelChange={onProviderModelSelect}
+                          {...(hasThreadStarted
+                            ? { onProviderUnlock: () => setProviderUnlocked(true) }
+                            : {})}
                         />
 
                         {isComposerFooterCompact ? (

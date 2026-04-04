@@ -870,8 +870,28 @@ const makeCopilotAdapter = Effect.fn("makeCopilotAdapter")(function* (
         },
       );
 
-      if (input.modelSelection?.provider === "copilot") {
-        record.model = input.modelSelection.model;
+      const copilotModelSelection =
+        input.modelSelection?.provider === "copilot" ? input.modelSelection : undefined;
+
+      if (copilotModelSelection) {
+        record.model = copilotModelSelection.model;
+
+        yield* Effect.tryPromise({
+          try: () =>
+            record.session.setModel(
+              copilotModelSelection.model,
+              copilotModelSelection.options?.reasoningEffort
+                ? { reasoningEffort: copilotModelSelection.options.reasoningEffort }
+                : undefined,
+            ),
+          catch: (cause) =>
+            new ProviderAdapterRequestError({
+              provider: PROVIDER,
+              method: "session.setModel",
+              detail: toMessage(cause, "Failed to apply GitHub Copilot model selection."),
+              cause,
+            }),
+        });
       }
 
       const turnId = TurnId.makeUnsafe(`copilot-turn-${randomUUID()}`);

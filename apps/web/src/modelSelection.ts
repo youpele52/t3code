@@ -7,7 +7,7 @@ import {
 import { normalizeModelSlug, resolveSelectableModel } from "@t3tools/shared/model";
 import { getComposerProviderState } from "./components/chat/composerProviderRegistry";
 import { UnifiedSettings } from "@t3tools/contracts/settings";
-import { createModelSelection } from "./modelSelectionHelpers";
+import { cloneModelSelection, createModelSelection } from "./modelSelectionHelpers";
 import {
   getDefaultServerModel,
   getProviderModels,
@@ -29,6 +29,10 @@ export interface AppModelOption {
   slug: string;
   name: string;
   isCustom: boolean;
+  /** Sub-provider group label for display grouping (e.g. "Anthropic", "OpenAI"). Passed through from the server snapshot. */
+  group?: string | undefined;
+  /** Sub-provider ID for routing (e.g. "openrouter", "google"). Passed through from the server snapshot. */
+  subProviderID?: string | undefined;
 }
 
 const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConfig> = {
@@ -100,11 +104,12 @@ export function getAppModelOptions(
   selectedModel?: string | null,
 ): AppModelOption[] {
   const options: AppModelOption[] = getProviderModels(providers, provider).map(
-    ({ slug, name, isCustom }) => ({
-      slug,
-      name,
-      isCustom,
-    }),
+    ({ slug, name, isCustom, group, subProviderID }) => {
+      const option: AppModelOption = { slug, name, isCustom };
+      if (group !== undefined) option.group = group;
+      if (subProviderID !== undefined) option.subProviderID = subProviderID;
+      return option;
+    },
   );
   const seen = new Set(options.map((option) => option.slug));
   const trimmedSelectedModel = selectedModel?.trim().toLowerCase();
@@ -166,7 +171,15 @@ export function getCustomModelOptionsByProvider(
   providers: ReadonlyArray<ServerProvider>,
   selectedProvider?: ProviderKind | null,
   selectedModel?: string | null,
-): Record<ProviderKind, ReadonlyArray<{ slug: string; name: string }>> {
+): Record<
+  ProviderKind,
+  ReadonlyArray<{
+    slug: string;
+    name: string;
+    group?: string | undefined;
+    subProviderID?: string | undefined;
+  }>
+> {
   return {
     codex: getAppModelOptions(
       settings,
@@ -218,6 +231,15 @@ export function resolveAppModelSelectionState(
       [provider]: provider === selection.provider ? selection.options : undefined,
     },
   });
+
+  if (provider === selection.provider) {
+    const baseSelection = createModelSelection(provider, model, modelOptionsForDispatch);
+    return provider === "opencode" && "subProviderID" in selection && selection.subProviderID
+      ? cloneModelSelection(baseSelection, {
+          subProviderID: selection.subProviderID,
+        } as Partial<ModelSelection>)
+      : baseSelection;
+  }
 
   return createModelSelection(provider, model, modelOptionsForDispatch);
 }

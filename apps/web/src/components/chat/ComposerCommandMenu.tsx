@@ -28,6 +28,7 @@ export type ComposerCommandItem =
       type: "model";
       provider: ProviderKind;
       model: string;
+      subProviderID?: string | undefined;
       label: string;
       description: string;
     };

@@ -14,8 +14,10 @@ import {
   type ProviderTurnStartResult,
   type ThreadTokenUsageSnapshot,
 } from "@t3tools/contracts";
-import { createOpencode, type OpencodeClient, type Event as OpencodeEvent } from "@opencode-ai/sdk";
+import { type OpencodeClient, type Event as OpencodeEvent } from "@opencode-ai/sdk";
 import { Effect, Layer, Queue, Random, Stream } from "effect";
+
+import { OpencodeServerManager } from "../Services/OpencodeServerManager.ts";
 
 import { ServerConfig } from "../../config.ts";
 import { ServerSettingsService } from "../../serverSettings.ts";
@@ -54,8 +56,8 @@ interface MutableTurnSnapshot {
 
 interface ActiveOpencodeSession {
   readonly client: OpencodeClient;
-  readonly serverClose: () => void;
-  readonly serverUrl: string;
+  /** Releases the shared server handle acquired from OpencodeServerManager. */
+  readonly releaseServer: () => void;
   readonly opencodeSessionId: string;
   readonly threadId: ThreadId;
   readonly createdAt: string;
@@ -165,6 +167,17 @@ function requestDetailFromPermission(permission: {
   );
 }
 
+function withOpencodeDirectory<T extends object>(
+  cwd: string | undefined,
+  input: T,
+):
+  | T
+  | (T & {
+      query: { directory: string };
+    }) {
+  return cwd ? { ...input, query: { directory: cwd } } : input;
+}
+
 function buildThreadSnapshot(
   threadId: ThreadId,
   turns: ReadonlyArray<MutableTurnSnapshot>,
@@ -219,6 +232,13 @@ const makeOpencodeAdapter = Effect.fn("makeOpencodeAdapter")(function* (
 ) {
   const _serverConfig = yield* ServerConfig;
   const _serverSettings = yield* ServerSettingsService;
+  const serverManager = yield* OpencodeServerManager;
+
+  // Capture the Effect services context so we can run effects from
+  // non-Effect code (e.g. the SSE event loop).  This mirrors the
+  // pattern used by CodexAdapter (see registerListener).
+  const services = yield* Effect.services<never>();
+
   const nativeEventLogger =
     options?.nativeEventLogger ??
     (options?.nativeEventLogPath !== undefined
@@ -301,50 +321,88 @@ const makeOpencodeAdapter = Effect.fn("makeOpencodeAdapter")(function* (
       const turnId = session.activeTurnId;
       const stamp = yield* makeEventStamp();
       const createdAt = stamp.createdAt;
+      const eventType = (event as { type: string }).type;
       const raw = {
         source: "opencode.sdk.session-event" as const,
-        method: event.type,
+        method: eventType,
         payload: event,
       };
 
-      switch (event.type) {
+      if (eventType === "message.part.delta") {
+        const partDelta = event as OpencodeEvent & {
+          properties: {
+            partID?: string;
+            field?: string;
+            delta?: string;
+          };
+        };
+        const delta = partDelta.properties.delta;
+        const itemId = partDelta.properties.partID;
+
+        if (!delta || !itemId) {
+          return [];
+        }
+
+        const streamKind =
+          partDelta.properties.field === "text"
+            ? "assistant_text"
+            : partDelta.properties.field === "reasoning"
+              ? "reasoning_text"
+              : undefined;
+
+        if (!streamKind) {
+          return [];
+        }
+
+        return [
+          {
+            ...eventBase({
+              eventId: stamp.eventId,
+              createdAt,
+              threadId: session.threadId,
+              ...(turnId ? { turnId } : {}),
+              itemId,
+              raw,
+            }),
+            type: "content.delta",
+            payload: {
+              streamKind,
+              delta,
+            },
+          },
+        ];
+      }
+
+      switch (eventType) {
         case "message.part.updated": {
-          const part = event.properties.part;
-          const delta = event.properties.delta;
-
-          if (part.type === "text" && delta) {
-            return [
-              {
-                ...eventBase({
-                  eventId: stamp.eventId,
-                  createdAt,
-                  threadId: session.threadId,
-                  ...(turnId ? { turnId } : {}),
-                  itemId: part.id,
-                  raw,
-                }),
-                type: "content.delta",
-                payload: {
-                  streamKind: "assistant_text",
-                  delta,
-                },
-              },
-            ];
-          }
-
+          const part = (event.properties as { part: { id: string; type: string } }).part;
           if (part.type === "tool") {
             // Tool call progress — map to item.started on first delta, item.completed when done
             const toolPart = part as unknown as {
               id: string;
               type: "tool";
               tool: string;
-              state: string;
-              input?: unknown;
-              output?: string;
-              error?: string;
+              state: {
+                status?: string;
+                input?: unknown;
+                output?: string;
+                error?: string;
+                metadata?: Record<string, unknown>;
+                title?: string;
+              };
+              metadata?: Record<string, unknown>;
             };
 
-            if (toolPart.state === "pending" || toolPart.state === "running") {
+            const toolState = toolPart.state?.status;
+            const toolInput = toolPart.state?.input;
+            const toolOutput = normalizeString(toolPart.state?.output);
+            const toolError = normalizeString(toolPart.state?.error);
+            const toolTitle =
+              normalizeString(toolPart.state?.title) ??
+              normalizeString(toolPart.metadata?.title) ??
+              toolPart.tool;
+
+            if (toolState === "pending" || toolState === "running") {
               return [
                 {
                   ...eventBase({
@@ -359,14 +417,14 @@ const makeOpencodeAdapter = Effect.fn("makeOpencodeAdapter")(function* (
                   payload: {
                     itemType: "dynamic_tool_call",
                     status: "inProgress",
-                    title: toolPart.tool,
-                    ...(toolPart.input ? { data: toolPart.input } : {}),
+                    title: toolTitle,
+                    ...(toolInput ? { data: toolInput } : {}),
                   },
                 },
               ];
             }
 
-            if (toolPart.state === "completed" || toolPart.state === "error") {
+            if (toolState === "completed" || toolState === "error") {
               return [
                 {
                   ...eventBase({
@@ -380,10 +438,10 @@ const makeOpencodeAdapter = Effect.fn("makeOpencodeAdapter")(function* (
                   type: "item.completed",
                   payload: {
                     itemType: "dynamic_tool_call",
-                    status: toolPart.state === "completed" ? "completed" : "failed",
-                    title: toolPart.tool,
-                    ...(toolPart.output ? { detail: toolPart.output } : {}),
-                    ...(toolPart.error ? { detail: toolPart.error } : {}),
+                    status: toolState === "completed" ? "completed" : "failed",
+                    title: toolTitle,
+                    ...(toolOutput ? { detail: toolOutput } : {}),
+                    ...(toolError ? { detail: toolError } : {}),
                     data: toolPart,
                   },
                 },
@@ -393,31 +451,10 @@ const makeOpencodeAdapter = Effect.fn("makeOpencodeAdapter")(function* (
             return [];
           }
 
-          if (part.type === "reasoning" && delta) {
-            return [
-              {
-                ...eventBase({
-                  eventId: stamp.eventId,
-                  createdAt,
-                  threadId: session.threadId,
-                  ...(turnId ? { turnId } : {}),
-                  itemId: part.id,
-                  raw,
-                }),
-                type: "content.delta",
-                payload: {
-                  streamKind: "reasoning_text",
-                  delta,
-                },
-              },
-            ];
-          }
-
           return [];
         }
-
         case "message.updated": {
-          const msg = event.properties.info;
+          const msg = (event.properties as { info: { role: string } }).info;
           if (msg.role !== "assistant") return [];
 
           const assistantMsg = msg as {
@@ -508,10 +545,23 @@ const makeOpencodeAdapter = Effect.fn("makeOpencodeAdapter")(function* (
         }
 
         case "session.status": {
-          const status = event.properties.status;
+          const status = (event.properties as { status: { type: string } }).status;
 
           if (status.type === "busy") {
-            // Turn started
+            // If sendTurn already set an activeTurnId, reuse it (avoids
+            // double-TurnId creation).  Only mint a fresh id for
+            // server-initiated turns (e.g. retries, auto-continuations).
+            const existingTurnId = session.activeTurnId;
+            if (existingTurnId) {
+              // Turn was already started by sendTurn — just append the
+              // event to the existing turn snapshot.  No new
+              // `turn.started` event is needed because sendTurn already
+              // emitted one.
+              session.turns.at(-1)?.items.push(event);
+              return [];
+            }
+
+            // Server-initiated turn — create a new TurnId
             const newTurnId = TurnId.makeUnsafe(`opencode-turn-${randomUUID()}`);
             session.activeTurnId = newTurnId;
             session.turns.push({ id: newTurnId, items: [event] });
@@ -669,26 +719,61 @@ const makeOpencodeAdapter = Effect.fn("makeOpencodeAdapter")(function* (
 
     void (async () => {
       try {
-        const { stream } = await session.client.event.subscribe();
+        const { stream } = await session.client.event.subscribe(
+          withOpencodeDirectory(session.cwd, {
+            signal: abortController.signal,
+          }),
+        );
         for await (const event of stream) {
           if (abortController.signal.aborted) break;
 
-          // Filter events to only those for this session
+          // Filter events to only those for this session.
+          // The sessionID can live in different places depending on
+          // event type, so we check several known locations.
           const props = event.properties as Record<string, unknown>;
           const eventSessionId =
             (props.sessionID as string | undefined) ??
-            (props.info as Record<string, unknown> | undefined)?.sessionID;
+            ((props.info as Record<string, unknown> | undefined)?.sessionID as
+              | string
+              | undefined) ??
+            ((props.session as Record<string, unknown> | undefined)?.id as string | undefined);
 
           if (eventSessionId && eventSessionId !== session.opencodeSessionId) {
             continue;
           }
 
           await handleEvent(session, event)
-            .pipe(Effect.runPromise)
-            .catch(() => undefined);
+            .pipe(Effect.runPromiseWith(services))
+            .catch((err) => {
+              console.error(
+                `[opencode-adapter] handleEvent error for session=${session.opencodeSessionId} event.type=${event.type}:`,
+                err,
+              );
+            });
         }
-      } catch {
-        // SSE stream ended or errored — this is expected on session stop
+      } catch (err) {
+        // Only log if this wasn't an intentional abort
+        if (!abortController.signal.aborted) {
+          console.error(
+            `[opencode-adapter] SSE stream error for session=${session.opencodeSessionId}:`,
+            err,
+          );
+          // Emit a runtime error so the UI can surface the connection issue
+          makeSyntheticEvent(session.threadId, "runtime.error", {
+            message: toMessage(err, "SSE event stream disconnected unexpectedly."),
+            class: "transport_error",
+          })
+            .pipe(
+              Effect.flatMap((evt) => emit([evt])),
+              Effect.runPromiseWith(services),
+            )
+            .catch(() => {
+              // Last-resort: if even emitting the error fails, just log it
+              console.error(
+                `[opencode-adapter] Failed to emit SSE disconnect error for session=${session.opencodeSessionId}`,
+              );
+            });
+        }
       }
     })();
   }
@@ -721,9 +806,9 @@ const makeOpencodeAdapter = Effect.fn("makeOpencodeAdapter")(function* (
         } satisfies ProviderSession;
       }
 
-      // Start OpenCode server via createOpencode()
-      const { client, server } = yield* Effect.tryPromise({
-        try: () => createOpencode(),
+      // Acquire a handle from the shared OpenCode server manager
+      const serverHandle = yield* Effect.tryPromise({
+        try: () => serverManager.acquire(),
         catch: (cause) =>
           new ProviderAdapterProcessError({
             provider: PROVIDER,
@@ -732,36 +817,51 @@ const makeOpencodeAdapter = Effect.fn("makeOpencodeAdapter")(function* (
             cause,
           }),
       });
+      const client = serverHandle.client;
 
       // Determine model to use
       let modelID: string | undefined;
       let providerID: string | undefined;
       if (isOpencodeModelSelection(input.modelSelection)) {
         modelID = input.modelSelection.model;
-        // Try to find the provider for this model from the config
-        const resolved = yield* Effect.tryPromise({
-          try: async () => {
-            const providersResp = await client.config.providers();
-            if (providersResp.data) {
-              for (const p of providersResp.data.providers) {
-                if (p.models && modelID && modelID in p.models) {
-                  return p.id;
+        // Use subProviderID from the model selection (set at enumeration time)
+        // and fall back to a runtime lookup if not available.
+        const selectionProviderID =
+          "subProviderID" in input.modelSelection
+            ? (input.modelSelection as { subProviderID?: string }).subProviderID
+            : undefined;
+        providerID =
+          selectionProviderID ??
+          (yield* Effect.tryPromise({
+            try: async () => {
+              const providersResp = await client.config.providers(
+                withOpencodeDirectory(input.cwd, {}),
+              );
+              if (providersResp.data) {
+                for (const p of providersResp.data.providers) {
+                  if (p.models && modelID) {
+                    // Check both keys and model IDs for a match
+                    if (modelID in p.models) return p.id;
+                    for (const m of Object.values(p.models)) {
+                      if (m.id === modelID) return p.id;
+                    }
+                  }
                 }
               }
-            }
-            return undefined;
-          },
-          catch: () => undefined as never,
-        }).pipe(Effect.orElseSucceed(() => undefined));
-        providerID = resolved;
+              return undefined;
+            },
+            catch: () => undefined as never,
+          }).pipe(Effect.orElseSucceed(() => undefined)));
       }
 
       // Create an OpenCode session
       const sessionResp = yield* Effect.tryPromise({
         try: () =>
-          client.session.create({
-            body: input.cwd ? { title: `T3 Code session in ${input.cwd}` } : {},
-          }),
+          client.session.create(
+            withOpencodeDirectory(input.cwd, {
+              body: input.cwd ? { title: `T3 Code session in ${input.cwd}` } : {},
+            }),
+          ),
         catch: (cause) =>
           new ProviderAdapterProcessError({
             provider: PROVIDER,
@@ -772,7 +872,7 @@ const makeOpencodeAdapter = Effect.fn("makeOpencodeAdapter")(function* (
       });
 
       if (sessionResp.error || !sessionResp.data) {
-        server.close();
+        serverHandle.release();
         return yield* new ProviderAdapterProcessError({
           provider: PROVIDER,
           threadId: input.threadId,
@@ -785,8 +885,7 @@ const makeOpencodeAdapter = Effect.fn("makeOpencodeAdapter")(function* (
 
       const record: ActiveOpencodeSession = {
         client,
-        serverClose: () => server.close(),
-        serverUrl: server.url,
+        releaseServer: () => serverHandle.release(),
         opencodeSessionId,
         threadId: input.threadId,
         createdAt,
@@ -842,29 +941,82 @@ const makeOpencodeAdapter = Effect.fn("makeOpencodeAdapter")(function* (
 
       if (isOpencodeModelSelection(input.modelSelection)) {
         record.model = input.modelSelection.model;
+        // Use subProviderID from the model selection (set at enumeration time)
+        // and fall back to a runtime lookup if not available.
+        const selectionProviderID =
+          "subProviderID" in input.modelSelection
+            ? (input.modelSelection as { subProviderID?: string }).subProviderID
+            : undefined;
+        record.providerID =
+          selectionProviderID ??
+          (yield* Effect.tryPromise({
+            try: async () => {
+              const providersResp = await record.client.config.providers(
+                withOpencodeDirectory(record.cwd, {}),
+              );
+              if (providersResp.data) {
+                for (const p of providersResp.data.providers) {
+                  if (p.models && record.model) {
+                    // Check both keys and model IDs for a match
+                    if (record.model in p.models) return p.id;
+                    for (const m of Object.values(p.models)) {
+                      if (m.id === record.model) return p.id;
+                    }
+                  }
+                }
+              }
+              return undefined;
+            },
+            catch: () => undefined as never,
+          }).pipe(Effect.orElseSucceed(() => undefined)));
       }
 
       const turnId = TurnId.makeUnsafe(`opencode-turn-${randomUUID()}`);
       record.activeTurnId = turnId;
       record.updatedAt = new Date().toISOString();
+      record.turns.push({ id: turnId, items: [] });
+
+      // Emit turn.started immediately — this is the canonical source of
+      // the TurnId.  The SSE `session.status busy` handler will see that
+      // activeTurnId already exists and skip creating a duplicate.
+      yield* emit([
+        yield* makeSyntheticEvent(
+          input.threadId,
+          "turn.started",
+          record.model ? { model: record.model } : {},
+          { turnId },
+        ),
+      ]);
 
       // Use promptAsync for non-blocking send with SSE streaming
-      yield* Effect.tryPromise({
+      const promptBody = {
+        parts: [{ type: "text" as const, text: input.input ?? "" }],
+        ...(record.model
+          ? {
+              model: {
+                providerID: record.providerID ?? "",
+                modelID: record.model,
+              },
+            }
+          : {}),
+      };
+      if (record.model && !record.providerID) {
+        record.activeTurnId = undefined;
+        return yield* new ProviderAdapterValidationError({
+          provider: PROVIDER,
+          operation: "sendTurn",
+          issue: `Unable to resolve OpenCode provider for model '${record.model}'.`,
+        });
+      }
+
+      const promptResp = yield* Effect.tryPromise({
         try: () =>
-          record.client.session.promptAsync({
-            path: { id: record.opencodeSessionId },
-            body: {
-              parts: [{ type: "text", text: input.input ?? "" }],
-              ...(record.model
-                ? {
-                    model: {
-                      providerID: record.providerID ?? "",
-                      modelID: record.model,
-                    },
-                  }
-                : {}),
-            },
-          }),
+          record.client.session.promptAsync(
+            withOpencodeDirectory(record.cwd, {
+              path: { id: record.opencodeSessionId },
+              body: promptBody,
+            }),
+          ),
         catch: (cause) =>
           new ProviderAdapterRequestError({
             provider: PROVIDER,
@@ -873,6 +1025,15 @@ const makeOpencodeAdapter = Effect.fn("makeOpencodeAdapter")(function* (
             cause,
           }),
       });
+
+      if (promptResp.error) {
+        record.activeTurnId = undefined;
+        return yield* new ProviderAdapterRequestError({
+          provider: PROVIDER,
+          method: "session.promptAsync",
+          detail: `Failed to send OpenCode turn: ${String(promptResp.error)}`,
+        });
+      }
 
       return {
         threadId: input.threadId,
@@ -886,9 +1047,11 @@ const makeOpencodeAdapter = Effect.fn("makeOpencodeAdapter")(function* (
       const record = yield* requireSession(threadId);
       yield* Effect.tryPromise({
         try: () =>
-          record.client.session.abort({
-            path: { id: record.opencodeSessionId },
-          }),
+          record.client.session.abort(
+            withOpencodeDirectory(record.cwd, {
+              path: { id: record.opencodeSessionId },
+            }),
+          ),
         catch: (cause) =>
           new ProviderAdapterRequestError({
             provider: PROVIDER,
@@ -920,15 +1083,17 @@ const makeOpencodeAdapter = Effect.fn("makeOpencodeAdapter")(function* (
       // Respond via the OpenCode SDK permission API
       yield* Effect.tryPromise({
         try: () =>
-          record.client.postSessionIdPermissionsPermissionId({
-            path: {
-              id: record.opencodeSessionId,
-              permissionID: pending.permissionId,
-            },
-            body: {
-              response: approvalDecisionToOpencodeResponse(decision),
-            },
-          }),
+          record.client.postSessionIdPermissionsPermissionId(
+            withOpencodeDirectory(record.cwd, {
+              path: {
+                id: record.opencodeSessionId,
+                permissionID: pending.permissionId,
+              },
+              body: {
+                response: approvalDecisionToOpencodeResponse(decision),
+              },
+            }),
+          ),
         catch: (cause) =>
           new ProviderAdapterRequestError({
             provider: PROVIDER,
@@ -978,15 +1143,17 @@ const makeOpencodeAdapter = Effect.fn("makeOpencodeAdapter")(function* (
 
         // Delete the session from OpenCode
         try {
-          await record.client.session.delete({
-            path: { id: record.opencodeSessionId },
-          });
+          await record.client.session.delete(
+            withOpencodeDirectory(record.cwd, {
+              path: { id: record.opencodeSessionId },
+            }),
+          );
         } catch {
           // Best effort — session might already be gone
         }
 
-        // Shut down the OpenCode server
-        record.serverClose();
+        // Release the shared server handle (decrements ref-count; shuts down server when last session stops)
+        record.releaseServer();
         sessions.delete(record.threadId);
       },
       catch: (cause) =>
@@ -1002,6 +1169,13 @@ const makeOpencodeAdapter = Effect.fn("makeOpencodeAdapter")(function* (
     Effect.gen(function* () {
       const record = yield* requireSession(threadId);
       yield* stopSessionRecord(record);
+
+      // Notify the orchestration pipeline that the session has exited
+      yield* emit([
+        yield* makeSyntheticEvent(threadId, "session.exited", {
+          reason: "stopSession",
+        }),
+      ]);
     });
 
   const listSessions: OpencodeAdapterShape["listSessions"] = () =>

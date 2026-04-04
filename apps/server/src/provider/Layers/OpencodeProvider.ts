@@ -1,6 +1,6 @@
 import type { ModelCapabilities, OpencodeSettings, ServerProviderModel } from "@t3tools/contracts";
 import { Cache, Duration, Effect, Equal, Layer, Result, Stream } from "effect";
-import { createOpencode } from "@opencode-ai/sdk";
+import type { OpencodeClient } from "@opencode-ai/sdk";
 
 import {
   buildServerProvider,
@@ -9,6 +9,7 @@ import {
 } from "../providerSnapshot";
 import { makeManagedServerProvider } from "../makeManagedServerProvider";
 import { OpencodeProvider } from "../Services/OpencodeProvider";
+import { OpencodeServerManager } from "../Services/OpencodeServerManager";
 import { ServerSettingsService } from "../../serverSettings";
 import { ProviderAdapterProcessError } from "../Errors";
 
@@ -27,6 +28,7 @@ const BUILT_IN_MODELS: ReadonlyArray<ServerProviderModel> = [
     slug: "claude-sonnet-4-6",
     name: "Claude Sonnet 4.6",
     isCustom: false,
+    group: "Anthropic",
     capabilities: {
       ...EMPTY_MODEL_CAPABILITIES,
       reasoningEffortLevels: [
@@ -40,12 +42,14 @@ const BUILT_IN_MODELS: ReadonlyArray<ServerProviderModel> = [
     slug: "claude-haiku-4-5",
     name: "Claude Haiku 4.5",
     isCustom: false,
+    group: "Anthropic",
     capabilities: EMPTY_MODEL_CAPABILITIES,
   },
   {
     slug: "claude-opus-4-6",
     name: "Claude Opus 4.6",
     isCustom: false,
+    group: "Anthropic",
     capabilities: {
       ...EMPTY_MODEL_CAPABILITIES,
       reasoningEffortLevels: [
@@ -64,17 +68,24 @@ const BUILT_IN_MODELS: ReadonlyArray<ServerProviderModel> = [
  * ```ts
  * { id, name, capabilities: { reasoning, ... }, ... }
  * ```
+ * @param providerName - Human-readable sub-provider name (e.g. "Anthropic", "OpenAI") used for UI grouping.
  */
-function mapOpencodeModel(model: {
-  id: string;
-  name: string;
-  capabilities?: { reasoning?: boolean };
-}): ServerProviderModel {
+function mapOpencodeModel(
+  model: {
+    id: string;
+    providerID: string;
+    name: string;
+    capabilities?: { reasoning?: boolean };
+  },
+  providerName: string,
+): ServerProviderModel {
   const supportsReasoning = model.capabilities?.reasoning === true;
   return {
     slug: model.id,
     name: model.name,
     isCustom: false,
+    group: providerName,
+    subProviderID: model.providerID,
     capabilities: {
       ...EMPTY_MODEL_CAPABILITIES,
       reasoningEffortLevels: supportsReasoning
@@ -89,26 +100,17 @@ function mapOpencodeModel(model: {
 }
 
 /**
- * Start an OpenCode server instance via `createOpencode()`, probe health &
- * provider config, then shut it down.  Returns collected models and version.
+ * Acquire a handle from the shared OpenCode server manager, run `f`, then
+ * release the handle.  Reuses a running server if one is already active.
  */
 const withOpencodeServer = <A>(
-  f: (client: Awaited<ReturnType<typeof createOpencode>>["client"]) => Promise<A>,
-): Effect.Effect<A, ProviderAdapterProcessError> =>
-  Effect.acquireUseRelease(
-    Effect.tryPromise({
-      try: () => createOpencode(),
-      catch: (cause) =>
-        new ProviderAdapterProcessError({
-          provider: PROVIDER,
-          threadId: "provider-check",
-          detail: cause instanceof Error ? cause.message : String(cause),
-          cause,
-        }),
-    }),
-    ({ client }) =>
+  f: (client: OpencodeClient) => Promise<A>,
+): Effect.Effect<A, ProviderAdapterProcessError, OpencodeServerManager> =>
+  Effect.gen(function* () {
+    const manager = yield* OpencodeServerManager;
+    return yield* Effect.acquireUseRelease(
       Effect.tryPromise({
-        try: () => f(client),
+        try: () => manager.acquire(),
         catch: (cause) =>
           new ProviderAdapterProcessError({
             provider: PROVIDER,
@@ -117,8 +119,20 @@ const withOpencodeServer = <A>(
             cause,
           }),
       }),
-    ({ server }) => Effect.sync(() => server.close()),
-  );
+      (handle) =>
+        Effect.tryPromise({
+          try: () => f(handle.client),
+          catch: (cause) =>
+            new ProviderAdapterProcessError({
+              provider: PROVIDER,
+              threadId: "provider-check",
+              detail: cause instanceof Error ? cause.message : String(cause),
+              cause,
+            }),
+        }),
+      (handle) => Effect.sync(() => handle.release()),
+    );
+  });
 
 export const checkOpencodeProviderStatus = Effect.fn("checkOpencodeProviderStatus")(function* () {
   const opencodeSettings = yield* Effect.service(ServerSettingsService).pipe(
@@ -161,12 +175,12 @@ export const checkOpencodeProviderStatus = Effect.fn("checkOpencodeProviderStatu
       (p) => p.models && Object.keys(p.models).length > 0,
     );
 
-    // Collect all models from all providers
+    // Collect all models from all providers, preserving sub-provider name for UI grouping
     const sdkModels: ServerProviderModel[] = [];
     for (const provider of providers) {
       if (!provider.models) continue;
       for (const model of Object.values(provider.models)) {
-        sdkModels.push(mapOpencodeModel(model));
+        sdkModels.push(mapOpencodeModel(model, provider.name));
       }
     }
 
@@ -227,17 +241,20 @@ export const OpencodeProviderLive = Layer.effect(
   OpencodeProvider,
   Effect.gen(function* () {
     const serverSettings = yield* ServerSettingsService;
+    const serverManager = yield* OpencodeServerManager;
     const snapshotCache = yield* Cache.make({
       capacity: 1,
       timeToLive: Duration.minutes(1),
       lookup: () =>
         checkOpencodeProviderStatus().pipe(
           Effect.provideService(ServerSettingsService, serverSettings),
+          Effect.provideService(OpencodeServerManager, serverManager),
         ),
     });
 
     const checkProvider = Cache.get(snapshotCache, "opencode").pipe(
       Effect.provideService(ServerSettingsService, serverSettings),
+      Effect.provideService(OpencodeServerManager, serverManager),
     );
 
     return yield* makeManagedServerProvider<OpencodeSettings>({

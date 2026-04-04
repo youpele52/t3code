@@ -71,6 +71,8 @@ export const OpencodeModelSelection = Schema.Struct({
   provider: Schema.Literal("opencode"),
   model: TrimmedNonEmptyString,
   options: Schema.optionalKey(OpencodeModelOptions),
+  /** Sub-provider ID for routing (e.g. "openrouter", "google"). Resolved at model enumeration time and sent back to the adapter. */
+  subProviderID: Schema.optionalKey(TrimmedNonEmptyString),
 });
 export type OpencodeModelSelection = typeof OpencodeModelSelection.Type;
 

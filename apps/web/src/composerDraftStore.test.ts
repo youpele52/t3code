@@ -91,6 +91,21 @@ function modelSelection(
   } as ModelSelection;
 }
 
+function opencodeModelSelection(
+  model: string,
+  input?: {
+    options?: Extract<ModelSelection, { provider: "opencode" }>["options"];
+    subProviderID?: string;
+  },
+): ModelSelection {
+  return {
+    provider: "opencode",
+    model,
+    ...(input?.options ? { options: input.options } : {}),
+    ...(input?.subProviderID ? { subProviderID: input.subProviderID } : {}),
+  } as ModelSelection;
+}
+
 function providerModelOptions(options: ProviderModelOptions): ProviderModelOptions {
   return options;
 }
@@ -707,6 +722,42 @@ describe("composerDraftStore modelSelection", () => {
     expect(
       useComposerDraftStore.getState().draftsByThreadId[threadId]?.modelSelectionByProvider.codex,
     ).toEqual(modelSelection("codex", "gpt-5.4"));
+  });
+
+  it("preserves OpenCode sub-provider identity when updating a draft selection", () => {
+    const store = useComposerDraftStore.getState();
+
+    store.setModelSelection(
+      threadId,
+      opencodeModelSelection("gpt-5-mini", {
+        subProviderID: "openai",
+      }),
+    );
+
+    store.setProviderModelOptions(
+      threadId,
+      "opencode",
+      {
+        reasoningEffort: "high",
+      },
+      { persistSticky: true },
+    );
+
+    expect(
+      useComposerDraftStore.getState().draftsByThreadId[threadId]?.modelSelectionByProvider
+        .opencode,
+    ).toEqual(
+      opencodeModelSelection("gpt-5-mini", {
+        subProviderID: "openai",
+        options: { reasoningEffort: "high" },
+      }),
+    );
+    expect(useComposerDraftStore.getState().stickyModelSelectionByProvider.opencode).toEqual(
+      opencodeModelSelection("gpt-5-mini", {
+        subProviderID: "openai",
+        options: { reasoningEffort: "high" },
+      }),
+    );
   });
 
   it("replaces only the targeted provider options on the current model selection", () => {

@@ -16,6 +16,7 @@ import { makeCodexAdapterLive } from "./provider/Layers/CodexAdapter";
 import { makeClaudeAdapterLive } from "./provider/Layers/ClaudeAdapter";
 import { makeCopilotAdapterLive } from "./provider/Layers/CopilotAdapter";
 import { makeOpencodeAdapterLive } from "./provider/Layers/OpencodeAdapter";
+import { OpencodeServerManagerLive } from "./provider/Layers/OpencodeServerManager";
 import { ProviderAdapterRegistryLive } from "./provider/Layers/ProviderAdapterRegistry";
 import { makeProviderServiceLive } from "./provider/Layers/ProviderService";
 import { OrchestrationEngineLive } from "./orchestration/Layers/OrchestrationEngine";
@@ -202,6 +203,8 @@ const RuntimeDependenciesLive = ReactorLayerLive.pipe(
   Layer.provideMerge(ServerSettingsLive),
   Layer.provideMerge(WorkspaceLayerLive),
   Layer.provideMerge(ProjectFaviconResolverLive),
+  // Shared OpenCode server manager — must be a singleton so health-checks and sessions share one process
+  Layer.provideMerge(OpencodeServerManagerLive),
 
   // Misc.
   Layer.provideMerge(AnalyticsServiceLayerLive),

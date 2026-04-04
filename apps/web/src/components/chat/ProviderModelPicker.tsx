@@ -1,9 +1,9 @@
 import { type ProviderKind, type ServerProvider } from "@t3tools/contracts";
 import { resolveSelectableModel } from "@t3tools/shared/model";
-import { memo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import type { VariantProps } from "class-variance-authority";
 import { type ProviderPickerKind, PROVIDER_OPTIONS } from "../../session-logic";
-import { ChevronDownIcon } from "lucide-react";
+import { ArrowLeftIcon, ChevronDownIcon, XIcon } from "lucide-react";
 import { Button, buttonVariants } from "../ui/button";
 import {
   Menu,
@@ -13,6 +13,7 @@ import {
   MenuRadioGroup,
   MenuRadioItem,
   MenuSeparator as MenuDivider,
+  MenuGroupLabel,
   MenuSub,
   MenuSubPopup,
   MenuSubTrigger,
@@ -49,28 +50,193 @@ function providerIconClassName(
   return provider === "claudeAgent" ? "text-[#d97757]" : fallbackClassName;
 }
 
+// exactOptionalPropertyTypes: group/subProviderID must be `string | undefined` so callers can
+// safely pass through server model mappings unchanged.
+type ModelOption = {
+  slug: string;
+  name: string;
+  group?: string | undefined;
+  subProviderID?: string | undefined;
+};
+
+function modelOptionValue(option: ModelOption): string {
+  return option.subProviderID ? `${option.slug}::${option.subProviderID}` : option.slug;
+}
+
+type GroupedSection =
+  | { kind: "named"; group: string; models: ModelOption[] }
+  | { kind: "ungrouped"; models: ModelOption[] };
+
+/** Groups a flat model list by their `group` field. Returns ordered sections. */
+function groupModelOptions(options: ReadonlyArray<ModelOption>): GroupedSection[] {
+  const namedMap = new Map<string, ModelOption[]>();
+  const ungrouped: ModelOption[] = [];
+  for (const option of options) {
+    if (option.group) {
+      if (!namedMap.has(option.group)) namedMap.set(option.group, []);
+      namedMap.get(option.group)!.push(option);
+    } else {
+      ungrouped.push(option);
+    }
+  }
+  const named: GroupedSection[] = [...namedMap.entries()]
+    .toSorted(([a], [b]) => a.localeCompare(b))
+    .map(([group, models]) => ({ kind: "named" as const, group, models }));
+  if (ungrouped.length > 0) named.push({ kind: "ungrouped" as const, models: ungrouped });
+  return named;
+}
+
+/** Renders a searchable, optionally-grouped model list. */
+function ModelList({
+  provider,
+  selectedValue,
+  options,
+  onSelect,
+  onBack,
+}: {
+  provider: ProviderKind;
+  selectedValue: string;
+  options: ReadonlyArray<ModelOption>;
+  onSelect: (value: string) => void;
+  onBack?: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const filtered = useMemo(() => {
+    if (!query.trim()) return options;
+    const q = query.trim().toLowerCase();
+    return options.filter(
+      (o) => o.name.toLowerCase().includes(q) || o.slug.toLowerCase().includes(q),
+    );
+  }, [options, query]);
+
+  const grouped = useMemo(() => groupModelOptions(filtered), [filtered]);
+  const hasNamedGroups = grouped.some((g) => g.kind === "named");
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  return (
+    <div className="flex flex-col">
+      {/* Search bar + optional back arrow */}
+      <div className="flex items-center gap-1 border-b px-2 py-1.5">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex shrink-0 items-center justify-center rounded p-0.5 text-muted-foreground/70 transition-colors hover:bg-accent hover:text-foreground focus:outline-none"
+            aria-label="Back to provider selection"
+          >
+            <ArrowLeftIcon className="size-3.5" />
+          </button>
+        )}
+        <input
+          ref={inputRef}
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(event) => {
+            event.stopPropagation();
+          }}
+          placeholder="Search models…"
+          className="min-w-0 flex-1 bg-transparent py-0.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+          autoFocus
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => {
+              setQuery("");
+              inputRef.current?.focus();
+            }}
+            className="flex shrink-0 items-center justify-center rounded p-0.5 text-muted-foreground/50 transition-colors hover:text-foreground focus:outline-none"
+            aria-label="Clear search"
+          >
+            <XIcon className="size-3" />
+          </button>
+        )}
+      </div>
+
+      {/* Model list — grouped or flat */}
+      <MenuRadioGroup value={selectedValue} onValueChange={onSelect}>
+        {grouped.length === 0 ? (
+          <div className="px-3 py-4 text-center text-sm text-muted-foreground/60">
+            No models match &ldquo;{query}&rdquo;
+          </div>
+        ) : hasNamedGroups ? (
+          grouped.map((section) => (
+            <MenuGroup key={section.kind === "named" ? section.group : "__ungrouped"}>
+              {section.kind === "named" && <MenuGroupLabel>{section.group}</MenuGroupLabel>}
+              {section.models.map((modelOption) => (
+                <MenuRadioItem
+                  key={`${provider}:${modelOptionValue(modelOption)}`}
+                  value={modelOptionValue(modelOption)}
+                >
+                  {modelOption.name}
+                </MenuRadioItem>
+              ))}
+            </MenuGroup>
+          ))
+        ) : (
+          <MenuGroup>
+            {filtered.map((modelOption) => (
+              <MenuRadioItem
+                key={`${provider}:${modelOptionValue(modelOption)}`}
+                value={modelOptionValue(modelOption)}
+              >
+                {modelOption.name}
+              </MenuRadioItem>
+            ))}
+          </MenuGroup>
+        )}
+      </MenuRadioGroup>
+    </div>
+  );
+}
+
 export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
   provider: ProviderKind;
   model: string;
   lockedProvider: ProviderKind | null;
   providers?: ReadonlyArray<ServerProvider>;
-  modelOptionsByProvider: Record<ProviderKind, ReadonlyArray<{ slug: string; name: string }>>;
+  modelOptionsByProvider: Record<ProviderKind, ReadonlyArray<ModelOption>>;
   activeProviderIconClassName?: string;
   compact?: boolean;
   disabled?: boolean;
   triggerVariant?: VariantProps<typeof buttonVariants>["variant"];
   triggerClassName?: string;
-  onProviderModelChange: (provider: ProviderKind, model: string) => void;
+  onProviderModelChange: (
+    provider: ProviderKind,
+    model: string,
+    subProviderID?: string | undefined,
+  ) => void;
+  /** Called when the user clicks the back-arrow to unlock the provider and return to provider selection. */
+  onProviderUnlock?: () => void;
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const activeProvider = props.lockedProvider ?? props.provider;
   const selectedProviderOptions = props.modelOptionsByProvider[activeProvider];
+  const selectedProviderValue = props.provider === activeProvider ? props.model : "";
   const selectedModelLabel =
-    selectedProviderOptions.find((option) => option.slug === props.model)?.name ?? props.model;
+    selectedProviderOptions.find((option) => modelOptionValue(option) === selectedProviderValue)
+      ?.name ??
+    selectedProviderOptions.find((option) => option.slug === props.model)?.name ??
+    props.model;
   const ProviderIcon = PROVIDER_ICON_BY_PROVIDER[activeProvider];
+
   const handleModelChange = (provider: ProviderKind, value: string) => {
     if (props.disabled) return;
     if (!value) return;
+    const matchedOption = props.modelOptionsByProvider[provider].find(
+      (option) => modelOptionValue(option) === value,
+    );
+    if (matchedOption) {
+      props.onProviderModelChange(provider, matchedOption.slug, matchedOption.subProviderID);
+      setIsMenuOpen(false);
+      return;
+    }
     const resolvedModel = resolveSelectableModel(
       provider,
       value,
@@ -127,22 +293,16 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
       </MenuTrigger>
       <MenuPopup align="start">
         {props.lockedProvider !== null ? (
-          <MenuGroup>
-            <MenuRadioGroup
-              value={props.model}
-              onValueChange={(value) => handleModelChange(props.lockedProvider!, value)}
-            >
-              {props.modelOptionsByProvider[props.lockedProvider].map((modelOption) => (
-                <MenuRadioItem
-                  key={`${props.lockedProvider}:${modelOption.slug}`}
-                  value={modelOption.slug}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {modelOption.name}
-                </MenuRadioItem>
-              ))}
-            </MenuRadioGroup>
-          </MenuGroup>
+          // Provider is locked — show model list with search + back arrow
+          <div className="[--available-height:min(24rem,70vh)] max-h-(--available-height) overflow-y-auto">
+            <ModelList
+              provider={props.lockedProvider}
+              selectedValue={selectedProviderValue}
+              options={props.modelOptionsByProvider[props.lockedProvider]}
+              onSelect={(value) => handleModelChange(props.lockedProvider!, value)}
+              {...(props.onProviderUnlock ? { onBack: props.onProviderUnlock } : {})}
+            />
+          </div>
         ) : (
           <>
             {AVAILABLE_PROVIDER_OPTIONS.map((option) => {
@@ -184,23 +344,20 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
                     />
                     {option.label}
                   </MenuSubTrigger>
-                  <MenuSubPopup className="[--available-height:min(24rem,70vh)]" sideOffset={4}>
-                    <MenuGroup>
-                      <MenuRadioGroup
-                        value={props.provider === option.value ? props.model : ""}
-                        onValueChange={(value) => handleModelChange(option.value, value)}
-                      >
-                        {props.modelOptionsByProvider[option.value].map((modelOption) => (
-                          <MenuRadioItem
-                            key={`${option.value}:${modelOption.slug}`}
-                            value={modelOption.slug}
-                            onClick={() => setIsMenuOpen(false)}
-                          >
-                            {modelOption.name}
-                          </MenuRadioItem>
-                        ))}
-                      </MenuRadioGroup>
-                    </MenuGroup>
+                  <MenuSubPopup
+                    className="[--available-height:min(24rem,70vh)] !p-0 overflow-hidden"
+                    sideOffset={4}
+                  >
+                    <div className="max-h-(--available-height) overflow-y-auto">
+                      <ModelList
+                        provider={option.value}
+                        selectedValue={props.provider === option.value ? props.model : ""}
+                        options={props.modelOptionsByProvider[option.value]}
+                        onSelect={(value) => {
+                          handleModelChange(option.value, value);
+                        }}
+                      />
+                    </div>
                   </MenuSubPopup>
                 </MenuSub>
               );

@@ -30,7 +30,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { createDebouncedStorage, createMemoryStorage } from "./lib/storage";
 import { getDefaultServerModel } from "./providerModels";
 import { UnifiedSettings } from "@t3tools/contracts/settings";
-import { createModelSelection } from "./modelSelectionHelpers";
+import { cloneModelSelection, createModelSelection } from "./modelSelectionHelpers";
 
 export const COMPOSER_DRAFT_STORAGE_KEY = "t3code:composer-drafts:v1";
 const COMPOSER_DRAFT_STORAGE_VERSION = 3;
@@ -568,8 +568,16 @@ function normalizeModelSelection(
       ? modelOptions?.codex
       : provider === "claudeAgent"
         ? modelOptions?.claudeAgent
-        : modelOptions?.copilot;
-  return createModelSelection(provider, model, options);
+        : provider === "opencode"
+          ? modelOptions?.opencode
+          : modelOptions?.copilot;
+  const baseSelection = createModelSelection(provider, model, options);
+  const rawSubProviderID = candidate?.subProviderID;
+  return provider === "opencode" &&
+    typeof rawSubProviderID === "string" &&
+    rawSubProviderID.length > 0
+    ? ({ ...baseSelection, subProviderID: rawSubProviderID } as ModelSelection)
+    : baseSelection;
 }
 
 // ── Legacy sync helpers (used only during migration from v2 storage) ──
@@ -582,7 +590,11 @@ function legacySyncModelSelectionOptions(
     return null;
   }
   const options = modelOptions?.[modelSelection.provider];
-  return createModelSelection(modelSelection.provider, modelSelection.model, options);
+  if (options === undefined) {
+    const { options: _discardedOptions, ...rest } = modelSelection;
+    return rest as ModelSelection;
+  }
+  return cloneModelSelection(modelSelection, { options } as Partial<ModelSelection>);
 }
 
 function legacyMergeModelSelectionIntoProviderModelOptions(
@@ -1667,11 +1679,12 @@ export const useComposerDraftStore = create<ComposerDraftStoreState>()(
               nextMap[normalized.provider] = normalized;
             } else {
               // No options in selection → preserve existing options, update provider+model
-              nextMap[normalized.provider] = createModelSelection(
-                normalized.provider,
-                normalized.model,
-                current?.options,
-              );
+              nextMap[normalized.provider] =
+                current?.options !== undefined
+                  ? cloneModelSelection(normalized, {
+                      options: current.options,
+                    } as Partial<ModelSelection>)
+                  : normalized;
             }
           }
           const nextActiveProvider = normalized?.provider ?? base.activeProvider;
@@ -1713,11 +1726,9 @@ export const useComposerDraftStore = create<ComposerDraftStoreState>()(
             const opts = normalizedOpts[provider];
             const current = nextMap[provider];
             if (opts) {
-              nextMap[provider] = createModelSelection(
-                provider,
-                current?.model ?? DEFAULT_MODEL_BY_PROVIDER[provider],
-                opts,
-              );
+              nextMap[provider] = current
+                ? cloneModelSelection(current, { options: opts })
+                : createModelSelection(provider, DEFAULT_MODEL_BY_PROVIDER[provider], opts);
             } else if (current?.options) {
               // Remove options but keep the selection
               const { options: _, ...rest } = current;
@@ -1763,11 +1774,13 @@ export const useComposerDraftStore = create<ComposerDraftStoreState>()(
           const nextMap = { ...base.modelSelectionByProvider };
           const currentForProvider = nextMap[normalizedProvider];
           if (providerOpts) {
-            nextMap[normalizedProvider] = createModelSelection(
-              normalizedProvider,
-              currentForProvider?.model ?? DEFAULT_MODEL_BY_PROVIDER[normalizedProvider],
-              providerOpts,
-            );
+            nextMap[normalizedProvider] = currentForProvider
+              ? cloneModelSelection(currentForProvider, { options: providerOpts })
+              : createModelSelection(
+                  normalizedProvider,
+                  DEFAULT_MODEL_BY_PROVIDER[normalizedProvider],
+                  providerOpts,
+                );
           } else if (currentForProvider?.options) {
             const { options: _, ...rest } = currentForProvider;
             nextMap[normalizedProvider] = rest as ModelSelection;
@@ -1786,11 +1799,9 @@ export const useComposerDraftStore = create<ComposerDraftStoreState>()(
                 DEFAULT_MODEL_BY_PROVIDER[normalizedProvider],
               );
             if (providerOpts) {
-              nextStickyMap[normalizedProvider] = createModelSelection(
-                normalizedProvider,
-                stickyBase.model,
-                providerOpts,
-              );
+              nextStickyMap[normalizedProvider] = cloneModelSelection(stickyBase, {
+                options: providerOpts,
+              });
             } else if (stickyBase.options) {
               const { options: _, ...rest } = stickyBase;
               nextStickyMap[normalizedProvider] = rest as ModelSelection;

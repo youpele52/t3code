@@ -31,10 +31,16 @@ import {
 } from "./CodexProvider";
 import { checkClaudeProviderStatus, parseClaudeAuthStatusFromOutput } from "./ClaudeProvider";
 import { haveProvidersChanged, ProviderRegistryLive } from "./ProviderRegistry";
+import { OpencodeServerManager } from "../Services/OpencodeServerManager";
 import { ServerSettingsService, type ServerSettingsShape } from "../../serverSettings";
 import { ProviderRegistry } from "../Services/ProviderRegistry";
 
 // ── Test helpers ────────────────────────────────────────────────────
+
+/** Stub OpencodeServerManager — the ProviderRegistry tests don't exercise OpenCode sessions. */
+const mockOpencodeServerManagerLayer = Layer.succeed(OpencodeServerManager, {
+  acquire: () => Promise.reject(new Error("OpencodeServerManager.acquire not available in tests")),
+});
 
 const encoder = new TextEncoder();
 
@@ -519,6 +525,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsService.layerTest()))(
           yield* Effect.addFinalizer(() => Scope.close(scope, Exit.void));
           const providerRegistryLayer = ProviderRegistryLive.pipe(
             Layer.provideMerge(Layer.succeed(ServerSettingsService, serverSettings)),
+            Layer.provideMerge(mockOpencodeServerManagerLayer),
             Layer.provideMerge(
               mockCommandSpawnerLayer((command, args) => {
                 const joined = args.join(" ");

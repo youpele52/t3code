@@ -53,6 +53,10 @@ export const ServerProviderModel = Schema.Struct({
   name: TrimmedNonEmptyString,
   isCustom: Schema.Boolean,
   capabilities: Schema.NullOr(ModelCapabilities),
+  /** Sub-provider group label for display grouping (e.g. "Anthropic", "OpenAI"). Optional — only set by aggregator providers like OpenCode. */
+  group: Schema.optional(TrimmedNonEmptyString),
+  /** Sub-provider ID for routing (e.g. "openrouter", "google"). Used by the adapter to send the correct providerID in API calls. */
+  subProviderID: Schema.optional(TrimmedNonEmptyString),
 });
 export type ServerProviderModel = typeof ServerProviderModel.Type;
 

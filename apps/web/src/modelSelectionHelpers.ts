@@ -48,3 +48,13 @@ export function createModelSelection<P extends ProviderKind>(
     { provider: P }
   >;
 }
+
+export function cloneModelSelection<T extends ModelSelection>(
+  selection: T,
+  overrides?: Partial<T>,
+): T {
+  return {
+    ...selection,
+    ...overrides,
+  };
+}
