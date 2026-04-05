@@ -44,6 +44,7 @@ import { deriveOrchestrationBatchEffects } from "../orchestrationEventEffects";
 import { createOrchestrationRecoveryCoordinator } from "../orchestrationRecovery";
 import { deriveReplayRetryDecision } from "../orchestrationRecovery";
 import { getWsRpcClient } from "~/wsRpcClient";
+import { TaskCompletionNotifications } from "../notifications/taskCompletion";
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
@@ -73,6 +74,7 @@ function RootRouteView() {
       <AnchoredToastProvider>
         <ServerStateBootstrap />
         <EventRouter />
+        <TaskCompletionNotifications />
         <AppSidebarLayout>
           <Outlet />
         </AppSidebarLayout>

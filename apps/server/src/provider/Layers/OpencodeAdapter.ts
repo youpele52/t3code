@@ -13,6 +13,7 @@ import {
   type ProviderSession,
   type ProviderTurnStartResult,
   type ThreadTokenUsageSnapshot,
+  type UserInputQuestion,
 } from "@t3tools/contracts";
 import { type OpencodeClient, type Event as OpencodeEvent } from "@opencode-ai/sdk";
 import { Effect, Layer, Queue, Random, Stream } from "effect";
@@ -49,6 +50,13 @@ interface PendingPermissionRequest {
   readonly permissionId: string;
 }
 
+/** Tracks an in-flight tui.prompt.append question awaiting a user answer. */
+interface PendingUserInputRequest {
+  readonly turnId: TurnId | undefined;
+  /** The raw question text emitted by OpenCode. */
+  readonly questionText: string;
+}
+
 interface MutableTurnSnapshot {
   readonly id: TurnId;
   readonly items: Array<unknown>;
@@ -63,6 +71,7 @@ interface ActiveOpencodeSession {
   readonly createdAt: string;
   readonly runtimeMode: ProviderSession["runtimeMode"];
   readonly pendingPermissions: Map<string, PendingPermissionRequest>;
+  readonly pendingUserInputs: Map<string, PendingUserInputRequest>;
   readonly turns: Array<MutableTurnSnapshot>;
   sseAbortController: AbortController | null;
   cwd: string | undefined;
@@ -686,6 +695,43 @@ const makeOpencodeAdapter = Effect.fn("makeOpencodeAdapter")(function* (
           ];
         }
 
+        case "tui.prompt.append": {
+          const tuiProps = event.properties as { text?: string };
+          const questionText = normalizeString(tuiProps.text);
+
+          if (!questionText) {
+            return [];
+          }
+
+          const requestId = randomUUID();
+          session.pendingUserInputs.set(requestId, {
+            turnId,
+            questionText,
+          });
+
+          const question: UserInputQuestion = {
+            id: requestId,
+            header: "OpenCode",
+            question: questionText,
+            options: [],
+          };
+
+          return [
+            {
+              ...eventBase({
+                eventId: stamp.eventId,
+                createdAt,
+                threadId: session.threadId,
+                ...(turnId ? { turnId } : {}),
+                requestId,
+                raw,
+              }),
+              type: "user-input.requested",
+              payload: { questions: [question] },
+            },
+          ];
+        }
+
         default:
           return [];
       }
@@ -891,6 +937,7 @@ const makeOpencodeAdapter = Effect.fn("makeOpencodeAdapter")(function* (
         createdAt,
         runtimeMode: input.runtimeMode,
         pendingPermissions: new Map(),
+        pendingUserInputs: new Map(),
         turns: [],
         sseAbortController: null,
         cwd: input.cwd,
@@ -1120,16 +1167,69 @@ const makeOpencodeAdapter = Effect.fn("makeOpencodeAdapter")(function* (
 
   const respondToUserInput: OpencodeAdapterShape["respondToUserInput"] = (
     threadId,
-    _requestId,
-    _answers,
+    requestId,
+    answers,
   ) =>
-    Effect.fail(
-      new ProviderAdapterRequestError({
-        provider: PROVIDER,
-        method: "session.userInput.respond",
-        detail: "OpenCode does not support interactive user-input requests.",
-      }),
-    ).pipe(Effect.annotateLogs({ threadId }));
+    Effect.gen(function* () {
+      const record = yield* requireSession(threadId);
+      const pending = record.pendingUserInputs.get(requestId);
+
+      if (!pending) {
+        return yield* new ProviderAdapterRequestError({
+          provider: PROVIDER,
+          method: "session.userInput.respond",
+          detail: `Unknown pending OpenCode user-input request '${requestId}'.`,
+        });
+      }
+
+      record.pendingUserInputs.delete(requestId);
+
+      // Emit user-input.resolved immediately so the UI panel closes regardless of
+      // whether the subsequent TUI API calls succeed.
+      const resolvedEvent = yield* makeSyntheticEvent(
+        threadId,
+        "user-input.resolved",
+        { answers: answers as Record<string, unknown> },
+        {
+          ...(pending.turnId ? { turnId: pending.turnId } : {}),
+          requestId,
+        },
+      );
+      yield* emit([resolvedEvent]);
+
+      // Extract the answer text — the single question id equals the requestId.
+      const answerValue = answers[requestId];
+      const answerText =
+        typeof answerValue === "string" && answerValue.trim().length > 0 ? answerValue.trim() : "";
+
+      // Append the user's answer text into the OpenCode TUI prompt box, then submit it.
+      yield* Effect.tryPromise({
+        try: () =>
+          record.client.tui.appendPrompt(
+            withOpencodeDirectory(record.cwd, {
+              body: { text: answerText },
+            }),
+          ),
+        catch: (cause) =>
+          new ProviderAdapterRequestError({
+            provider: PROVIDER,
+            method: "session.userInput.respond",
+            detail: toMessage(cause, "Failed to append OpenCode user-input answer to prompt."),
+            cause,
+          }),
+      });
+
+      yield* Effect.tryPromise({
+        try: () => record.client.tui.submitPrompt(withOpencodeDirectory(record.cwd, {})),
+        catch: (cause) =>
+          new ProviderAdapterRequestError({
+            provider: PROVIDER,
+            method: "session.userInput.respond",
+            detail: toMessage(cause, "Failed to submit OpenCode user-input answer."),
+            cause,
+          }),
+      });
+    }).pipe(Effect.annotateLogs({ threadId }));
 
   const stopSessionRecord = (record: ActiveOpencodeSession) =>
     Effect.tryPromise({
@@ -1140,6 +1240,9 @@ const makeOpencodeAdapter = Effect.fn("makeOpencodeAdapter")(function* (
 
         // Clear pending permissions
         record.pendingPermissions.clear();
+
+        // Clear pending user-input requests so the UI panel dismisses cleanly
+        record.pendingUserInputs.clear();
 
         // Delete the session from OpenCode
         try {
@@ -1168,6 +1271,22 @@ const makeOpencodeAdapter = Effect.fn("makeOpencodeAdapter")(function* (
   const stopSession: OpencodeAdapterShape["stopSession"] = (threadId) =>
     Effect.gen(function* () {
       const record = yield* requireSession(threadId);
+
+      // Drain any pending user-input requests — emit resolved events so the UI panel
+      // dismisses cleanly instead of staying open after the session is gone.
+      for (const [requestId, pending] of record.pendingUserInputs) {
+        const resolvedEvent = yield* makeSyntheticEvent(
+          threadId,
+          "user-input.resolved",
+          { answers: {} },
+          {
+            ...(pending.turnId ? { turnId: pending.turnId } : {}),
+            requestId,
+          },
+        );
+        yield* emit([resolvedEvent]);
+      }
+
       yield* stopSessionRecord(record);
 
       // Notify the orchestration pipeline that the session has exited

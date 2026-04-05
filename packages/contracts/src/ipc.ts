@@ -103,6 +103,12 @@ export interface DesktopUpdateCheckResult {
   state: DesktopUpdateState;
 }
 
+export interface DesktopNotificationInput {
+  title: string;
+  body?: string;
+  silent?: boolean;
+}
+
 export interface DesktopBridge {
   getWsUrl: () => string | null;
   pickFolder: () => Promise<string | null>;
@@ -119,6 +125,10 @@ export interface DesktopBridge {
   downloadUpdate: () => Promise<DesktopUpdateActionResult>;
   installUpdate: () => Promise<DesktopUpdateActionResult>;
   onUpdateState: (listener: (state: DesktopUpdateState) => void) => () => void;
+  notifications: {
+    isSupported: () => Promise<boolean>;
+    show: (input: DesktopNotificationInput) => Promise<boolean>;
+  };
 }
 
 export interface NativeApi {

@@ -12,12 +12,14 @@ import {
   Menu,
   nativeImage,
   nativeTheme,
+  Notification,
   protocol,
   shell,
 } from "electron";
 import type { MenuItemConstructorOptions } from "electron";
 import * as Effect from "effect/Effect";
 import type {
+  DesktopNotificationInput,
   DesktopTheme,
   DesktopUpdateActionResult,
   DesktopUpdateCheckResult,
@@ -60,6 +62,8 @@ const UPDATE_DOWNLOAD_CHANNEL = "desktop:update-download";
 const UPDATE_INSTALL_CHANNEL = "desktop:update-install";
 const UPDATE_CHECK_CHANNEL = "desktop:update-check";
 const GET_WS_URL_CHANNEL = "desktop:get-ws-url";
+const NOTIFICATIONS_IS_SUPPORTED_CHANNEL = "desktop:notifications-is-supported";
+const NOTIFICATIONS_SHOW_CHANNEL = "desktop:notifications-show";
 const BASE_DIR = process.env.T3CODE_HOME?.trim() || Path.join(OS.homedir(), ".t3");
 const STATE_DIR = Path.join(BASE_DIR, "userdata");
 const DESKTOP_SCHEME = "t3";
@@ -1166,6 +1170,40 @@ async function stopBackendAndWaitForExit(timeoutMs = 5_000): Promise<void> {
   });
 }
 
+/**
+ * Show a native OS desktop notification and wire up a click handler that
+ * restores and focuses the main window.
+ */
+function showDesktopNotification(input: DesktopNotificationInput): boolean {
+  if (!Notification.isSupported()) {
+    return false;
+  }
+
+  const { title, body, silent } = input;
+  if (typeof title !== "string" || title.trim().length === 0) {
+    return false;
+  }
+
+  const iconPath = resolveIconPath("png");
+  const notification = new Notification({
+    title,
+    ...(typeof body === "string" && body.length > 0 ? { body } : {}),
+    ...(silent === true ? { silent: true } : {}),
+    ...(iconPath ? { icon: iconPath } : {}),
+  });
+
+  notification.on("click", () => {
+    const window = mainWindow ?? BrowserWindow.getAllWindows()[0];
+    if (!window) return;
+    if (window.isMinimized()) window.restore();
+    window.show();
+    window.focus();
+  });
+
+  notification.show();
+  return true;
+}
+
 function registerIpcHandlers(): void {
   ipcMain.removeAllListeners(GET_WS_URL_CHANNEL);
   ipcMain.on(GET_WS_URL_CHANNEL, (event) => {
@@ -1327,6 +1365,22 @@ function registerIpcHandlers(): void {
       checked,
       state: updateState,
     } satisfies DesktopUpdateCheckResult;
+  });
+
+  ipcMain.removeHandler(NOTIFICATIONS_IS_SUPPORTED_CHANNEL);
+  ipcMain.handle(NOTIFICATIONS_IS_SUPPORTED_CHANNEL, () => Notification.isSupported());
+
+  ipcMain.removeHandler(NOTIFICATIONS_SHOW_CHANNEL);
+  ipcMain.handle(NOTIFICATIONS_SHOW_CHANNEL, (_event, input: unknown) => {
+    if (typeof input !== "object" || input === null) {
+      return false;
+    }
+    const { title, body, silent } = input as Record<string, unknown>;
+    return showDesktopNotification({
+      title: typeof title === "string" ? title : "",
+      ...(typeof body === "string" ? { body } : {}),
+      ...(silent === true ? { silent: true } : {}),
+    });
   });
 }
 
