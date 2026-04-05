@@ -1522,11 +1522,27 @@ function normalizeProviderThreadId(value: string | undefined): string | undefine
   return brandIfNonEmpty(value, (normalized) => normalized);
 }
 
+/**
+ * Module-level cache for version check results keyed by binary path.
+ * Avoids repeating the blocking spawnSync on every new session start.
+ * The cache holds a tuple: `[ok: true]` for a passing check, or
+ * `[ok: false, message: string]` for a version that previously failed.
+ */
+const versionCheckCache = new Map<string, [ok: true] | [ok: false, message: string]>();
+
 function assertSupportedCodexCliVersion(input: {
   readonly binaryPath: string;
   readonly cwd: string;
   readonly homePath?: string;
 }): void {
+  const cached = versionCheckCache.get(input.binaryPath);
+  if (cached !== undefined) {
+    if (!cached[0]) {
+      throw new Error(cached[1]);
+    }
+    return;
+  }
+
   const result = spawnSync(input.binaryPath, ["--version"], {
     cwd: input.cwd,
     env: {
@@ -1547,24 +1563,32 @@ function assertSupportedCodexCliVersion(input: {
       lower.includes("command not found") ||
       lower.includes("not found")
     ) {
-      throw new Error(`Codex CLI (${input.binaryPath}) is not installed or not executable.`);
+      const msg = `Codex CLI (${input.binaryPath}) is not installed or not executable.`;
+      versionCheckCache.set(input.binaryPath, [false, msg]);
+      throw new Error(msg);
     }
-    throw new Error(
-      `Failed to execute Codex CLI version check: ${result.error.message || String(result.error)}`,
-    );
+    const msg = `Failed to execute Codex CLI version check: ${result.error.message || String(result.error)}`;
+    versionCheckCache.set(input.binaryPath, [false, msg]);
+    throw new Error(msg);
   }
 
   const stdout = result.stdout ?? "";
   const stderr = result.stderr ?? "";
   if (result.status !== 0) {
     const detail = stderr.trim() || stdout.trim() || `Command exited with code ${result.status}.`;
-    throw new Error(`Codex CLI version check failed. ${detail}`);
+    const msg = `Codex CLI version check failed. ${detail}`;
+    versionCheckCache.set(input.binaryPath, [false, msg]);
+    throw new Error(msg);
   }
 
   const parsedVersion = parseCodexCliVersion(`${stdout}\n${stderr}`);
   if (parsedVersion && !isCodexCliVersionSupported(parsedVersion)) {
-    throw new Error(formatCodexCliUpgradeMessage(parsedVersion));
+    const msg = formatCodexCliUpgradeMessage(parsedVersion);
+    versionCheckCache.set(input.binaryPath, [false, msg]);
+    throw new Error(msg);
   }
+
+  versionCheckCache.set(input.binaryPath, [true]);
 }
 
 function readResumeCursorThreadId(resumeCursor: unknown): string | undefined {

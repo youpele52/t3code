@@ -13,8 +13,8 @@ import {
   type OrchestrationThreadActivity,
   type ProviderRuntimeEvent,
 } from "@t3tools/contracts";
-import { Cache, Cause, Duration, Effect, Layer, Option, Stream } from "effect";
-import { makeDrainableWorker } from "@t3tools/shared/DrainableWorker";
+import { Cache, Cause, Duration, Effect, Layer, Option, Scope, Stream } from "effect";
+import { type DrainableWorker, makeDrainableWorker } from "@t3tools/shared/DrainableWorker";
 
 import { ProviderService } from "../../provider/Services/ProviderService.ts";
 import { ProjectionTurnRepository } from "../../persistence/Services/ProjectionTurns.ts";
@@ -1242,12 +1242,31 @@ const make = Effect.fn("make")(function* () {
       }),
     );
 
-  const worker = yield* makeDrainableWorker(processInputSafely);
+  // Per-thread worker map: each thread gets its own DrainableWorker so that
+  // processing a large burst of events for one thread does not delay ingestion
+  // for any other thread.
+  const threadWorkers = new Map<string, DrainableWorker<RuntimeIngestionInput>>();
+  const outerScope = yield* Effect.scope;
+
+  const getOrCreateThreadWorker = (
+    threadId: string,
+  ): Effect.Effect<DrainableWorker<RuntimeIngestionInput>> => {
+    const existing = threadWorkers.get(threadId);
+    if (existing !== undefined) {
+      return Effect.succeed(existing);
+    }
+    return makeDrainableWorker(processInputSafely).pipe(
+      Effect.provideService(Scope.Scope, outerScope),
+      Effect.tap((worker) => Effect.sync(() => threadWorkers.set(threadId, worker))),
+    );
+  };
 
   const start: ProviderRuntimeIngestionShape["start"] = Effect.fn("start")(function* () {
     yield* Effect.forkScoped(
       Stream.runForEach(providerService.streamEvents, (event) =>
-        worker.enqueue({ source: "runtime", event }),
+        getOrCreateThreadWorker(event.threadId).pipe(
+          Effect.flatMap((worker) => worker.enqueue({ source: "runtime", event })),
+        ),
       ),
     );
     yield* Effect.forkScoped(
@@ -1255,14 +1274,22 @@ const make = Effect.fn("make")(function* () {
         if (event.type !== "thread.turn-start-requested") {
           return Effect.void;
         }
-        return worker.enqueue({ source: "domain", event });
+        return getOrCreateThreadWorker(event.payload.threadId).pipe(
+          Effect.flatMap((worker) => worker.enqueue({ source: "domain", event })),
+        );
       }),
     );
   });
 
   return {
     start,
-    drain: worker.drain,
+    // Lazily capture workers at drain time so newly-created thread workers are
+    // included. Runs all active per-thread drain effects concurrently.
+    drain: Effect.suspend(() =>
+      Effect.forEach(Array.from(threadWorkers.values()), (worker) => worker.drain, {
+        concurrency: "unbounded",
+      }),
+    ).pipe(Effect.asVoid),
   } satisfies ProviderRuntimeIngestionShape;
 });
 

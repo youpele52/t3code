@@ -11,8 +11,19 @@ import {
   type RuntimeMode,
   type TurnId,
 } from "@t3tools/contracts";
-import { Cache, Cause, Duration, Effect, Equal, Layer, Option, Schema, Stream } from "effect";
-import { makeDrainableWorker } from "@t3tools/shared/DrainableWorker";
+import {
+  Cache,
+  Cause,
+  Duration,
+  Effect,
+  Equal,
+  Layer,
+  Option,
+  Schema,
+  Scope,
+  Stream,
+} from "effect";
+import { type DrainableWorker, makeDrainableWorker } from "@t3tools/shared/DrainableWorker";
 
 import { resolveThreadWorkspaceCwd } from "../../checkpointing/Utils.ts";
 import { GitCore } from "../../git/Services/GitCore.ts";
@@ -787,7 +798,24 @@ const make = Effect.gen(function* () {
       }),
     );
 
-  const worker = yield* makeDrainableWorker(processDomainEventSafely);
+  // Per-thread worker map: each thread gets its own DrainableWorker so that
+  // a slow operation on one thread (e.g. spawning the Codex process) does not
+  // block intent events for any other thread.
+  const threadWorkers = new Map<string, DrainableWorker<ProviderIntentEvent>>();
+  const outerScope = yield* Effect.scope;
+
+  const getOrCreateThreadWorker = (
+    threadId: string,
+  ): Effect.Effect<DrainableWorker<ProviderIntentEvent>> => {
+    const existing = threadWorkers.get(threadId);
+    if (existing !== undefined) {
+      return Effect.succeed(existing);
+    }
+    return makeDrainableWorker(processDomainEventSafely).pipe(
+      Effect.provideService(Scope.Scope, outerScope),
+      Effect.tap((worker) => Effect.sync(() => threadWorkers.set(threadId, worker))),
+    );
+  };
 
   const start: ProviderCommandReactorShape["start"] = Effect.fn("start")(function* () {
     const processEvent = Effect.fn("processEvent")(function* (event: OrchestrationEvent) {
@@ -799,6 +827,7 @@ const make = Effect.gen(function* () {
         event.type === "thread.user-input-response-requested" ||
         event.type === "thread.session-stop-requested"
       ) {
+        const worker = yield* getOrCreateThreadWorker(event.payload.threadId);
         return yield* worker.enqueue(event);
       }
     });
@@ -810,7 +839,13 @@ const make = Effect.gen(function* () {
 
   return {
     start,
-    drain: worker.drain,
+    // Lazily capture workers at drain time so newly-created thread workers are
+    // included. Runs all active per-thread drain effects concurrently.
+    drain: Effect.suspend(() =>
+      Effect.forEach(Array.from(threadWorkers.values()), (worker) => worker.drain, {
+        concurrency: "unbounded",
+      }),
+    ).pipe(Effect.asVoid),
   } satisfies ProviderCommandReactorShape;
 });
 
