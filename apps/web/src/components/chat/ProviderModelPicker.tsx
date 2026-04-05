@@ -120,8 +120,8 @@ function ModelList({
 
   return (
     <div className="flex flex-col">
-      {/* Search bar + optional back arrow */}
-      <div className="flex items-center gap-1 border-b px-2 py-1.5">
+      {/* Search bar + optional back arrow — sticky at top */}
+      <div className="sticky top-0 z-10 flex items-center gap-1 border-b bg-popover px-2 py-1.5">
         {onBack && (
           <button
             type="button"
@@ -140,8 +140,8 @@ function ModelList({
           onKeyDown={(event) => {
             event.stopPropagation();
           }}
-          placeholder="Search models…"
-          className="min-w-0 flex-1 bg-transparent py-0.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+          placeholder="Search models"
+          className="min-w-0 flex-1 bg-transparent py-0.5 text-xs tracking-tight text-foreground placeholder:text-xs placeholder:tracking-tight placeholder:text-muted-foreground/50 focus:outline-none"
           autoFocus
         />
         {query && (
