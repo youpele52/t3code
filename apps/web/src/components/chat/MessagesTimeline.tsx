@@ -699,7 +699,7 @@ const UserMessageBody = memo(function UserMessageBody(props: {
         }
 
         return (
-          <div className="wrap-break-word whitespace-pre-wrap font-mono text-sm leading-relaxed text-foreground">
+          <div className="wrap-break-word whitespace-pre-wrap text-sm leading-relaxed text-foreground">
             {inlineNodes}
           </div>
         );
@@ -727,7 +727,7 @@ const UserMessageBody = memo(function UserMessageBody(props: {
     }
 
     return (
-      <div className="wrap-break-word whitespace-pre-wrap font-mono text-sm leading-relaxed text-foreground">
+      <div className="wrap-break-word whitespace-pre-wrap text-sm leading-relaxed text-foreground">
         {inlineNodes}
       </div>
     );
@@ -738,9 +738,9 @@ const UserMessageBody = memo(function UserMessageBody(props: {
   }
 
   return (
-    <pre className="whitespace-pre-wrap wrap-break-word font-mono text-sm leading-relaxed text-foreground">
+    <p className="whitespace-pre-wrap wrap-break-word text-sm leading-relaxed text-foreground">
       {props.text}
-    </pre>
+    </p>
   );
 });
 
@@ -861,7 +861,13 @@ const SimpleWorkEntryRow = memo(function SimpleWorkEntryRow(props: {
             )}
             title={displayText}
           >
-            <span className={cn("text-foreground/80", workToneClass(workEntry.tone))}>
+            <span
+              className={cn(
+                workEntry.tone === "thinking" || workEntry.tone === "info"
+                  ? workToneClass(workEntry.tone)
+                  : "text-foreground/80",
+              )}
+            >
               {heading}
             </span>
             {preview && <span className="text-muted-foreground/55"> - {preview}</span>}
