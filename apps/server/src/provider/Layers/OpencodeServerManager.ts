@@ -30,7 +30,7 @@ function makeOpencodeServerManager(): { acquire: () => Promise<OpencodeServerHan
 
     // If a start is in flight, wait for it
     if (startPromise === null) {
-      startPromise = createOpencode()
+      startPromise = createOpencode({ port: 0 })
         .then(({ client: _client, server }) => ({
           url: server.url,
           close: () => server.close(),

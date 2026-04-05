@@ -82,13 +82,15 @@ interface MutableTurnSnapshot {
 
 interface ActiveCopilotSession {
   readonly client: CopilotClient;
-  readonly session: CopilotSession;
+  session: CopilotSession;
   readonly threadId: ThreadId;
   readonly createdAt: string;
   readonly runtimeMode: ProviderSession["runtimeMode"];
   readonly pendingApprovals: Map<string, PendingApprovalRequest>;
   readonly pendingUserInputs: Map<string, PendingUserInputRequest>;
   readonly turns: Array<MutableTurnSnapshot>;
+  /** Creates a fresh session to replace a stale one (e.g. after server restart). */
+  readonly renewSession: () => Promise<CopilotSession>;
   unsubscribe: () => void;
   cwd: string | undefined;
   model: string | undefined;
@@ -110,6 +112,11 @@ function toMessage(cause: unknown, fallback: string): string {
     return cause.message;
   }
   return fallback;
+}
+
+/** Returns true when the Copilot CLI reports the session ID no longer exists (e.g. after a server restart). */
+function isSessionNotFoundError(cause: unknown): boolean {
+  return cause instanceof Error && cause.message.toLowerCase().includes("session not found");
 }
 
 function normalizeString(value: unknown): string | undefined {
@@ -796,6 +803,7 @@ const makeCopilotAdapter = Effect.fn("makeCopilotAdapter")(function* (
         pendingApprovals,
         pendingUserInputs,
         turns: [],
+        renewSession: () => client.createSession(sessionConfig),
         unsubscribe: () => {},
         cwd: input.cwd,
         model:
@@ -877,13 +885,29 @@ const makeCopilotAdapter = Effect.fn("makeCopilotAdapter")(function* (
         record.model = copilotModelSelection.model;
 
         yield* Effect.tryPromise({
-          try: () =>
-            record.session.setModel(
-              copilotModelSelection.model,
-              copilotModelSelection.options?.reasoningEffort
-                ? { reasoningEffort: copilotModelSelection.options.reasoningEffort }
-                : undefined,
-            ),
+          try: async () => {
+            try {
+              await record.session.setModel(
+                copilotModelSelection.model,
+                copilotModelSelection.options?.reasoningEffort
+                  ? { reasoningEffort: copilotModelSelection.options.reasoningEffort }
+                  : undefined,
+              );
+            } catch (firstError) {
+              if (isSessionNotFoundError(firstError)) {
+                const freshSession = await record.renewSession();
+                record.session = freshSession;
+                await record.session.setModel(
+                  copilotModelSelection.model,
+                  copilotModelSelection.options?.reasoningEffort
+                    ? { reasoningEffort: copilotModelSelection.options.reasoningEffort }
+                    : undefined,
+                );
+              } else {
+                throw firstError;
+              }
+            }
+          },
           catch: (cause) =>
             new ProviderAdapterRequestError({
               provider: PROVIDER,
@@ -898,13 +922,30 @@ const makeCopilotAdapter = Effect.fn("makeCopilotAdapter")(function* (
       record.activeTurnId = turnId;
       record.updatedAt = new Date().toISOString();
 
+      const sendPayload: Parameters<typeof record.session.send>[0] = {
+        prompt: input.input ?? "",
+        ...(attachments.length > 0 ? { attachments } : {}),
+        mode: "immediate",
+      };
+
       yield* Effect.tryPromise({
-        try: () =>
-          record.session.send({
-            prompt: input.input ?? "",
-            ...(attachments.length > 0 ? { attachments } : {}),
-            mode: "immediate",
-          }),
+        try: async () => {
+          try {
+            await record.session.send(sendPayload);
+          } catch (firstError) {
+            // When resuming after a server restart the Copilot CLI no longer knows
+            // about the old session ID.  Transparently replace it with a fresh
+            // session and retry the send exactly once so the user never sees the
+            // stale-session failure.
+            if (isSessionNotFoundError(firstError)) {
+              const freshSession = await record.renewSession();
+              record.session = freshSession;
+              await record.session.send(sendPayload);
+            } else {
+              throw firstError;
+            }
+          }
+        },
         catch: (cause) =>
           new ProviderAdapterRequestError({
             provider: PROVIDER,
