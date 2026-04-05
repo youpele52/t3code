@@ -250,17 +250,13 @@ const make = Effect.gen(function* () {
       : undefined;
     const requestedModelSelection = options?.modelSelection;
     const threadProvider: ProviderKind = currentProvider ?? thread.modelSelection.provider;
-    if (
-      requestedModelSelection !== undefined &&
-      requestedModelSelection.provider !== threadProvider
-    ) {
-      return yield* new ProviderAdapterRequestError({
-        provider: threadProvider,
-        method: "thread.turn.start",
-        detail: `Thread '${threadId}' is bound to provider '${threadProvider}' and cannot switch to '${requestedModelSelection.provider}'.`,
-      });
-    }
-    const preferredProvider: ProviderKind = currentProvider ?? threadProvider;
+    // When the requested provider differs from the current binding, use the
+    // requested provider so the existing-session restart path can drop the
+    // stale session and start fresh with the new one.
+    const preferredProvider: ProviderKind =
+      requestedModelSelection !== undefined && requestedModelSelection.provider !== threadProvider
+        ? requestedModelSelection.provider
+        : (currentProvider ?? threadProvider);
     const desiredModelSelection = requestedModelSelection ?? thread.modelSelection;
     const effectiveCwd = resolveThreadWorkspaceCwd({
       thread,
