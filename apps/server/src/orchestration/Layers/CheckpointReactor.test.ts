@@ -38,7 +38,7 @@ import {
   type ProviderServiceShape,
 } from "../../provider/Services/ProviderService.ts";
 import { checkpointRefForThreadTurn } from "../../checkpointing/Utils.ts";
-import { ServerConfig } from "../../config.ts";
+import { ServerConfig } from "../../startup/config.ts";
 import { WorkspaceEntriesLive } from "../../workspace/Layers/WorkspaceEntries.ts";
 import { WorkspacePathsLive } from "../../workspace/Layers/WorkspacePaths.ts";
 
@@ -88,6 +88,7 @@ function createProviderServiceHarness(
       : Effect.succeed([] as ReadonlyArray<ProviderSession>);
   const service: ProviderServiceShape = {
     startSession: () => unsupported(),
+    startSessionFresh: () => unsupported(),
     sendTurn: () => unsupported(),
     interruptTurn: () => unsupported(),
     respondToRequest: () => unsupported(),

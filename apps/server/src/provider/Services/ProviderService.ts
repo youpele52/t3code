@@ -43,6 +43,14 @@ export interface ProviderServiceShape {
   ) => Effect.Effect<ProviderSession, ProviderServiceError>;
 
   /**
+   * Start a provider session without automatically reusing persisted resume state.
+   */
+  readonly startSessionFresh: (
+    threadId: ThreadId,
+    input: ProviderSessionStartInput,
+  ) => Effect.Effect<ProviderSession, ProviderServiceError>;
+
+  /**
    * Send a provider turn.
    */
   readonly sendTurn: (

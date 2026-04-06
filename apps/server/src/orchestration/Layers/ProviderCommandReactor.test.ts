@@ -16,7 +16,7 @@ import {
 import { Effect, Exit, Layer, ManagedRuntime, PubSub, Scope, Stream } from "effect";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { deriveServerPaths, ServerConfig } from "../../config.ts";
+import { deriveServerPaths, ServerConfig } from "../../startup/config.ts";
 import { TextGenerationError } from "@t3tools/contracts";
 import { ProviderAdapterRequestError } from "../../provider/Errors.ts";
 import { OrchestrationEventStoreLive } from "../../persistence/Layers/OrchestrationEventStore.ts";
@@ -35,7 +35,7 @@ import { ProviderCommandReactorLive } from "./ProviderCommandReactor.ts";
 import { OrchestrationEngineService } from "../Services/OrchestrationEngine.ts";
 import { ProviderCommandReactor } from "../Services/ProviderCommandReactor.ts";
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import { ServerSettingsService } from "../../serverSettings.ts";
+import { ServerSettingsService } from "../../ws/serverSettings.ts";
 
 const asProjectId = (value: string): ProjectId => ProjectId.makeUnsafe(value);
 const asApprovalRequestId = (value: string): ApprovalRequestId =>
@@ -197,6 +197,7 @@ describe("ProviderCommandReactor", () => {
     const unsupported = () => Effect.die(new Error("Unsupported provider call in test")) as never;
     const service: ProviderServiceShape = {
       startSession: startSession as ProviderServiceShape["startSession"],
+      startSessionFresh: startSession as ProviderServiceShape["startSessionFresh"],
       sendTurn: sendTurn as ProviderServiceShape["sendTurn"],
       interruptTurn: interruptTurn as ProviderServiceShape["interruptTurn"],
       respondToRequest: respondToRequest as ProviderServiceShape["respondToRequest"],
@@ -320,6 +321,82 @@ describe("ProviderCommandReactor", () => {
     const thread = readModel.threads.find((entry) => entry.id === ThreadId.makeUnsafe("thread-1"));
     expect(thread?.session?.threadId).toBe("thread-1");
     expect(thread?.session?.runtimeMode).toBe("approval-required");
+  });
+
+  it("rebuilds transcript context on the next turn when the provider session was lost", async () => {
+    const harness = await createHarness();
+    const firstTurnAt = new Date().toISOString();
+    const secondTurnAt = new Date(Date.now() + 1000).toISOString();
+
+    await Effect.runPromise(
+      harness.engine.dispatch({
+        type: "thread.turn.start",
+        commandId: CommandId.makeUnsafe("cmd-turn-start-bootstrap-1"),
+        threadId: ThreadId.makeUnsafe("thread-1"),
+        message: {
+          messageId: asMessageId("user-message-bootstrap-1"),
+          role: "user",
+          text: "first question",
+          attachments: [],
+        },
+        interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
+        runtimeMode: "approval-required",
+        createdAt: firstTurnAt,
+      }),
+    );
+
+    await waitFor(() => harness.sendTurn.mock.calls.length === 1);
+
+    await Effect.runPromise(
+      harness.engine.dispatch({
+        type: "thread.message.assistant.delta",
+        commandId: CommandId.makeUnsafe("cmd-assistant-bootstrap-1-delta"),
+        threadId: ThreadId.makeUnsafe("thread-1"),
+        messageId: asMessageId("assistant-message-bootstrap-1"),
+        turnId: asTurnId("turn-1"),
+        delta: "first answer",
+        createdAt: new Date(Date.now() + 400).toISOString(),
+      }),
+    );
+
+    await Effect.runPromise(
+      harness.engine.dispatch({
+        type: "thread.message.assistant.complete",
+        commandId: CommandId.makeUnsafe("cmd-assistant-bootstrap-1"),
+        threadId: ThreadId.makeUnsafe("thread-1"),
+        messageId: asMessageId("assistant-message-bootstrap-1"),
+        turnId: asTurnId("turn-1"),
+        createdAt: new Date(Date.now() + 500).toISOString(),
+      }),
+    );
+
+    await Effect.runPromise(harness.stopSession({ threadId: ThreadId.makeUnsafe("thread-1") }));
+
+    await Effect.runPromise(
+      harness.engine.dispatch({
+        type: "thread.turn.start",
+        commandId: CommandId.makeUnsafe("cmd-turn-start-bootstrap-2"),
+        threadId: ThreadId.makeUnsafe("thread-1"),
+        message: {
+          messageId: asMessageId("user-message-bootstrap-2"),
+          role: "user",
+          text: "second question",
+          attachments: [],
+        },
+        interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
+        runtimeMode: "approval-required",
+        createdAt: secondTurnAt,
+      }),
+    );
+
+    await waitFor(() => harness.sendTurn.mock.calls.length === 2);
+    const secondSendInput = harness.sendTurn.mock.calls[1]?.[0] as { input?: string } | undefined;
+    expect(secondSendInput?.input).toContain("Transcript context:");
+    expect(secondSendInput?.input).toContain("USER:\nfirst question");
+    expect(secondSendInput?.input).toContain("ASSISTANT:\nfirst answer");
+    expect(secondSendInput?.input).toContain(
+      "Latest user request (answer this now):\nsecond question",
+    );
   });
 
   it("generates a thread title on the first turn", async () => {

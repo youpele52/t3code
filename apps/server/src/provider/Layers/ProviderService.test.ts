@@ -12,6 +12,7 @@ import type {
 import {
   ApprovalRequestId,
   EventId,
+  PROVIDER_SEND_TURN_MAX_INPUT_CHARS,
   type ProviderKind,
   ProviderSessionStartInput,
   ThreadId,
@@ -42,8 +43,9 @@ import {
   makeSqlitePersistenceLive,
   SqlitePersistenceMemory,
 } from "../../persistence/Layers/Sqlite.ts";
-import { ServerSettingsService } from "../../serverSettings.ts";
+import { ServerSettingsService } from "../../ws/serverSettings.ts";
 import { AnalyticsService } from "../../telemetry/Services/AnalyticsService.ts";
+import { buildBootstrapInput } from "@t3tools/shared/history";
 
 const defaultServerSettingsLayer = ServerSettingsService.layerTest();
 
@@ -301,7 +303,7 @@ it.effect("ProviderServiceLive rejects new sessions for disabled providers", () 
           : provider === "claudeAgent"
             ? Effect.succeed(claude.adapter)
             : Effect.fail(new ProviderUnsupportedError({ provider })),
-      listProviders: () => Effect.succeed(["codex", "claudeAgent", "copilot"]),
+      listProviders: () => Effect.succeed(["codex", "claudeAgent"]),
     };
     const providerAdapterLayer = Layer.succeed(ProviderAdapterRegistry, registry);
     const serverSettingsLayer = ServerSettingsService.layerTest({
@@ -754,6 +756,66 @@ routing.layer("ProviderServiceLive routing", (it) => {
       assert.equal(routing.claude.sendTurn.mock.calls.length, 1);
     }),
   );
+
+  it.effect("startSessionFresh skips persisted resume cursor reuse", () =>
+    Effect.gen(function* () {
+      const provider = yield* ProviderService;
+
+      const initial = yield* provider.startSession(asThreadId("thread-fresh-start"), {
+        provider: "codex",
+        threadId: asThreadId("thread-fresh-start"),
+        cwd: "/tmp/project-fresh-start",
+        runtimeMode: "full-access",
+      });
+
+      yield* routing.codex.stopAll();
+      routing.codex.startSession.mockClear();
+
+      yield* provider.startSessionFresh(initial.threadId, {
+        provider: "codex",
+        threadId: initial.threadId,
+        cwd: "/tmp/project-fresh-start",
+        runtimeMode: "full-access",
+      });
+
+      assert.equal(routing.codex.startSession.mock.calls.length, 1);
+      const resumedStartInput = routing.codex.startSession.mock.calls[0]?.[0];
+      assert.equal(typeof resumedStartInput === "object" && resumedStartInput !== null, true);
+      if (resumedStartInput && typeof resumedStartInput === "object") {
+        const startPayload = resumedStartInput as {
+          provider?: string;
+          cwd?: string;
+          resumeCursor?: unknown;
+          threadId?: string;
+        };
+        assert.equal(startPayload.provider, "codex");
+        assert.equal(startPayload.cwd, "/tmp/project-fresh-start");
+        assert.equal(startPayload.resumeCursor, undefined);
+        assert.equal(startPayload.threadId, initial.threadId);
+      }
+    }),
+  );
+
+  it("shared bootstrap builder preserves transcript chronology", () => {
+    const result = buildBootstrapInput(
+      [
+        {
+          role: "user",
+          text: "first",
+        },
+        {
+          role: "assistant",
+          text: "second",
+        },
+      ],
+      "third",
+      PROVIDER_SEND_TURN_MAX_INPUT_CHARS,
+    );
+
+    assert.equal(result.text.includes("USER:\nfirst"), true);
+    assert.equal(result.text.includes("ASSISTANT:\nsecond"), true);
+    assert.equal(result.text.includes("Latest user request (answer this now):\nthird"), true);
+  });
 
   it.effect("lists no sessions after adapter runtime clears", () =>
     Effect.gen(function* () {

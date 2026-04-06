@@ -1,4 +1,8 @@
-import type { ChatMessage } from "./types";
+import type {
+  ChatAttachment,
+  OrchestrationMessage,
+  OrchestrationMessageRole,
+} from "@t3tools/contracts";
 
 export interface BootstrapInputResult {
   text: string;
@@ -14,11 +18,21 @@ const LATEST_PROMPT_HEADER = "Latest user request (answer this now):";
 const OMITTED_SUMMARY = (count: number) =>
   `[${count} earlier message(s) omitted to stay within input limits.]`;
 
-function messageRoleLabel(message: ChatMessage): "USER" | "ASSISTANT" {
-  return message.role === "assistant" ? "ASSISTANT" : "USER";
+type BootstrapMessage = Pick<OrchestrationMessage, "role" | "text" | "attachments">;
+
+function messageRoleLabel(message: BootstrapMessage): "USER" | "ASSISTANT" | "SYSTEM" {
+  switch (message.role satisfies OrchestrationMessageRole) {
+    case "assistant":
+      return "ASSISTANT";
+    case "system":
+      return "SYSTEM";
+    case "user":
+    default:
+      return "USER";
+  }
 }
 
-function attachmentSummary(message: ChatMessage): string | null {
+function attachmentSummary(message: BootstrapMessage): string | null {
   const imageAttachments = message.attachments?.filter((attachment) => attachment.type === "image");
   const count = imageAttachments?.length ?? 0;
   if (count === 0) {
@@ -32,7 +46,7 @@ function attachmentSummary(message: ChatMessage): string | null {
   return `[Attached image${count === 1 ? "" : "s"}: ${namesSummary}${extraSummary}]`;
 }
 
-function buildMessageBlock(message: ChatMessage): string {
+function buildMessageBlock(message: BootstrapMessage): string {
   const text = message.text;
   const attachments = attachmentSummary(message);
 
@@ -57,8 +71,14 @@ function finalizeWithPrompt(
   return text.length <= maxChars ? text : null;
 }
 
+export function hasImageAttachments(
+  attachments: ReadonlyArray<ChatAttachment> | undefined,
+): boolean {
+  return attachments?.some((attachment) => attachment.type === "image") ?? false;
+}
+
 export function buildBootstrapInput(
-  previousMessages: ChatMessage[],
+  previousMessages: ReadonlyArray<BootstrapMessage>,
   latestPrompt: string,
   maxChars: number,
 ): BootstrapInputResult {
@@ -90,7 +110,6 @@ export function buildBootstrapInput(
     };
   }
 
-  // Include a contiguous suffix from newest to oldest, then reverse to chronological.
   let includedNewestFirst: string[] = [];
   for (const block of newestFirstBlocks) {
     const nextNewestFirst = [...includedNewestFirst, block];
