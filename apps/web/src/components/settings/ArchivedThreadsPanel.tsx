@@ -1,10 +1,13 @@
 import { ArchiveIcon, ArchiveX } from "lucide-react";
 import { type ThreadId } from "@t3tools/contracts";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useSettings } from "../../hooks/useSettings";
 import { useStore } from "../../stores/main";
 import { useThreadActions } from "../../hooks/useThreadActions";
 import { formatRelativeTimeLabel } from "../../utils/timestamp";
 import { readNativeApi } from "../../rpc/nativeApi";
+import { ConfirmationPanel } from "../common/ConfirmationPanel";
+import { AlertDialog, AlertDialogPopup } from "../ui/alert-dialog";
 import { toastManager } from "../ui/toast";
 import { Button } from "../ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "../ui/empty";
@@ -12,9 +15,14 @@ import { ProjectFavicon } from "../project/ProjectFavicon";
 import { SettingsPageContainer, SettingsSection } from "./settingsLayout";
 
 export function ArchivedThreadsPanel() {
+  const appSettings = useSettings();
   const projects = useStore((store) => store.projects);
   const threads = useStore((store) => store.threads);
-  const { unarchiveThread, confirmAndDeleteThread } = useThreadActions();
+  const { unarchiveThread, deleteThread } = useThreadActions();
+  const [pendingDeleteConfirmation, setPendingDeleteConfirmation] = useState<{
+    threadId: ThreadId;
+    title: string;
+  } | null>(null);
   const archivedGroups = useMemo(() => {
     const projectById = new Map(projects.map((project) => [project.id, project] as const));
     return [...projectById.values()]
@@ -57,10 +65,18 @@ export function ArchivedThreadsPanel() {
       }
 
       if (clicked === "delete") {
-        await confirmAndDeleteThread(threadId);
+        const thread = threads.find((entry) => entry.id === threadId);
+        if (!thread) {
+          return;
+        }
+        if (appSettings.confirmThreadDelete) {
+          setPendingDeleteConfirmation({ threadId, title: thread.title });
+          return;
+        }
+        await deleteThread(threadId);
       }
     },
-    [confirmAndDeleteThread, unarchiveThread],
+    [appSettings.confirmThreadDelete, deleteThread, threads, unarchiveThread],
   );
 
   return (
@@ -85,9 +101,9 @@ export function ArchivedThreadsPanel() {
             icon={<ProjectFavicon cwd={project.cwd} />}
           >
             {projectThreads.map((thread) => (
-              <div
+              <fieldset
                 key={thread.id}
-                className="flex items-center justify-between gap-3 border-t border-border px-4 py-3 first:border-t-0 sm:px-5"
+                className="min-w-0 border-0 border-t border-border px-4 py-3 first:border-t-0 sm:px-5"
                 onContextMenu={(event) => {
                   event.preventDefault();
                   void handleArchivedThreadContextMenu(thread.id, {
@@ -122,11 +138,38 @@ export function ArchivedThreadsPanel() {
                   <ArchiveX className="size-3.5" />
                   <span>Unarchive</span>
                 </Button>
-              </div>
+              </fieldset>
             ))}
           </SettingsSection>
         ))
       )}
+
+      <AlertDialog
+        open={pendingDeleteConfirmation !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingDeleteConfirmation(null);
+          }
+        }}
+      >
+        <AlertDialogPopup className="max-w-sm p-0" bottomStickOnMobile={false}>
+          {pendingDeleteConfirmation ? (
+            <ConfirmationPanel
+              title={`Delete thread "${pendingDeleteConfirmation.title}"?`}
+              description="This permanently clears conversation history for this thread."
+              cancelLabel="Cancel"
+              confirmLabel="Delete"
+              confirmVariant="destructive"
+              onCancel={() => setPendingDeleteConfirmation(null)}
+              onConfirm={() => {
+                const threadId = pendingDeleteConfirmation.threadId;
+                setPendingDeleteConfirmation(null);
+                void deleteThread(threadId);
+              }}
+            />
+          ) : null}
+        </AlertDialogPopup>
+      </AlertDialog>
     </SettingsPageContainer>
   );
 }

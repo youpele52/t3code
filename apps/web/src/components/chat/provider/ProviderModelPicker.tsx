@@ -250,162 +250,163 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
   };
 
   return (
-    <Menu
-      open={isMenuOpen}
-      onOpenChange={(open) => {
-        if (props.disabled) {
-          setIsMenuOpen(false);
-          return;
-        }
-        if (open) {
-          setView(props.lockedProvider !== null ? "model" : "provider");
-        }
-        setIsMenuOpen(open);
-      }}
-    >
-      <MenuTrigger
-        render={
-          <Button
-            size="sm"
-            variant={props.triggerVariant ?? "ghost"}
-            data-chat-provider-model-picker="true"
-            className={cn(
-              "min-w-0 justify-start overflow-hidden whitespace-nowrap px-2 text-muted-foreground/70 hover:text-foreground/80 [&_svg]:mx-0",
-              props.compact ? "max-w-42 shrink-0" : "max-w-48 shrink sm:max-w-56 sm:px-3",
-              props.triggerClassName,
-            )}
-            disabled={props.disabled}
-          />
-        }
+    <>
+      <Menu
+        open={isMenuOpen}
+        onOpenChange={(open) => {
+          if (props.disabled) {
+            setIsMenuOpen(false);
+            return;
+          }
+          if (open) {
+            setView(props.lockedProvider !== null ? "model" : "provider");
+          }
+          setIsMenuOpen(open);
+        }}
       >
-        <span
-          className={cn(
-            "flex min-w-0 w-full box-border items-center gap-2 overflow-hidden",
-            props.compact ? "max-w-36 sm:pl-1" : undefined,
-          )}
-        >
-          <ProviderIcon
-            aria-hidden="true"
-            className={cn(
-              "size-4 shrink-0",
-              providerIconClassName(activeProvider, "text-muted-foreground/70"),
-              props.activeProviderIconClassName,
-            )}
-          />
-          <span className="min-w-0 flex-1 truncate">{selectedModelLabel}</span>
-          <ChevronDownIcon aria-hidden="true" className="size-3 shrink-0 opacity-60" />
-        </span>
-      </MenuTrigger>
-      <MenuPopup align="start">
-        {props.lockedProvider !== null && view === "model" ? (
-          // Provider is locked — show model list with search + back arrow
-          <div className="[--available-height:min(24rem,70vh)] max-h-(--available-height) overflow-y-auto">
-            <ModelList
-              provider={props.lockedProvider}
-              selectedValue={selectedProviderValue}
-              options={props.modelOptionsByProvider[props.lockedProvider]}
-              onSelect={(value) => handleModelChange(props.lockedProvider!, value)}
-              {...(props.onProviderUnlock
-                ? {
-                    onBack: () => {
-                      setView("provider");
-                      props.onProviderUnlock?.();
-                    },
-                  }
-                : {})}
+        <MenuTrigger
+          render={
+            <Button
+              size="sm"
+              variant={props.triggerVariant ?? "ghost"}
+              data-chat-provider-model-picker="true"
+              className={cn(
+                "min-w-0 justify-start overflow-hidden whitespace-nowrap px-2 text-muted-foreground/70 hover:text-foreground/80 [&_svg]:mx-0",
+                props.compact ? "max-w-42 shrink-0" : "max-w-48 shrink sm:max-w-56 sm:px-3",
+                props.triggerClassName,
+              )}
+              disabled={props.disabled}
             />
-          </div>
-        ) : (
-          <>
-            {AVAILABLE_PROVIDER_OPTIONS.map((option) => {
-              const OptionIcon = PROVIDER_ICON_BY_PROVIDER[option.value];
-              const liveProvider = props.providers
-                ? getProviderSnapshot(props.providers, option.value)
-                : undefined;
-              if (liveProvider && liveProvider.status !== "ready") {
-                const unavailableLabel = !liveProvider.enabled
-                  ? "Disabled"
-                  : !liveProvider.installed
-                    ? "Not installed"
-                    : "Unavailable";
+          }
+        >
+          <span
+            className={cn(
+              "flex min-w-0 w-full box-border items-center gap-2 overflow-hidden",
+              props.compact ? "max-w-36 sm:pl-1" : undefined,
+            )}
+          >
+            <ProviderIcon
+              aria-hidden="true"
+              className={cn(
+                "size-4 shrink-0",
+                providerIconClassName(activeProvider, "text-muted-foreground/70"),
+                props.activeProviderIconClassName,
+              )}
+            />
+            <span className="min-w-0 flex-1 truncate">{selectedModelLabel}</span>
+            <ChevronDownIcon aria-hidden="true" className="size-3 shrink-0 opacity-60" />
+          </span>
+        </MenuTrigger>
+        <MenuPopup align="start">
+          {props.lockedProvider !== null && view === "model" ? (
+            <div className="[--available-height:min(24rem,70vh)] max-h-(--available-height) overflow-y-auto">
+              <ModelList
+                provider={props.lockedProvider}
+                selectedValue={selectedProviderValue}
+                options={props.modelOptionsByProvider[props.lockedProvider]}
+                onSelect={(value) => handleModelChange(props.lockedProvider!, value)}
+                {...(props.onProviderUnlock
+                  ? {
+                      onBack: () => {
+                        setView("provider");
+                        props.onProviderUnlock?.();
+                      },
+                    }
+                  : {})}
+              />
+            </div>
+          ) : (
+            <>
+              {AVAILABLE_PROVIDER_OPTIONS.map((option) => {
+                const OptionIcon = PROVIDER_ICON_BY_PROVIDER[option.value];
+                const liveProvider = props.providers
+                  ? getProviderSnapshot(props.providers, option.value)
+                  : undefined;
+                if (liveProvider && liveProvider.status !== "ready") {
+                  const unavailableLabel = !liveProvider.enabled
+                    ? "Disabled"
+                    : !liveProvider.installed
+                      ? "Not installed"
+                      : "Unavailable";
+                  return (
+                    <MenuItem key={option.value} disabled>
+                      <OptionIcon
+                        aria-hidden="true"
+                        className={cn(
+                          "size-4 shrink-0 opacity-80",
+                          providerIconClassName(option.value, "text-muted-foreground/85"),
+                        )}
+                      />
+                      <span>{option.label}</span>
+                      <span className="ms-auto text-[11px] text-muted-foreground/80 uppercase tracking-[0.08em]">
+                        {unavailableLabel}
+                      </span>
+                    </MenuItem>
+                  );
+                }
+                return (
+                  <MenuSub key={option.value}>
+                    <MenuSubTrigger>
+                      <OptionIcon
+                        aria-hidden="true"
+                        className={cn(
+                          "size-4 shrink-0",
+                          providerIconClassName(option.value, "text-muted-foreground/85"),
+                        )}
+                      />
+                      {option.label}
+                    </MenuSubTrigger>
+                    <MenuSubPopup
+                      className="[--available-height:min(24rem,70vh)] !p-0 overflow-hidden"
+                      sideOffset={4}
+                    >
+                      <div className="max-h-(--available-height) overflow-y-auto">
+                        <ModelList
+                          provider={option.value}
+                          selectedValue={props.provider === option.value ? props.model : ""}
+                          options={props.modelOptionsByProvider[option.value]}
+                          onSelect={(value) => {
+                            handleModelChange(option.value, value);
+                          }}
+                        />
+                      </div>
+                    </MenuSubPopup>
+                  </MenuSub>
+                );
+              })}
+              {UNAVAILABLE_PROVIDER_OPTIONS.length > 0 && <MenuDivider />}
+              {UNAVAILABLE_PROVIDER_OPTIONS.map((option) => {
+                const OptionIcon = PROVIDER_ICON_BY_PROVIDER[option.value];
                 return (
                   <MenuItem key={option.value} disabled>
                     <OptionIcon
                       aria-hidden="true"
-                      className={cn(
-                        "size-4 shrink-0 opacity-80",
-                        providerIconClassName(option.value, "text-muted-foreground/85"),
-                      )}
+                      className="size-4 shrink-0 text-muted-foreground/85 opacity-80"
                     />
                     <span>{option.label}</span>
                     <span className="ms-auto text-[11px] text-muted-foreground/80 uppercase tracking-[0.08em]">
-                      {unavailableLabel}
+                      Coming soon
                     </span>
                   </MenuItem>
                 );
-              }
-              return (
-                <MenuSub key={option.value}>
-                  <MenuSubTrigger>
-                    <OptionIcon
-                      aria-hidden="true"
-                      className={cn(
-                        "size-4 shrink-0",
-                        providerIconClassName(option.value, "text-muted-foreground/85"),
-                      )}
-                    />
-                    {option.label}
-                  </MenuSubTrigger>
-                  <MenuSubPopup
-                    className="[--available-height:min(24rem,70vh)] !p-0 overflow-hidden"
-                    sideOffset={4}
-                  >
-                    <div className="max-h-(--available-height) overflow-y-auto">
-                      <ModelList
-                        provider={option.value}
-                        selectedValue={props.provider === option.value ? props.model : ""}
-                        options={props.modelOptionsByProvider[option.value]}
-                        onSelect={(value) => {
-                          handleModelChange(option.value, value);
-                        }}
-                      />
-                    </div>
-                  </MenuSubPopup>
-                </MenuSub>
-              );
-            })}
-            {UNAVAILABLE_PROVIDER_OPTIONS.length > 0 && <MenuDivider />}
-            {UNAVAILABLE_PROVIDER_OPTIONS.map((option) => {
-              const OptionIcon = PROVIDER_ICON_BY_PROVIDER[option.value];
-              return (
-                <MenuItem key={option.value} disabled>
-                  <OptionIcon
-                    aria-hidden="true"
-                    className="size-4 shrink-0 text-muted-foreground/85 opacity-80"
-                  />
-                  <span>{option.label}</span>
-                  <span className="ms-auto text-[11px] text-muted-foreground/80 uppercase tracking-[0.08em]">
-                    Coming soon
-                  </span>
-                </MenuItem>
-              );
-            })}
-            {UNAVAILABLE_PROVIDER_OPTIONS.length === 0 && <MenuDivider />}
-            {COMING_SOON_PROVIDER_OPTIONS.map((option) => {
-              const OptionIcon = option.icon;
-              return (
-                <MenuItem key={option.id} disabled>
-                  <OptionIcon aria-hidden="true" className="size-4 shrink-0 opacity-80" />
-                  <span>{option.label}</span>
-                  <span className="ms-auto text-[11px] text-muted-foreground/80 uppercase tracking-[0.08em]">
-                    Coming soon
-                  </span>
-                </MenuItem>
-              );
-            })}
-          </>
-        )}
-      </MenuPopup>
-    </Menu>
+              })}
+              {UNAVAILABLE_PROVIDER_OPTIONS.length === 0 && <MenuDivider />}
+              {COMING_SOON_PROVIDER_OPTIONS.map((option) => {
+                const OptionIcon = option.icon;
+                return (
+                  <MenuItem key={option.id} disabled>
+                    <OptionIcon aria-hidden="true" className="size-4 shrink-0 opacity-80" />
+                    <span>{option.label}</span>
+                    <span className="ms-auto text-[11px] text-muted-foreground/80 uppercase tracking-[0.08em]">
+                      Coming soon
+                    </span>
+                  </MenuItem>
+                );
+              })}
+            </>
+          )}
+        </MenuPopup>
+      </Menu>
+    </>
   );
 });

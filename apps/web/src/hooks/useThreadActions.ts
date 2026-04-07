@@ -175,34 +175,9 @@ export function useThreadActions() {
     ],
   );
 
-  const confirmAndDeleteThread = useCallback(
-    async (threadId: ThreadId) => {
-      const api = readNativeApi();
-      if (!api) return;
-      const thread = useStore.getState().threads.find((entry) => entry.id === threadId);
-      if (!thread) return;
-
-      if (appSettings.confirmThreadDelete) {
-        const confirmed = await api.dialogs.confirm(
-          [
-            `Delete thread "${thread.title}"?`,
-            "This permanently clears conversation history for this thread.",
-          ].join("\n"),
-        );
-        if (!confirmed) {
-          return;
-        }
-      }
-
-      await deleteThread(threadId);
-    },
-    [appSettings.confirmThreadDelete, deleteThread],
-  );
-
   return {
     archiveThread,
     unarchiveThread,
     deleteThread,
-    confirmAndDeleteThread,
   };
 }

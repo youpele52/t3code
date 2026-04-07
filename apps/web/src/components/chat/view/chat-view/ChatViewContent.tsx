@@ -5,6 +5,7 @@ import { isElectron } from "~/config/env";
 import { cn } from "~/lib/utils";
 
 import { ChatHeader } from "../../common/ChatHeader";
+import { ConfirmationPanel } from "../../../common/ConfirmationPanel";
 import { ExpandedImageOverlay } from "../../common/ExpandedImageOverlay";
 import { PendingApprovalDialog } from "../../composer/PendingApprovalDialog";
 import { ScrollToBottomPill } from "../../common/ScrollToBottomPill";
@@ -16,6 +17,7 @@ import PlanSidebar from "../../plan/PlanSidebar";
 import { ProviderStatusBanner } from "../../provider/ProviderStatusBanner";
 import { PersistentThreadTerminalDrawer } from "../ChatView.terminalDrawer";
 import BranchToolbar from "../../../git/BranchToolbar";
+import { Card } from "../../../ui/card";
 
 import { ChatViewComposer } from "./ChatViewComposer";
 import { type ChatViewBaseState } from "./chat-view-base-state.hooks";
@@ -161,6 +163,27 @@ export function ChatViewContent({
                 workspaceRoot={base.activeProject?.cwd ?? undefined}
               />
             </div>
+
+            {interactions.pendingProviderSwitchConfirmation ? (
+              <div className="absolute inset-0 z-20 flex items-center justify-center px-4 py-6">
+                <button
+                  type="button"
+                  aria-label="Dismiss provider switch confirmation"
+                  className="absolute inset-0 bg-background/60 backdrop-blur-[1px]"
+                  onClick={interactions.onDismissPendingProviderSwitch}
+                />
+                <Card className="relative w-full max-w-sm border-border/80 bg-background/96 shadow-lg/10">
+                  <ConfirmationPanel
+                    title={`Start a new ${interactions.pendingProviderSwitchConfirmation.targetLabel} branch?`}
+                    description="Switching providers after a thread has started creates a branch so the current conversation stays on its existing provider."
+                    cancelLabel="Cancel"
+                    confirmLabel="Create branch"
+                    onCancel={interactions.onDismissPendingProviderSwitch}
+                    onConfirm={interactions.onConfirmPendingProviderSwitch}
+                  />
+                </Card>
+              </div>
+            ) : null}
 
             {runtime.scrollBehavior.showScrollToBottom ? (
               <ScrollToBottomPill

@@ -1,6 +1,8 @@
 import { useNavigate } from "@tanstack/react-router";
 import { isElectron } from "../../config/env";
+import { ConfirmationPanel } from "../common/ConfirmationPanel";
 import { SettingsSidebarNav } from "../settings/SettingsSidebarNav";
+import { AlertDialog, AlertDialogPopup } from "../ui/alert-dialog";
 import {
   SidebarFooter,
   SidebarMenu,
@@ -81,6 +83,31 @@ export default function Sidebar() {
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarFooter>
+
+          <AlertDialog
+            open={s.pendingDeleteConfirmation !== null}
+            onOpenChange={(open) => {
+              if (!open) {
+                s.dismissPendingDeleteConfirmation();
+              }
+            }}
+          >
+            <AlertDialogPopup className="max-w-sm p-0" bottomStickOnMobile={false}>
+              {s.pendingDeleteConfirmation ? (
+                <ConfirmationPanel
+                  title={s.pendingDeleteConfirmation.title}
+                  description={s.pendingDeleteConfirmation.description}
+                  cancelLabel="Cancel"
+                  confirmLabel="Delete"
+                  confirmVariant="destructive"
+                  onCancel={s.dismissPendingDeleteConfirmation}
+                  onConfirm={() => {
+                    void s.confirmPendingDeleteThreads();
+                  }}
+                />
+              ) : null}
+            </AlertDialogPopup>
+          </AlertDialog>
         </>
       )}
     </>

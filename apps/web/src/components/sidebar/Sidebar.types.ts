@@ -127,6 +127,13 @@ export interface SidebarState {
   setConfirmingArchiveThreadId: React.Dispatch<React.SetStateAction<ThreadId | null>>;
   confirmArchiveButtonRefs: React.MutableRefObject<Map<ThreadId, HTMLButtonElement>>;
   attemptArchiveThread: (threadId: ThreadId) => Promise<void>;
+  pendingDeleteConfirmation: {
+    title: string;
+    description: string;
+    threadIds: readonly ThreadId[];
+  } | null;
+  dismissPendingDeleteConfirmation: () => void;
+  confirmPendingDeleteThreads: () => Promise<void>;
   // Thread selection
   selectedThreadIds: ReadonlySet<ThreadId>;
   clearSelection: () => void;

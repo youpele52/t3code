@@ -32,6 +32,13 @@ export interface SidebarThreadActionsOutput {
   setConfirmingArchiveThreadId: React.Dispatch<React.SetStateAction<ThreadId | null>>;
   confirmArchiveButtonRefs: React.MutableRefObject<Map<ThreadId, HTMLButtonElement>>;
   attemptArchiveThread: (threadId: ThreadId) => Promise<void>;
+  pendingDeleteConfirmation: {
+    title: string;
+    description: string;
+    threadIds: readonly ThreadId[];
+  } | null;
+  dismissPendingDeleteConfirmation: () => void;
+  confirmPendingDeleteThreads: () => Promise<void>;
   // Selection
   selectedThreadIds: ReadonlySet<ThreadId>;
   clearSelection: () => void;
@@ -69,6 +76,11 @@ export function useSidebarThreadActions({
   const [renamingThreadId, setRenamingThreadId] = useState<ThreadId | null>(null);
   const [renamingTitle, setRenamingTitle] = useState("");
   const [confirmingArchiveThreadId, setConfirmingArchiveThreadId] = useState<ThreadId | null>(null);
+  const [pendingDeleteConfirmation, setPendingDeleteConfirmation] = useState<{
+    title: string;
+    description: string;
+    threadIds: readonly ThreadId[];
+  } | null>(null);
   const renamingCommittedRef = useRef(false);
   const renamingInputRef = useRef<HTMLInputElement | null>(null);
   const confirmArchiveButtonRefs = useRef(new Map<ThreadId, HTMLButtonElement>());
@@ -198,6 +210,30 @@ export function useSidebarThreadActions({
     });
   }, []);
 
+  const dismissPendingDeleteConfirmation = useCallback(() => {
+    setPendingDeleteConfirmation(null);
+  }, []);
+
+  const confirmPendingDeleteThreads = useCallback(async () => {
+    if (!pendingDeleteConfirmation) {
+      return;
+    }
+
+    const ids = [...pendingDeleteConfirmation.threadIds];
+    setPendingDeleteConfirmation(null);
+
+    if (ids.length === 1) {
+      await deleteThread(ids[0]!);
+      return;
+    }
+
+    const deletedIds = new Set<ThreadId>(ids);
+    for (const id of ids) {
+      await deleteThread(id, { deletedThreadIds: deletedIds });
+    }
+    removeFromSelection(ids);
+  }, [deleteThread, pendingDeleteConfirmation, removeFromSelection]);
+
   const navigateToThread = useCallback(
     (threadId: ThreadId) => {
       if (selectedThreadIds.size > 0) {
@@ -291,15 +327,12 @@ export function useSidebarThreadActions({
       }
       if (clicked !== "delete") return;
       if (appSettings.confirmThreadDelete) {
-        const confirmed = await api.dialogs.confirm(
-          [
-            `Delete thread "${thread.title}"?`,
-            "This permanently clears conversation history for this thread.",
-          ].join("\n"),
-        );
-        if (!confirmed) {
-          return;
-        }
+        setPendingDeleteConfirmation({
+          title: `Delete thread "${thread.title}"?`,
+          description: "This permanently clears conversation history for this thread.",
+          threadIds: [threadId],
+        });
+        return;
       }
       await deleteThread(threadId);
     },
@@ -342,13 +375,12 @@ export function useSidebarThreadActions({
       if (clicked !== "delete") return;
 
       if (appSettings.confirmThreadDelete) {
-        const confirmed = await api.dialogs.confirm(
-          [
-            `Delete ${count} thread${count === 1 ? "" : "s"}?`,
-            "This permanently clears conversation history for these threads.",
-          ].join("\n"),
-        );
-        if (!confirmed) return;
+        setPendingDeleteConfirmation({
+          title: `Delete ${count} thread${count === 1 ? "" : "s"}?`,
+          description: "This permanently clears conversation history for these threads.",
+          threadIds: ids,
+        });
+        return;
       }
 
       const deletedIds = new Set<ThreadId>(ids);
@@ -380,6 +412,9 @@ export function useSidebarThreadActions({
     setConfirmingArchiveThreadId,
     confirmArchiveButtonRefs,
     attemptArchiveThread,
+    pendingDeleteConfirmation,
+    dismissPendingDeleteConfirmation,
+    confirmPendingDeleteThreads,
     selectedThreadIds,
     clearSelection,
     handleThreadClick,

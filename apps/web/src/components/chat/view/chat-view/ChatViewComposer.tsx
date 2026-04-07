@@ -38,16 +38,16 @@ export function ChatViewComposer({
       onSubmit={interactions.onSend}
       className="mx-auto w-full min-w-0 max-w-[52rem]"
       data-chat-composer-form="true"
+      onDragEnter={interactions.onComposerDragEnter}
+      onDragOver={interactions.onComposerDragOver}
+      onDragLeave={interactions.onComposerDragLeave}
+      onDrop={interactions.onComposerDrop}
     >
       <div
         className={cn(
           "group rounded-[22px] p-px transition-colors duration-200",
           composer.composerProviderState.composerFrameClassName,
         )}
-        onDragEnter={interactions.onComposerDragEnter}
-        onDragOver={interactions.onComposerDragOver}
-        onDragLeave={interactions.onComposerDragLeave}
-        onDrop={interactions.onComposerDrop}
       >
         <div
           className={cn(
