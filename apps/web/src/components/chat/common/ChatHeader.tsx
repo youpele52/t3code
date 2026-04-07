@@ -69,7 +69,7 @@ export const ChatHeader = memo(function ChatHeader({
 
   return (
     <div className="@container/header-actions flex min-w-0 flex-1 items-center gap-2">
-      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden sm:gap-3">
+      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden whitespace-nowrap sm:gap-3">
         <h2
           className="min-w-0 shrink truncate text-sm font-medium text-foreground"
           title={activeThreadTitle}
@@ -77,7 +77,7 @@ export const ChatHeader = memo(function ChatHeader({
           {activeThreadTitle}
         </h2>
         {activeProjectName && (
-          <Badge variant="outline" className="min-w-0 shrink overflow-hidden">
+          <Badge variant="outline" className="shrink-0 overflow-hidden">
             <span className="min-w-0 truncate">{activeProjectName}</span>
           </Badge>
         )}
