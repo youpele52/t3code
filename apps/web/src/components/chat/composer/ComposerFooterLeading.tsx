@@ -119,13 +119,13 @@ export const ComposerFooterLeading = forwardRef<HTMLDivElement, ComposerFooterLe
               onClick={onToggleInteractionMode}
               title={
                 interactionMode === "plan"
-                  ? "Plan mode — click to return to normal chat mode"
+                  ? "Plan mode — click to return to normal build mode"
                   : "Default mode — click to enter plan mode"
               }
             >
               <BotIcon />
               <span className="sr-only sm:not-sr-only">
-                {interactionMode === "plan" ? "Plan" : "Chat"}
+                {interactionMode === "plan" ? "Plan" : "Build"}
               </span>
             </Button>
 

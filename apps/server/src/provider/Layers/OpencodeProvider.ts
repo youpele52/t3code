@@ -144,6 +144,7 @@ export const checkOpencodeProviderStatus = Effect.fn("checkOpencodeProviderStatu
     BUILT_IN_MODELS,
     PROVIDER,
     opencodeSettings.customModels,
+    EMPTY_MODEL_CAPABILITIES,
   );
 
   if (!opencodeSettings.enabled) {
@@ -186,7 +187,15 @@ export const checkOpencodeProviderStatus = Effect.fn("checkOpencodeProviderStatu
 
     const resolvedModels =
       sdkModels.length > 0
-        ? [...sdkModels, ...providerModelsFromSettings([], PROVIDER, opencodeSettings.customModels)]
+        ? [
+            ...sdkModels,
+            ...providerModelsFromSettings(
+              [],
+              PROVIDER,
+              opencodeSettings.customModels,
+              EMPTY_MODEL_CAPABILITIES,
+            ),
+          ]
         : builtInModels;
 
     const probe: ProviderProbeResult = {

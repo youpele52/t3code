@@ -172,7 +172,7 @@ function resolveWsRpc(tag: string): unknown {
       branches: [{ name: "main", current: true, isDefault: true, worktreePath: null }],
     };
   }
-  if (tag === WS_METHODS.gitStatus) {
+  if (tag === WS_METHODS.gitRefreshStatus) {
     return {
       isRepo: true,
       hasOriginRemote: true,

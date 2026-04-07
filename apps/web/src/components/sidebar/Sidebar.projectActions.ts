@@ -1,4 +1,12 @@
-import { useCallback, type PointerEvent, type MouseEvent, type KeyboardEvent } from "react";
+import {
+  useCallback,
+  useRef,
+  useState,
+  type PointerEvent,
+  type MouseEvent,
+  type KeyboardEvent,
+} from "react";
+import type React from "react";
 import { type DragCancelEvent, type DragStartEvent, type DragEndEvent } from "@dnd-kit/core";
 import { DEFAULT_MODEL_BY_PROVIDER, type ProjectId, type ThreadId } from "@t3tools/contracts";
 import { isNonEmpty as isNonEmptyString } from "effect/String";
@@ -38,9 +46,28 @@ export interface SidebarProjectActionsInput {
   copyPathToClipboard: (text: string, ctx: { path: string }) => void;
   focusMostRecentThreadForProject: (projectId: ProjectId) => void;
   handleNewThread: ReturnType<typeof useHandleNewThread>["handleNewThread"];
+  /** Called when a thread rename is in progress — cancels it so both can't be active at once. */
+  cancelThreadRename: () => void;
 }
 
 export interface SidebarProjectActionsOutput {
+  // Project rename
+  renamingProjectId: ProjectId | null;
+  renamingProjectTitle: string;
+  setRenamingProjectTitle: (title: string) => void;
+  /** Callback ref for the rename input element — handles focus/select on mount. */
+  onProjectRenamingInputMount: (element: HTMLInputElement | null) => void;
+  /** Returns whether the project rename has already been committed. */
+  hasProjectRenameCommitted: () => boolean;
+  /** Marks the project rename as committed to prevent double-commit on blur. */
+  markProjectRenameCommitted: () => void;
+  commitProjectRename: (
+    projectId: ProjectId,
+    newTitle: string,
+    originalTitle: string,
+  ) => Promise<void>;
+  cancelProjectRename: () => void;
+  // Other actions
   addProjectFromPath: (rawCwd: string) => Promise<void>;
   handleAddProject: () => void;
   handlePickFolder: () => Promise<void>;
@@ -82,6 +109,7 @@ export function useSidebarProjectActions({
   copyPathToClipboard,
   focusMostRecentThreadForProject,
   handleNewThread,
+  cancelThreadRename,
 }: SidebarProjectActionsInput): SidebarProjectActionsOutput {
   const reorderProjects = useUiStateStore((store) => store.reorderProjects);
   const toggleProject = useUiStateStore((store) => store.toggleProject);
@@ -91,6 +119,81 @@ export function useSidebarProjectActions({
   );
   const clearProjectDraftThreadId = useComposerDraftStore(
     (store) => store.clearProjectDraftThreadId,
+  );
+
+  const [renamingProjectId, setRenamingProjectId] = useState<ProjectId | null>(null);
+  const [renamingProjectTitle, setRenamingProjectTitle] = useState("");
+  const projectRenamingCommittedRef = useRef(false);
+  const projectRenamingInputRef = useRef<HTMLInputElement | null>(null);
+
+  const cancelProjectRename = useCallback(() => {
+    setRenamingProjectId(null);
+    projectRenamingInputRef.current = null;
+  }, []);
+
+  const onProjectRenamingInputMount = useCallback((element: HTMLInputElement | null) => {
+    if (element && projectRenamingInputRef.current !== element) {
+      projectRenamingInputRef.current = element;
+      element.focus();
+      element.select();
+      return;
+    }
+    if (element === null && projectRenamingInputRef.current !== null) {
+      projectRenamingInputRef.current = null;
+    }
+  }, []);
+
+  const hasProjectRenameCommitted = useCallback(() => projectRenamingCommittedRef.current, []);
+
+  const markProjectRenameCommitted = useCallback(() => {
+    projectRenamingCommittedRef.current = true;
+  }, []);
+
+  const commitProjectRename = useCallback(
+    async (projectId: ProjectId, newTitle: string, originalTitle: string) => {
+      const finishRename = () => {
+        setRenamingProjectId((current) => {
+          if (current !== projectId) return current;
+          projectRenamingInputRef.current = null;
+          return null;
+        });
+      };
+
+      const trimmed = newTitle.trim();
+      if (trimmed.length === 0) {
+        toastManager.add({
+          type: "warning",
+          title: "Project title cannot be empty",
+        });
+        finishRename();
+        return;
+      }
+      if (trimmed === originalTitle) {
+        finishRename();
+        return;
+      }
+      const api = readNativeApi();
+      if (!api) {
+        finishRename();
+        return;
+      }
+      try {
+        await api.orchestration.dispatchCommand({
+          type: "project.meta.update",
+          commandId: newCommandId(),
+          projectId,
+          title: trimmed,
+        });
+      } catch (error) {
+        toastManager.add({
+          type: "error",
+          title: "Failed to rename project",
+          description: error instanceof Error ? error.message : "An error occurred.",
+        });
+      }
+      finishRename();
+    },
+    [],
   );
 
   const addProjectFromPath = useCallback(
@@ -216,11 +319,19 @@ export function useSidebarProjectActions({
 
       const clicked = await api.contextMenu.show(
         [
+          { id: "rename", label: "Rename project" },
           { id: "copy-path", label: "Copy Project Path" },
           { id: "delete", label: "Remove project", destructive: true },
         ],
         position,
       );
+      if (clicked === "rename") {
+        cancelThreadRename();
+        setRenamingProjectId(projectId);
+        setRenamingProjectTitle(project.name);
+        projectRenamingCommittedRef.current = false;
+        return;
+      }
       if (clicked === "copy-path") {
         copyPathToClipboard(project.cwd, { path: project.cwd });
         return;
@@ -262,6 +373,7 @@ export function useSidebarProjectActions({
       }
     },
     [
+      cancelThreadRename,
       clearComposerDraftForThread,
       clearProjectDraftThreadId,
       copyPathToClipboard,
@@ -378,6 +490,14 @@ export function useSidebarProjectActions({
   );
 
   return {
+    renamingProjectId,
+    renamingProjectTitle,
+    setRenamingProjectTitle,
+    onProjectRenamingInputMount,
+    hasProjectRenameCommitted,
+    markProjectRenameCommitted,
+    commitProjectRename,
+    cancelProjectRename,
     addProjectFromPath,
     handleAddProject,
     handlePickFolder,

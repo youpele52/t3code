@@ -3,6 +3,7 @@ import {
   PROVIDER_SEND_TURN_MAX_IMAGE_BYTES,
   type ApprovalRequestId,
   type ThreadId,
+  type UserInputQuestion,
 } from "@t3tools/contracts";
 import { useCallback } from "react";
 import {
@@ -15,6 +16,7 @@ import {
 import {
   derivePendingUserInputProgress,
   setPendingUserInputCustomAnswer,
+  togglePendingUserInputOptionSelection,
   type PendingUserInputDraftAnswer,
 } from "../../../logic/user-input";
 import { toastManager } from "../../ui/toast";
@@ -122,6 +124,7 @@ export interface UseApplyPromptReplacementInput {
   setComposerTrigger: React.Dispatch<React.SetStateAction<ComposerTrigger | null>>;
   activePendingProgress: ReturnType<typeof derivePendingUserInputProgress> | null;
   activePendingUserInput: { requestId: string } | null;
+  isOpencodePendingUserInputMode: boolean;
   setPendingUserInputAnswersByRequestId: React.Dispatch<
     React.SetStateAction<Record<string, Record<string, PendingUserInputDraftAnswer>>>
   >;
@@ -137,6 +140,7 @@ export function useApplyPromptReplacement(input: UseApplyPromptReplacementInput)
     setComposerTrigger,
     activePendingProgress,
     activePendingUserInput,
+    isOpencodePendingUserInputMode,
     setPendingUserInputAnswersByRequestId,
     composerEditorRef,
   } = input;
@@ -161,7 +165,7 @@ export function useApplyPromptReplacement(input: UseApplyPromptReplacementInput)
       const nextCursor = collapseExpandedComposerCursor(next.text, next.cursor);
       promptRef.current = next.text;
       const activePendingQuestion = activePendingProgress?.activeQuestion;
-      if (activePendingQuestion && activePendingUserInput) {
+      if (activePendingQuestion && activePendingUserInput && !isOpencodePendingUserInputMode) {
         setPendingUserInputAnswersByRequestId((existing) => ({
           ...existing,
           [activePendingUserInput.requestId]: {
@@ -191,6 +195,7 @@ export function useApplyPromptReplacement(input: UseApplyPromptReplacementInput)
       setComposerTrigger,
       activePendingProgress,
       activePendingUserInput,
+      isOpencodePendingUserInputMode,
       setPendingUserInputAnswersByRequestId,
       composerEditorRef,
     ],
@@ -200,10 +205,10 @@ export function useApplyPromptReplacement(input: UseApplyPromptReplacementInput)
 export interface UsePendingUserInputHandlersInput {
   activePendingUserInput: {
     requestId: ApprovalRequestId;
-    questions: ReadonlyArray<unknown>;
+    questions: ReadonlyArray<UserInputQuestion>;
   } | null;
   activePendingProgress: ReturnType<typeof derivePendingUserInputProgress> | null;
-  activePendingResolvedAnswers: Record<string, string> | null;
+  activePendingResolvedAnswers: Record<string, string | string[]> | null;
   promptRef: React.MutableRefObject<string>;
   setComposerCursor: React.Dispatch<React.SetStateAction<number>>;
   setComposerTrigger: React.Dispatch<React.SetStateAction<ComposerTrigger | null>>;
@@ -244,14 +249,20 @@ export function usePendingUserInputHandlers(input: UsePendingUserInputHandlersIn
     [activePendingUserInput, setPendingUserInputQuestionIndexByRequestId],
   );
 
-  const onSelectActivePendingUserInputOption = useCallback(
+  const onToggleActivePendingUserInputOption = useCallback(
     (questionId: string, optionLabel: string) => {
       if (!activePendingUserInput) return;
+      const question = activePendingUserInput.questions.find((entry) => entry.id === questionId);
+      if (!question) return;
       setPendingUserInputAnswersByRequestId((existing) => ({
         ...existing,
         [activePendingUserInput.requestId]: {
           ...existing[activePendingUserInput.requestId],
-          [questionId]: { selectedOptionLabel: optionLabel, customAnswer: "" },
+          [questionId]: togglePendingUserInputOptionSelection(
+            question,
+            existing[activePendingUserInput.requestId]?.[questionId],
+            optionLabel,
+          ),
         },
       }));
       promptRef.current = "";
@@ -325,7 +336,7 @@ export function usePendingUserInputHandlers(input: UsePendingUserInputHandlersIn
 
   return {
     setActivePendingUserInputQuestionIndex,
-    onSelectActivePendingUserInputOption,
+    onToggleActivePendingUserInputOption,
     onChangeActivePendingUserInputCustomAnswer,
     onAdvanceActivePendingUserInput,
     onPreviousActivePendingUserInputQuestion,

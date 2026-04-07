@@ -428,7 +428,9 @@ const makeCopilotAdapter = Effect.fn("makeCopilotAdapter")(function* (
     readThread: makeReadThread(sessionDeps),
     rollbackThread: makeRollbackThread(),
     stopAll: makeStopAll(sessionDeps),
-    streamEvents: Stream.fromQueue(runtimeEventQueue),
+    get streamEvents() {
+      return Stream.fromQueue(runtimeEventQueue);
+    },
   } satisfies CopilotAdapterShape;
 });
 

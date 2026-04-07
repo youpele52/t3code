@@ -1,6 +1,14 @@
 import Mime from "@effect/platform-node/Mime";
-import { Effect, FileSystem, Option, Path } from "effect";
-import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/unstable/http";
+import { Data, Effect, FileSystem, Layer, Option, Path } from "effect";
+import {
+  HttpClient,
+  HttpClientRequest,
+  HttpClientResponse,
+  HttpRouter,
+  HttpServerRequest,
+  HttpServerResponse,
+} from "effect/unstable/http";
+import { OtlpTracer } from "effect/unstable/observability";
 
 import {
   ATTACHMENTS_ROUTE_PREFIX,
@@ -9,6 +17,8 @@ import {
 } from "../attachments/attachmentPaths";
 import { resolveAttachmentPathById } from "../attachments/attachmentStore";
 import { ServerConfig } from "../startup/config";
+import { decodeOtlpTraceRecords } from "../observability/TraceRecord.ts";
+import { BrowserTraceCollector } from "../observability/Services/BrowserTraceCollector.ts";
 import { ProjectFaviconResolver } from "../project/Services/ProjectFaviconResolver";
 
 const PROJECT_FAVICON_CACHE_CONTROL = "public, max-age=3600";
@@ -194,4 +204,65 @@ export const staticAndDevRouteLayer = HttpRouter.add(
       contentType,
     });
   }),
+);
+
+const OTLP_TRACES_PROXY_PATH = "/api/observability/v1/traces";
+
+class DecodeOtlpTraceRecordsError extends Data.TaggedError("DecodeOtlpTraceRecordsError")<{
+  readonly cause: unknown;
+  readonly bodyJson: OtlpTracer.TraceData;
+}> {}
+
+export const otlpTracesProxyRouteLayer = HttpRouter.add(
+  "POST",
+  OTLP_TRACES_PROXY_PATH,
+  Effect.gen(function* () {
+    const request = yield* HttpServerRequest.HttpServerRequest;
+    const config = yield* ServerConfig;
+    const otlpTracesUrl = config.otlpTracesUrl;
+    const browserTraceCollector = yield* BrowserTraceCollector;
+    const httpClient = yield* HttpClient.HttpClient;
+    const bodyJson = (yield* request.json) as unknown as OtlpTracer.TraceData;
+
+    yield* Effect.try({
+      try: () => decodeOtlpTraceRecords(bodyJson),
+      catch: (cause) => new DecodeOtlpTraceRecordsError({ cause, bodyJson }),
+    }).pipe(
+      Effect.flatMap((records) => browserTraceCollector.record(records)),
+      Effect.catch((cause) =>
+        Effect.logWarning("Failed to decode browser OTLP traces", {
+          cause,
+          bodyJson,
+        }),
+      ),
+    );
+
+    if (otlpTracesUrl === undefined) {
+      return HttpServerResponse.empty({ status: 204 });
+    }
+
+    return yield* HttpClientRequest.post(otlpTracesUrl).pipe(
+      HttpClientRequest.bodyJson(bodyJson),
+      Effect.flatMap(httpClient.execute),
+      Effect.flatMap(HttpClientResponse.filterStatusOk),
+      Effect.as(HttpServerResponse.empty({ status: 204 })),
+      Effect.tapError((cause) =>
+        Effect.logWarning("Failed to export browser OTLP traces", {
+          cause,
+          otlpTracesUrl,
+        }),
+      ),
+      Effect.catch(() =>
+        Effect.succeed(HttpServerResponse.text("Trace export failed.", { status: 502 })),
+      ),
+    );
+  }),
+).pipe(
+  Layer.provide(
+    HttpRouter.cors({
+      allowedMethods: ["POST", "OPTIONS"],
+      allowedHeaders: ["content-type"],
+      maxAge: 600,
+    }),
+  ),
 );

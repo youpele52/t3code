@@ -59,8 +59,12 @@ export interface SidebarRenderedProjectItemProps extends RenderedProjectData {
   renamingThreadId: ThreadId | null;
   renamingTitle: string;
   setRenamingTitle: (title: string) => void;
-  renamingInputRef: MutableRefObject<HTMLInputElement | null>;
-  renamingCommittedRef: MutableRefObject<boolean>;
+  /** Callback ref for the rename input element — handles focus/select on mount. */
+  onRenamingInputMount: (element: HTMLInputElement | null) => void;
+  /** Returns whether the rename has already been committed. */
+  hasRenameCommitted: () => boolean;
+  /** Marks the rename as committed to prevent double-commit on blur. */
+  markRenameCommitted: () => void;
   confirmingArchiveThreadId: ThreadId | null;
   setConfirmingArchiveThreadId: Dispatch<SetStateAction<ThreadId | null>>;
   confirmArchiveButtonRefs: MutableRefObject<Map<ThreadId, HTMLButtonElement>>;
@@ -71,6 +75,22 @@ export interface SidebarRenderedProjectItemProps extends RenderedProjectData {
     worktreePath: string | null;
     envMode: SidebarNewThreadEnvMode;
   } | null;
+  // Project rename
+  renamingProjectId: ProjectId | null;
+  renamingProjectTitle: string;
+  setRenamingProjectTitle: (title: string) => void;
+  /** Callback ref for the rename input element — handles focus/select on mount. */
+  onProjectRenamingInputMount: (element: HTMLInputElement | null) => void;
+  /** Returns whether the project rename has already been committed. */
+  hasProjectRenameCommitted: () => boolean;
+  /** Marks the project rename as committed to prevent double-commit on blur. */
+  markProjectRenameCommitted: () => void;
+  commitProjectRename: (
+    projectId: ProjectId,
+    newTitle: string,
+    originalTitle: string,
+  ) => Promise<void>;
+  cancelProjectRename: () => void;
   attachThreadListAutoAnimateRef: (node: HTMLElement | null) => void;
   handleProjectTitlePointerDownCapture: (event: PointerEvent<HTMLButtonElement>) => void;
   handleProjectTitleClick: (event: MouseEvent<HTMLButtonElement>, projectId: ProjectId) => void;
@@ -131,13 +151,22 @@ export function SidebarRenderedProjectItem({
   renamingThreadId,
   renamingTitle,
   setRenamingTitle,
-  renamingInputRef,
-  renamingCommittedRef,
+  onRenamingInputMount,
+  hasRenameCommitted,
+  markRenameCommitted,
   confirmingArchiveThreadId,
   setConfirmingArchiveThreadId,
   confirmArchiveButtonRefs,
   activeThread,
   activeDraftThread,
+  renamingProjectId,
+  renamingProjectTitle,
+  setRenamingProjectTitle,
+  onProjectRenamingInputMount,
+  hasProjectRenameCommitted,
+  markProjectRenameCommitted,
+  commitProjectRename,
+  cancelProjectRename,
   attachThreadListAutoAnimateRef,
   handleProjectTitlePointerDownCapture,
   handleProjectTitleClick,
@@ -202,9 +231,38 @@ export function SidebarRenderedProjectItem({
             />
           )}
           <ProjectFavicon cwd={project.cwd} />
-          <span className="flex-1 truncate text-xs font-medium text-foreground/90">
-            {project.name}
-          </span>
+          {renamingProjectId === project.id ? (
+            <input
+              ref={onProjectRenamingInputMount}
+              className="min-w-0 flex-1 truncate rounded border border-ring bg-transparent px-0.5 text-xs font-medium text-foreground/90 outline-none"
+              value={renamingProjectTitle}
+              onChange={(event) => setRenamingProjectTitle(event.target.value)}
+              onKeyDown={(event) => {
+                event.stopPropagation();
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  markProjectRenameCommitted();
+                  void commitProjectRename(project.id, renamingProjectTitle, project.name);
+                } else if (event.key === "Escape") {
+                  event.preventDefault();
+                  markProjectRenameCommitted();
+                  cancelProjectRename();
+                }
+              }}
+              onBlur={() => {
+                if (!hasProjectRenameCommitted()) {
+                  markProjectRenameCommitted();
+                  void commitProjectRename(project.id, renamingProjectTitle, project.name);
+                }
+              }}
+              onClick={(event) => event.stopPropagation()}
+              onPointerDown={(event) => event.stopPropagation()}
+            />
+          ) : (
+            <span className="flex-1 truncate text-xs font-medium text-foreground/90">
+              {project.name}
+            </span>
+          )}
         </SidebarMenuButton>
         <Tooltip>
           <TooltipTrigger
@@ -292,8 +350,9 @@ export function SidebarRenderedProjectItem({
               renamingThreadId={renamingThreadId}
               renamingTitle={renamingTitle}
               setRenamingTitle={setRenamingTitle}
-              renamingInputRef={renamingInputRef}
-              renamingCommittedRef={renamingCommittedRef}
+              onRenamingInputMount={onRenamingInputMount}
+              hasRenameCommitted={hasRenameCommitted}
+              markRenameCommitted={markRenameCommitted}
               confirmingArchiveThreadId={confirmingArchiveThreadId}
               setConfirmingArchiveThreadId={setConfirmingArchiveThreadId}
               confirmArchiveButtonRefs={confirmArchiveButtonRefs}

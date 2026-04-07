@@ -27,6 +27,7 @@ export interface UseComposerCommandHandlersInput {
   interactionMode: ProviderInteractionMode;
   activePendingProgress: ReturnType<typeof derivePendingUserInputProgress> | null;
   activePendingUserInput: { requestId: string } | null;
+  isOpencodePendingUserInputMode: boolean;
   setComposerCursor: React.Dispatch<React.SetStateAction<number>>;
   setComposerTrigger: React.Dispatch<React.SetStateAction<ComposerTrigger | null>>;
   setComposerHighlightedItemId: React.Dispatch<React.SetStateAction<string | null>>;
@@ -96,6 +97,7 @@ export function useComposerCommandHandlers(input: UseComposerCommandHandlersInpu
     composerHighlightedItemId,
     activePendingProgress,
     activePendingUserInput,
+    isOpencodePendingUserInputMode,
     setComposerCursor,
     setComposerTrigger,
     setComposerHighlightedItemId,
@@ -233,7 +235,11 @@ export function useComposerCommandHandlers(input: UseComposerCommandHandlersInpu
       cursorAdjacentToMention: boolean,
       terminalContextIds: string[],
     ) => {
-      if (activePendingProgress?.activeQuestion && activePendingUserInput) {
+      if (
+        activePendingProgress?.activeQuestion &&
+        activePendingUserInput &&
+        !isOpencodePendingUserInputMode
+      ) {
         onChangeActivePendingUserInputCustomAnswer(
           activePendingProgress.activeQuestion.id,
           nextPrompt,
@@ -259,6 +265,7 @@ export function useComposerCommandHandlers(input: UseComposerCommandHandlersInpu
     [
       activePendingProgress?.activeQuestion,
       activePendingUserInput,
+      isOpencodePendingUserInputMode,
       composerTerminalContexts,
       onChangeActivePendingUserInputCustomAnswer,
       setPrompt,

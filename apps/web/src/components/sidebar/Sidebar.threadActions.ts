@@ -16,6 +16,8 @@ export interface SidebarThreadActionsInput {
   appSettings: ReturnType<typeof useSettings>;
   /** Navigates to a thread route and clears multi-selection. */
   navigateToThreadRoute: (threadId: ThreadId) => void;
+  /** Called when a thread rename starts — cancels any in-progress project rename. */
+  cancelProjectRename: () => void;
 }
 
 export interface SidebarThreadActionsOutput {
@@ -23,8 +25,12 @@ export interface SidebarThreadActionsOutput {
   renamingThreadId: ThreadId | null;
   renamingTitle: string;
   setRenamingTitle: (title: string) => void;
-  renamingInputRef: React.MutableRefObject<HTMLInputElement | null>;
-  renamingCommittedRef: React.MutableRefObject<boolean>;
+  /** Callback ref for the rename input element — handles focus/select on mount. */
+  onRenamingInputMount: (element: HTMLInputElement | null) => void;
+  /** Returns whether the rename has already been committed. */
+  hasRenameCommitted: () => boolean;
+  /** Marks the rename as committed to prevent double-commit on blur. */
+  markRenameCommitted: () => void;
   cancelRename: () => void;
   commitRename: (threadId: ThreadId, newTitle: string, originalTitle: string) => Promise<void>;
   // Archive confirm state
@@ -63,6 +69,7 @@ export function useSidebarThreadActions({
   projectCwdById,
   appSettings,
   navigateToThreadRoute,
+  cancelProjectRename,
 }: SidebarThreadActionsInput): SidebarThreadActionsOutput {
   const markThreadUnread = useUiStateStore((store) => store.markThreadUnread);
   const selectedThreadIds = useThreadSelectionStore((s) => s.selectedThreadIds);
@@ -124,6 +131,24 @@ export function useSidebarThreadActions({
   const cancelRename = useCallback(() => {
     setRenamingThreadId(null);
     renamingInputRef.current = null;
+  }, []);
+
+  const onRenamingInputMount = useCallback((element: HTMLInputElement | null) => {
+    if (element && renamingInputRef.current !== element) {
+      renamingInputRef.current = element;
+      element.focus();
+      element.select();
+      return;
+    }
+    if (element === null && renamingInputRef.current !== null) {
+      renamingInputRef.current = null;
+    }
+  }, []);
+
+  const hasRenameCommitted = useCallback(() => renamingCommittedRef.current, []);
+
+  const markRenameCommitted = useCallback(() => {
+    renamingCommittedRef.current = true;
   }, []);
 
   const commitRename = useCallback(
@@ -299,6 +324,7 @@ export function useSidebarThreadActions({
       );
 
       if (clicked === "rename") {
+        cancelProjectRename();
         setRenamingThreadId(threadId);
         setRenamingTitle(thread.title);
         renamingCommittedRef.current = false;
@@ -338,6 +364,7 @@ export function useSidebarThreadActions({
     },
     [
       appSettings.confirmThreadDelete,
+      cancelProjectRename,
       copyPathToClipboard,
       copyThreadIdToClipboard,
       deleteThread,
@@ -404,8 +431,9 @@ export function useSidebarThreadActions({
     renamingThreadId,
     renamingTitle,
     setRenamingTitle,
-    renamingInputRef,
-    renamingCommittedRef,
+    onRenamingInputMount,
+    hasRenameCommitted,
+    markRenameCommitted,
     cancelRename,
     commitRename,
     confirmingArchiveThreadId,

@@ -423,7 +423,32 @@ export function makeMapEvent(
             options: [],
           };
 
+          // HACK: Emit a content.delta so the question is visible as a normal
+          // assistant message in the conversation stream.  OpenCode's
+          // tui.prompt.append events carry free-text questions with no
+          // predefined options, so the pending-input panel alone may not be
+          // sufficient for the user to notice the prompt.  Rendering the
+          // question inline (markdown-formatted) ensures it is always visible.
+          const textEventId = yield* nextEventId;
+          const markdownQuestion = `**${question.header}:** ${questionText}`;
+          const contentDelta: ProviderRuntimeEvent = {
+            ...eventBase({
+              eventId: textEventId,
+              createdAt,
+              threadId: session.threadId,
+              ...(turnId ? { turnId } : {}),
+              itemId: `opencode-prompt-${requestId}`,
+              raw,
+            }),
+            type: "content.delta",
+            payload: {
+              streamKind: "assistant_text",
+              delta: markdownQuestion,
+            },
+          };
+
           return [
+            contentDelta,
             {
               ...eventBase({
                 eventId: stamp.eventId,

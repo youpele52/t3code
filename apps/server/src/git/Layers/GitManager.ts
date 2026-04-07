@@ -1,7 +1,23 @@
 import { realpathSync } from "node:fs";
 
-import { Cache, Duration, Effect, Exit, FileSystem, Layer, Option, Path, Ref } from "effect";
-import { GitActionProgressPhase, GitRunStackedActionResult } from "@t3tools/contracts";
+import {
+  Cache,
+  Duration,
+  Effect,
+  Exit,
+  FileSystem,
+  Layer,
+  Option,
+  Path,
+  PlatformError,
+  Ref,
+} from "effect";
+import {
+  GitActionProgressPhase,
+  GitRunStackedActionResult,
+  type GitStatusLocalResult,
+  type GitStatusRemoteResult,
+} from "@t3tools/contracts";
 
 import { GitManager, type GitManagerShape } from "../Services/GitManager.ts";
 import { GitCore, GitStatusDetails } from "../Services/GitCore.ts";
@@ -28,11 +44,41 @@ import { makePrLookup } from "./GitManager.prLookup.ts";
 import { makeCommitStep } from "./GitManager.commitStep.ts";
 import { makePrStep } from "./GitManager.prStep.ts";
 
-const STATUS_RESULT_CACHE_TTL = Duration.seconds(1);
+const LOCAL_STATUS_CACHE_TTL = Duration.seconds(1);
+const REMOTE_STATUS_CACHE_TTL = Duration.seconds(5);
 const STATUS_RESULT_CACHE_CAPACITY = 2_048;
 
 function isNotGitRepositoryError(error: import("@t3tools/contracts").GitCommandError): boolean {
   return error.message.toLowerCase().includes("not a git repository");
+}
+
+function isMissingDirectoryError(error: unknown): error is PlatformError.PlatformError {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "_tag" in error &&
+    error._tag === "PlatformError" &&
+    "reason" in error &&
+    typeof error.reason === "object" &&
+    error.reason !== null &&
+    "_tag" in error.reason &&
+    error.reason._tag === "NotFound"
+  );
+}
+
+function emptyLocalStatus(): GitStatusDetails {
+  return {
+    isRepo: false,
+    hasOriginRemote: false,
+    isDefaultBranch: false,
+    branch: null,
+    upstreamRef: null,
+    hasWorkingTreeChanges: false,
+    workingTree: { files: [], insertions: 0, deletions: 0 },
+    hasUpstream: false,
+    aheadCount: 0,
+    behindCount: 0,
+  } satisfies GitStatusDetails;
 }
 
 function canonicalizeExistingPath(value: string): string {
@@ -72,24 +118,28 @@ export const makeGitManager = Effect.fn("makeGitManager")(function* () {
   const { runCommitStep, runFeatureBranchStep } = commitStep;
   const { runPrStep } = prStep;
 
-  // ── Status cache ────────────────────────────────────────────────────────
+  // ── Status caches ────────────────────────────────────────────────────────
   const normalizeStatusCacheKey = (cwd: string) => canonicalizeExistingPath(cwd);
-  const readStatus = Effect.fn("readStatus")(function* (cwd: string) {
+
+  const readLocalStatus = Effect.fn("readLocalStatus")(function* (cwd: string) {
+    const details = yield* gitCore.statusDetailsLocal(cwd).pipe(
+      Effect.catchIf(isNotGitRepositoryError, () => Effect.succeed(emptyLocalStatus())),
+      Effect.catchIf(isMissingDirectoryError, () => Effect.succeed(emptyLocalStatus())),
+    );
+    return {
+      isRepo: details.isRepo,
+      hasOriginRemote: details.hasOriginRemote,
+      isDefaultBranch: details.isDefaultBranch,
+      branch: details.branch,
+      hasWorkingTreeChanges: details.hasWorkingTreeChanges,
+      workingTree: details.workingTree,
+    } satisfies GitStatusLocalResult;
+  });
+
+  const readRemoteStatus = Effect.fn("readRemoteStatus")(function* (cwd: string) {
     const details = yield* gitCore.statusDetails(cwd).pipe(
-      Effect.catchIf(isNotGitRepositoryError, () =>
-        Effect.succeed({
-          isRepo: false,
-          hasOriginRemote: false,
-          isDefaultBranch: false,
-          branch: null,
-          upstreamRef: null,
-          hasWorkingTreeChanges: false,
-          workingTree: { files: [], insertions: 0, deletions: 0 },
-          hasUpstream: false,
-          aheadCount: 0,
-          behindCount: 0,
-        } satisfies GitStatusDetails),
-      ),
+      Effect.catchIf(isNotGitRepositoryError, () => Effect.succeed(emptyLocalStatus())),
+      Effect.catchIf(isMissingDirectoryError, () => Effect.succeed(emptyLocalStatus())),
     );
 
     const pr =
@@ -104,30 +154,80 @@ export const makeGitManager = Effect.fn("makeGitManager")(function* () {
         : null;
 
     return {
-      isRepo: details.isRepo,
-      hasOriginRemote: details.hasOriginRemote,
-      isDefaultBranch: details.isDefaultBranch,
-      branch: details.branch,
-      hasWorkingTreeChanges: details.hasWorkingTreeChanges,
-      workingTree: details.workingTree,
       hasUpstream: details.hasUpstream,
       aheadCount: details.aheadCount,
       behindCount: details.behindCount,
       pr,
+    } satisfies GitStatusRemoteResult;
+  });
+
+  const readStatus = Effect.fn("readStatus")(function* (cwd: string) {
+    const [local, remote] = yield* Effect.all([readLocalStatus(cwd), readRemoteStatus(cwd)], {
+      concurrency: "unbounded",
+    });
+    return {
+      isRepo: local.isRepo,
+      hasOriginRemote: local.hasOriginRemote,
+      isDefaultBranch: local.isDefaultBranch,
+      branch: local.branch,
+      hasWorkingTreeChanges: local.hasWorkingTreeChanges,
+      workingTree: local.workingTree,
+      hasUpstream: remote.hasUpstream,
+      aheadCount: remote.aheadCount,
+      behindCount: remote.behindCount,
+      pr: remote.pr,
     };
+  });
+
+  const localStatusResultCache = yield* Cache.makeWith({
+    capacity: STATUS_RESULT_CACHE_CAPACITY,
+    lookup: readLocalStatus,
+    timeToLive: (exit) => (Exit.isSuccess(exit) ? LOCAL_STATUS_CACHE_TTL : Duration.zero),
+  });
+  const remoteStatusResultCache = yield* Cache.makeWith({
+    capacity: STATUS_RESULT_CACHE_CAPACITY,
+    lookup: readRemoteStatus,
+    timeToLive: (exit) => (Exit.isSuccess(exit) ? REMOTE_STATUS_CACHE_TTL : Duration.zero),
   });
   const statusResultCache = yield* Cache.makeWith({
     capacity: STATUS_RESULT_CACHE_CAPACITY,
     lookup: readStatus,
-    timeToLive: (exit) => (Exit.isSuccess(exit) ? STATUS_RESULT_CACHE_TTL : Duration.zero),
+    timeToLive: (exit) => (Exit.isSuccess(exit) ? LOCAL_STATUS_CACHE_TTL : Duration.zero),
   });
-  const invalidateStatusResultCache = (cwd: string) =>
-    Cache.invalidate(statusResultCache, normalizeStatusCacheKey(cwd));
+
+  const invalidateLocalStatus: GitManagerShape["invalidateLocalStatus"] = (cwd) =>
+    Cache.invalidate(localStatusResultCache, normalizeStatusCacheKey(cwd));
+
+  const invalidateRemoteStatus: GitManagerShape["invalidateRemoteStatus"] = (cwd) =>
+    Cache.invalidate(remoteStatusResultCache, normalizeStatusCacheKey(cwd));
+
+  const invalidateStatus: GitManagerShape["invalidateStatus"] = (cwd) =>
+    Effect.all(
+      [
+        Cache.invalidate(statusResultCache, normalizeStatusCacheKey(cwd)),
+        Cache.invalidate(localStatusResultCache, normalizeStatusCacheKey(cwd)),
+        Cache.invalidate(remoteStatusResultCache, normalizeStatusCacheKey(cwd)),
+      ],
+      { concurrency: "unbounded", discard: true },
+    );
+
+  // Legacy alias used internally
+  const invalidateStatusResultCache = (cwd: string) => invalidateStatus(cwd);
 
   // ── Public API methods ──────────────────────────────────────────────────
   const status: GitManagerShape["status"] = Effect.fn("status")(function* (input) {
     return yield* Cache.get(statusResultCache, normalizeStatusCacheKey(input.cwd));
   });
+
+  const localStatus: GitManagerShape["localStatus"] = Effect.fn("localStatus")(function* (input) {
+    return yield* Cache.get(localStatusResultCache, normalizeStatusCacheKey(input.cwd));
+  });
+
+  const remoteStatus: GitManagerShape["remoteStatus"] = Effect.fn("remoteStatus")(
+    function* (input) {
+      return yield* Cache.get(remoteStatusResultCache, normalizeStatusCacheKey(input.cwd));
+    },
+  );
 
   const resolvePullRequest: GitManagerShape["resolvePullRequest"] = Effect.fn("resolvePullRequest")(
     function* (input) {
@@ -488,6 +588,11 @@ export const makeGitManager = Effect.fn("makeGitManager")(function* () {
 
   return {
     status,
+    localStatus,
+    remoteStatus,
+    invalidateLocalStatus,
+    invalidateRemoteStatus,
+    invalidateStatus,
     resolvePullRequest,
     preparePullRequestThread,
     runStackedAction,

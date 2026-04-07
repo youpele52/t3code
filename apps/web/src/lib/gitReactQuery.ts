@@ -61,7 +61,7 @@ export function gitStatusQueryOptions(cwd: string | null) {
     queryFn: async () => {
       const api = ensureNativeApi();
       if (!cwd) throw new Error("Git status is unavailable.");
-      return api.git.status({ cwd });
+      return api.git.refreshStatus({ cwd });
     },
     enabled: cwd !== null,
     staleTime: GIT_STATUS_STALE_TIME_MS,

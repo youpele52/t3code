@@ -57,7 +57,13 @@ export function useChatViewEffects({ base, composer, thread, runtime }: ChatView
     threadId,
   } = base;
   const { composerMenuItems, composerMenuOpen, gitCwd } = composer;
-  const { activePendingProgress, activePendingUserInput, phase, resetLocalDispatch } = thread;
+  const {
+    activePendingProgress,
+    activePendingUserInput,
+    isOpencodePendingUserInputMode,
+    phase,
+    resetLocalDispatch,
+  } = thread;
   const { closePullRequestDialog, focusComposer } = runtime;
   const lastSyncedPendingInputRef = useRef<{
     requestId: string | null;
@@ -66,7 +72,7 @@ export function useChatViewEffects({ base, composer, thread, runtime }: ChatView
 
   useEffect(() => {
     const nextCustomAnswer = activePendingProgress?.customAnswer;
-    if (typeof nextCustomAnswer !== "string") {
+    if (isOpencodePendingUserInputMode || typeof nextCustomAnswer !== "string") {
       lastSyncedPendingInputRef.current = null;
       return;
     }
@@ -96,6 +102,7 @@ export function useChatViewEffects({ base, composer, thread, runtime }: ChatView
     activePendingProgress?.activeQuestion?.id,
     activePendingProgress?.customAnswer,
     activePendingUserInput?.requestId,
+    isOpencodePendingUserInputMode,
     collapseExpandedComposerCursor,
     detectComposerTrigger,
     promptRef,

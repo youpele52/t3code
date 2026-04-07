@@ -167,7 +167,7 @@ export function useChatViewRuntime({ base, thread, composer, timeline }: ChatVie
     : false;
 
   const composerFooterActionLayoutKey = useMemo(() => {
-    if (thread.activePendingProgress) {
+    if (thread.activePendingProgress && !thread.isOpencodePendingUserInputMode) {
       return `pending:${thread.activePendingProgress.questionIndex}:${thread.activePendingProgress.isLastQuestion}:${activePendingIsResponding}`;
     }
     if (thread.phase === "running") {
@@ -183,6 +183,7 @@ export function useChatViewRuntime({ base, thread, composer, timeline }: ChatVie
     base.isConnecting,
     base.prompt,
     thread.activePendingProgress,
+    thread.isOpencodePendingUserInputMode,
     thread.isPreparingWorktree,
     thread.isSendBusy,
     thread.phase,

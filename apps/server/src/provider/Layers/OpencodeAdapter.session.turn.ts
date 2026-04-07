@@ -234,8 +234,11 @@ export function makeTurnMethods(deps: TurnMethodDeps) {
       );
       yield* emitFn([resolvedEvent]);
 
-      // Extract the answer text — the single question id equals the requestId.
-      const answerValue = answers[requestId];
+      const answerValue =
+        typeof answers[requestId] === "string"
+          ? answers[requestId]
+          : (Object.values(answers).find((value): value is string => typeof value === "string") ??
+            "");
       const answerText =
         typeof answerValue === "string" && answerValue.trim().length > 0 ? answerValue.trim() : "";
 

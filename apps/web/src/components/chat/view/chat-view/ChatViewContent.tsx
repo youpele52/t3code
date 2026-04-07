@@ -65,6 +65,10 @@ export function ChatViewContent({
     activeApprovalRequestId !== null &&
     runtime.turnActions.respondingRequestIds.includes(activeApprovalRequestId);
 
+  // Prefer the active worktree path so proposed-plan saves land in the right
+  // directory when a thread is running in a worktree rather than project root.
+  const workspaceRoot = base.activeThread?.worktreePath ?? base.activeProject?.cwd ?? undefined;
+
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden bg-background">
       <header
@@ -161,7 +165,7 @@ export function ChatViewContent({
                 markdownCwd={composer.gitCwd ?? undefined}
                 resolvedTheme={base.resolvedTheme}
                 timestampFormat={base.timestampFormat}
-                workspaceRoot={base.activeProject?.cwd ?? undefined}
+                workspaceRoot={workspaceRoot}
               />
             </div>
 
@@ -266,7 +270,7 @@ export function ChatViewContent({
             activePlan={thread.activePlan}
             activeProposedPlan={thread.sidebarProposedPlan}
             markdownCwd={composer.gitCwd ?? undefined}
-            workspaceRoot={base.activeProject?.cwd ?? undefined}
+            workspaceRoot={workspaceRoot}
             timestampFormat={base.timestampFormat}
             onClose={() => {
               base.setPlanSidebarOpen(false);

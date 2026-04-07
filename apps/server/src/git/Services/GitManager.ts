@@ -15,6 +15,8 @@ import {
   GitRunStackedActionInput,
   GitRunStackedActionResult,
   GitStatusInput,
+  GitStatusLocalResult,
+  GitStatusRemoteResult,
   GitStatusResult,
 } from "@t3tools/contracts";
 import { ServiceMap } from "effect";
@@ -40,6 +42,35 @@ export interface GitManagerShape {
   readonly status: (
     input: GitStatusInput,
   ) => Effect.Effect<GitStatusResult, GitManagerServiceError>;
+
+  /**
+   * Read only the local portion of Git status (no upstream fetch).
+   */
+  readonly localStatus: (
+    input: GitStatusInput,
+  ) => Effect.Effect<GitStatusLocalResult, GitManagerServiceError>;
+
+  /**
+   * Read only the remote portion of Git status (ahead/behind + PR).
+   */
+  readonly remoteStatus: (
+    input: GitStatusInput,
+  ) => Effect.Effect<GitStatusRemoteResult, GitManagerServiceError>;
+
+  /**
+   * Invalidate the local status cache for the given cwd.
+   */
+  readonly invalidateLocalStatus: (cwd: string) => Effect.Effect<void>;
+
+  /**
+   * Invalidate the remote status cache for the given cwd.
+   */
+  readonly invalidateRemoteStatus: (cwd: string) => Effect.Effect<void>;
+
+  /**
+   * Invalidate both local and remote status caches for the given cwd.
+   */
+  readonly invalidateStatus: (cwd: string) => Effect.Effect<void>;
 
   /**
    * Resolve a pull request by URL/number against the current repository.

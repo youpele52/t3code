@@ -36,7 +36,9 @@ import {
 } from "./checkpointing/Services/CheckpointDiffQuery.ts";
 import { GitCore, type GitCoreShape } from "./git/Services/GitCore.ts";
 import { GitManager, type GitManagerShape } from "./git/Services/GitManager.ts";
+import { GitStatusBroadcaster } from "./git/Services/GitStatusBroadcaster.ts";
 import { Keybindings, type KeybindingsShape } from "./keybindings/keybindings.ts";
+import { BrowserTraceCollector } from "./observability/Services/BrowserTraceCollector.ts";
 import { Open, type OpenShape } from "./utils/open.ts";
 import {
   OrchestrationEngineService,
@@ -225,6 +227,13 @@ const buildAppUnderTest = (options?: {
         }),
       ),
       Layer.provide(
+        Layer.mock(GitStatusBroadcaster)({
+          subscribe: () => Effect.succeed(Stream.empty),
+          invalidateLocal: () => Effect.void,
+          invalidateRemote: () => Effect.void,
+        }),
+      ),
+      Layer.provide(
         Layer.mock(ProjectSetupScriptRunner)({
           runForThread: () => Effect.succeed({ status: "no-script" as const }),
           ...options?.layers?.projectSetupScriptRunner,
@@ -283,6 +292,11 @@ const buildAppUnderTest = (options?: {
           markHttpListening: Effect.void,
           enqueueCommand: (effect) => effect,
           ...options?.layers?.serverRuntimeStartup,
+        }),
+      ),
+      Layer.provide(
+        Layer.mock(BrowserTraceCollector)({
+          record: () => Effect.void,
         }),
       ),
       Layer.provide(workspaceAndProjectServicesLayer),
@@ -973,8 +987,8 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
                 worktree: { path: "/tmp/wt", branch: "feature/demo" },
               }),
             removeWorktree: () => Effect.void,
-            createBranch: () => Effect.void,
-            checkoutBranch: () => Effect.void,
+            createBranch: () => Effect.succeed({ branch: "feature/demo" }),
+            checkoutBranch: () => Effect.succeed({ branch: "feature/demo" }),
             initRepo: () => Effect.void,
           },
         },
@@ -983,7 +997,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       const wsUrl = yield* getWsServerUrl("/ws");
 
       const status = yield* Effect.scoped(
-        withWsRpcClient(wsUrl, (client) => client[WS_METHODS.gitStatus]({ cwd: "/tmp/repo" })),
+        withWsRpcClient(wsUrl, (client) =>
+          client[WS_METHODS.gitRefreshStatus]({ cwd: "/tmp/repo" }),
+        ),
       );
       assert.equal(status.branch, "main");
 

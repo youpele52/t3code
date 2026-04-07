@@ -1,13 +1,12 @@
-import {
-  type EditorId,
-  type ProjectScript,
-  type ResolvedKeybindingsConfig,
-  type ThreadId,
+import type {
+  EditorId,
+  ProjectScript,
+  ResolvedKeybindingsConfig,
+  ThreadId,
 } from "@t3tools/contracts";
 import { memo } from "react";
 import GitActionsControl from "../../git/GitActionsControl";
 import { DiffIcon, PanelLeftCloseIcon, PanelLeftIcon, TerminalSquareIcon } from "lucide-react";
-import { Badge } from "../../ui/badge";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import ProjectScriptsControl, {
   type NewProjectScriptInput,
@@ -16,6 +15,11 @@ import { Toggle } from "../../ui/toggle";
 import { useSidebar } from "../../ui/sidebar";
 import { OpenInPicker } from "./OpenInPicker";
 import { useIsThreadRunning } from "../../../stores/main";
+
+const truncateThreadName = (name: string, maxLength: number = 20): string => {
+  if (name.length <= maxLength) return name;
+  return `${name.slice(0, maxLength)}...`;
+};
 
 interface ChatHeaderProps {
   activeThreadId: ThreadId;
@@ -78,37 +82,38 @@ export const ChatHeader = memo(function ChatHeader({
           className="min-w-0 shrink truncate text-sm font-medium text-foreground"
           title={activeThreadTitle}
         >
-          {activeThreadTitle}
+          {activeProjectName && `${activeProjectName} > `}
+          <span className="text-muted-foreground">
+            {truncateThreadName(activeThreadTitle)}
+            <span className="ml-3">
+              {isThreadRunning && (
+                <span
+                  aria-hidden="true"
+                  title="Agent is working"
+                  className="inline-flex items-center gap-[3px] pr-1"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="h-1 w-1 animate-pulse rounded-full bg-primary"
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="h-1 w-1 animate-pulse rounded-full bg-primary [animation-delay:200ms]"
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="h-1 w-1 animate-pulse rounded-full bg-primary [animation-delay:400ms]"
+                  />
+                </span>
+              )}
+            </span>
+          </span>
         </h2>
-        {activeProjectName && (
-          <Badge variant="outline" className="shrink-0 overflow-hidden">
-            <span className="truncate">{activeProjectName}</span>
-          </Badge>
-        )}
         {activeProjectName && !isGitRepo && (
-          <Badge variant="outline" className="shrink-0 text-[10px] text-amber-700">
-            No Git
-          </Badge>
+          <span className="shrink-0 text-[10px] text-amber-700">No Git</span>
         )}
       </div>
       <div className="flex shrink-0 items-center justify-end gap-2 @3xl/header-actions:gap-3">
-        {isThreadRunning && (
-          <span
-            aria-hidden="true"
-            title="Agent is working"
-            className="inline-flex items-center gap-[3px] pr-1"
-          >
-            <span aria-hidden="true" className="h-1 w-1 animate-pulse rounded-full bg-primary" />
-            <span
-              aria-hidden="true"
-              className="h-1 w-1 animate-pulse rounded-full bg-primary [animation-delay:200ms]"
-            />
-            <span
-              aria-hidden="true"
-              className="h-1 w-1 animate-pulse rounded-full bg-primary [animation-delay:400ms]"
-            />
-          </span>
-        )}
         {activeProjectScripts && (
           <ProjectScriptsControl
             scripts={activeProjectScripts}

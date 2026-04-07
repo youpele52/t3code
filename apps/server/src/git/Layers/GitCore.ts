@@ -43,6 +43,7 @@ const makeGitCore = Effect.fn("makeGitCore")(function* (options?: {
     execute,
     status: statusOps.status,
     statusDetails: statusOps.statusDetails,
+    statusDetailsLocal: statusOps.statusDetailsLocal,
     prepareCommitContext: statusOps.prepareCommitContext,
     commit: statusOps.commit,
     pushCurrentBranch: statusOps.pushCurrentBranch,

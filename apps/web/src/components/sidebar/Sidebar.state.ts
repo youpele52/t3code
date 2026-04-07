@@ -181,12 +181,27 @@ export function useSidebarState(): SidebarState {
     [navigate],
   );
 
+  // ── Stable forwarder refs for cross-hook cancellation ─────────────────────
+  // These break the circular initialisation order between thread and project sub-hooks
+  // without violating hook call order rules.
+  const cancelProjectRenameRef = useRef<(() => void) | null>(null);
+  const cancelThreadRenameRef = useRef<(() => void) | null>(null);
+
+  const forwardCancelProjectRename = useCallback(() => {
+    cancelProjectRenameRef.current?.();
+  }, []);
+
+  const forwardCancelThreadRename = useCallback(() => {
+    cancelThreadRenameRef.current?.();
+  }, []);
+
   // ── Thread actions sub-hook ────────────────────────────────────────────────
   const threadActions = useSidebarThreadActions({
     sidebarThreadsById,
     projectCwdById,
     appSettings,
     navigateToThreadRoute,
+    cancelProjectRename: forwardCancelProjectRename,
   });
 
   // ── Project actions sub-hook ───────────────────────────────────────────────
@@ -213,7 +228,12 @@ export function useSidebarState(): SidebarState {
     copyPathToClipboard,
     focusMostRecentThreadForProject,
     handleNewThread,
+    cancelThreadRename: forwardCancelThreadRename,
   });
+
+  // Populate the forwarder refs after both sub-hooks are initialised.
+  cancelProjectRenameRef.current = projectActions.cancelProjectRename;
+  cancelThreadRenameRef.current = threadActions.cancelRename;
 
   // ── Rendered projects + jump hints + keyboard nav sub-hook ────────────────
   const renderedProjectsState = useSidebarRenderedProjects({
@@ -259,13 +279,22 @@ export function useSidebarState(): SidebarState {
       renamingThreadId: threadActions.renamingThreadId,
       renamingTitle: threadActions.renamingTitle,
       setRenamingTitle: threadActions.setRenamingTitle,
-      renamingInputRef: threadActions.renamingInputRef,
-      renamingCommittedRef: threadActions.renamingCommittedRef,
+      onRenamingInputMount: threadActions.onRenamingInputMount,
+      hasRenameCommitted: threadActions.hasRenameCommitted,
+      markRenameCommitted: threadActions.markRenameCommitted,
       confirmingArchiveThreadId: threadActions.confirmingArchiveThreadId,
       setConfirmingArchiveThreadId: threadActions.setConfirmingArchiveThreadId,
       confirmArchiveButtonRefs: threadActions.confirmArchiveButtonRefs,
       activeThread,
       activeDraftThread,
+      renamingProjectId: projectActions.renamingProjectId,
+      renamingProjectTitle: projectActions.renamingProjectTitle,
+      setRenamingProjectTitle: projectActions.setRenamingProjectTitle,
+      onProjectRenamingInputMount: projectActions.onProjectRenamingInputMount,
+      hasProjectRenameCommitted: projectActions.hasProjectRenameCommitted,
+      markProjectRenameCommitted: projectActions.markProjectRenameCommitted,
+      commitProjectRename: projectActions.commitProjectRename,
+      cancelProjectRename: projectActions.cancelProjectRename,
       attachThreadListAutoAnimateRef: renderedProjectsState.attachThreadListAutoAnimateRef,
       handleProjectTitlePointerDownCapture: projectActions.handleProjectTitlePointerDownCapture,
       handleProjectTitleClick: projectActions.handleProjectTitleClick,
@@ -333,11 +362,20 @@ export function useSidebarState(): SidebarState {
     handleAddProject: projectActions.handleAddProject,
     handlePickFolder: projectActions.handlePickFolder,
     cancelAddProject: projectActions.cancelAddProject,
+    renamingProjectId: projectActions.renamingProjectId,
+    renamingProjectTitle: projectActions.renamingProjectTitle,
+    setRenamingProjectTitle: projectActions.setRenamingProjectTitle,
+    onProjectRenamingInputMount: projectActions.onProjectRenamingInputMount,
+    hasProjectRenameCommitted: projectActions.hasProjectRenameCommitted,
+    markProjectRenameCommitted: projectActions.markProjectRenameCommitted,
+    commitProjectRename: projectActions.commitProjectRename,
+    cancelProjectRename: projectActions.cancelProjectRename,
     renamingThreadId: threadActions.renamingThreadId,
     renamingTitle: threadActions.renamingTitle,
     setRenamingTitle: threadActions.setRenamingTitle,
-    renamingInputRef: threadActions.renamingInputRef,
-    renamingCommittedRef: threadActions.renamingCommittedRef,
+    onRenamingInputMount: threadActions.onRenamingInputMount,
+    hasRenameCommitted: threadActions.hasRenameCommitted,
+    markRenameCommitted: threadActions.markRenameCommitted,
     cancelRename: threadActions.cancelRename,
     commitRename: threadActions.commitRename,
     confirmingArchiveThreadId: threadActions.confirmingArchiveThreadId,

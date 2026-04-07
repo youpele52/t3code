@@ -5,6 +5,7 @@ import {
   type RuntimeMode,
   type ServerProvider,
   type ThreadId,
+  type ApprovalRequestId,
 } from "@t3tools/contracts";
 import { useCallback, useRef } from "react";
 import {
@@ -58,6 +59,8 @@ export interface UseOnSendInput {
   envMode: string;
   showPlanFollowUpPrompt: boolean;
   activeProposedPlan: ProposedPlan | null;
+  isOpencodePendingUserInputMode: boolean;
+  activePendingUserInputRequestId: ApprovalRequestId | null;
   activePendingProgress: ReturnType<typeof derivePendingUserInputProgress> | null;
   shouldAutoScrollRef: React.MutableRefObject<boolean>;
   setOptimisticUserMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
@@ -88,6 +91,10 @@ export interface UseOnSendInput {
   }) => Promise<void>;
   handleInteractionModeChange: (mode: ProviderInteractionMode) => void;
   onAdvanceActivePendingUserInput: () => void;
+  onRespondToUserInput: (
+    requestId: ApprovalRequestId,
+    answers: Record<string, unknown>,
+  ) => Promise<void>;
 }
 
 /** Returns the `onSend` handler for the composer form. */
@@ -122,19 +129,37 @@ export function useOnSend(input: UseOnSendInput) {
       envMode: env,
       showPlanFollowUpPrompt: planFollowUp,
       activeProposedPlan: proposedPlan,
+      isOpencodePendingUserInputMode,
+      activePendingUserInputRequestId,
       activePendingProgress: pendingProgress,
       bootstrapSourceThreadId,
       shouldAutoScrollRef: autoScrollRef,
     } = inputRef.current;
 
-    if (!api || !thread || sendBusy || connecting || inFlightRef.current) return;
+    if (!api || !thread) return;
+    const trimmed = pRef.current.trim();
+    if (isOpencodePendingUserInputMode && activePendingUserInputRequestId) {
+      if (!trimmed) {
+        return;
+      }
+      await inputRef.current.onRespondToUserInput(activePendingUserInputRequestId, {
+        [activePendingUserInputRequestId]: trimmed,
+      });
+      pRef.current = "";
+      inputRef.current.clearComposerDraftContent(thread.id);
+      inputRef.current.setComposerHighlightedItemId(null);
+      inputRef.current.setComposerCursor(0);
+      inputRef.current.setComposerTrigger(null);
+      return;
+    }
     if (pendingProgress) {
       inputRef.current.onAdvanceActivePendingUserInput();
       return;
     }
+    if (sendBusy || connecting || inFlightRef.current) return;
     const promptForSend = pRef.current;
     const {
-      trimmedPrompt: trimmed,
+      trimmedPrompt,
       sendableTerminalContexts: sendableComposerTerminalContexts,
       expiredTerminalContextCount,
       hasSendableContent,
@@ -145,7 +170,7 @@ export function useOnSend(input: UseOnSendInput) {
     });
     if (planFollowUp && proposedPlan) {
       const followUp = resolvePlanFollowUpSubmission({
-        draftText: trimmed,
+        draftText: trimmedPrompt,
         planMarkdown: proposedPlan.planMarkdown,
       });
       pRef.current = "";
@@ -161,7 +186,7 @@ export function useOnSend(input: UseOnSendInput) {
     }
     const standaloneSlashCommand =
       images.length === 0 && sendableComposerTerminalContexts.length === 0
-        ? parseStandaloneComposerSlashCommand(trimmed)
+        ? parseStandaloneComposerSlashCommand(trimmedPrompt)
         : null;
     if (standaloneSlashCommand) {
       inputRef.current.handleInteractionModeChange(standaloneSlashCommand);
@@ -276,7 +301,7 @@ export function useOnSend(input: UseOnSendInput) {
           firstComposerImageName = firstComposerImage.name;
         }
       }
-      let titleSeed = trimmed;
+      let titleSeed = trimmedPrompt;
       if (!titleSeed) {
         if (firstComposerImageName) {
           titleSeed = `Image: ${firstComposerImageName}`;

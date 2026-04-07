@@ -9,7 +9,7 @@
  * when the session is running in full-access (non-interactive) mode.
  *
  * SECURITY CONTRACT — keep this value intentional:
- *   • 3 seconds is long enough for a user watching the UI to click "Deny"
+ *   • 5 seconds is long enough for a user watching the UI to click "Deny"
  *     before an irreversible action is taken (e.g. deleting files, running
  *     shell commands).
  *   • Reducing this below ~1 s would make manual cancellation effectively
@@ -18,4 +18,4 @@
  *   • This constant is referenced by every provider adapter. Changing it
  *     here affects Codex, Claude, Copilot, and OpenCode simultaneously.
  */
-export const FULL_ACCESS_AUTO_APPROVE_AFTER_MS = 3_000;
+export const FULL_ACCESS_AUTO_APPROVE_AFTER_MS = 5_000;

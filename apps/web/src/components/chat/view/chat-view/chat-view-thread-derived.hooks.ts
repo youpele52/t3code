@@ -127,6 +127,8 @@ export function useChatViewThreadDerivedState(base: ChatViewBaseState) {
     () => derivePendingUserInputs(activeThread?.activities ?? []),
     [activeThread?.activities],
   );
+  const isOpencodePendingUserInputMode =
+    activeThread?.session?.provider === "opencode" && pendingUserInputs.length > 0;
 
   const activePendingUserInput = pendingUserInputs[0] ?? null;
   const activePendingDraftAnswers = useMemo(
@@ -187,6 +189,7 @@ export function useChatViewThreadDerivedState(base: ChatViewBaseState) {
   );
 
   const showPlanFollowUpPrompt =
+    !isOpencodePendingUserInputMode &&
     pendingUserInputs.length === 0 &&
     interactionMode === "plan" &&
     latestTurnSettled &&
@@ -229,9 +232,10 @@ export function useChatViewThreadDerivedState(base: ChatViewBaseState) {
   const isComposerApprovalState = activePendingApproval !== null;
   const hasComposerHeader =
     isComposerApprovalState ||
-    pendingUserInputs.length > 0 ||
+    (!isOpencodePendingUserInputMode && pendingUserInputs.length > 0) ||
     (showPlanFollowUpPrompt && activeProposedPlan !== null);
-  const composerFooterHasWideActions = showPlanFollowUpPrompt || activePendingProgress !== null;
+  const composerFooterHasWideActions =
+    showPlanFollowUpPrompt || (!isOpencodePendingUserInputMode && activePendingProgress !== null);
 
   const completionSummary = useMemo(() => {
     if (!latestTurnSettled) return null;
@@ -256,6 +260,7 @@ export function useChatViewThreadDerivedState(base: ChatViewBaseState) {
     latestTurnHasToolActivity,
     pendingApprovals,
     pendingUserInputs,
+    isOpencodePendingUserInputMode,
     activePendingUserInput,
     activePendingDraftAnswers,
     activePendingQuestionIndex,

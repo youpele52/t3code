@@ -221,7 +221,7 @@ export function useChatViewComposerDerivedState(base: ChatViewBaseState) {
           type: "slash-command",
           command: "default",
           label: "/default",
-          description: "Switch this thread back to normal chat mode",
+          description: "Switch this thread back to normal build mode",
         },
       ] satisfies ReadonlyArray<Extract<ComposerCommandItem, { type: "slash-command" }>>;
       const query = base.composerTrigger.query.trim().toLowerCase();

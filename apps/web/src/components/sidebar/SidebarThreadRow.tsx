@@ -6,6 +6,7 @@ import {
   type ReactNode,
   type SetStateAction,
 } from "react";
+
 import { type ThreadId, type GitStatusResult } from "@t3tools/contracts";
 import { useIsThreadRunning, useSidebarThreadSummaryById } from "../../stores/main";
 import { useUiStateStore } from "../../stores/ui";
@@ -90,8 +91,12 @@ export interface SidebarThreadRowProps {
   renamingThreadId: ThreadId | null;
   renamingTitle: string;
   setRenamingTitle: (title: string) => void;
-  renamingInputRef: MutableRefObject<HTMLInputElement | null>;
-  renamingCommittedRef: MutableRefObject<boolean>;
+  /** Callback ref for the rename input — handles focus/select on mount. */
+  onRenamingInputMount: (element: HTMLInputElement | null) => void;
+  /** Returns whether the rename has already been committed. */
+  hasRenameCommitted: () => boolean;
+  /** Marks the rename as committed to prevent double-commit on blur. */
+  markRenameCommitted: () => void;
   confirmingArchiveThreadId: ThreadId | null;
   setConfirmingArchiveThreadId: Dispatch<SetStateAction<ThreadId | null>>;
   confirmArchiveButtonRefs: MutableRefObject<Map<ThreadId, HTMLButtonElement>>;
@@ -235,13 +240,7 @@ export function SidebarThreadRow(props: SidebarThreadRowProps) {
           )}
           {props.renamingThreadId === thread.id ? (
             <input
-              ref={(element) => {
-                if (element && props.renamingInputRef.current !== element) {
-                  props.renamingInputRef.current = element;
-                  element.focus();
-                  element.select();
-                }
-              }}
+              ref={props.onRenamingInputMount}
               className="min-w-0 flex-1 truncate text-xs bg-transparent outline-none border border-ring rounded px-0.5"
               value={props.renamingTitle}
               onChange={(event) => props.setRenamingTitle(event.target.value)}
@@ -249,16 +248,16 @@ export function SidebarThreadRow(props: SidebarThreadRowProps) {
                 event.stopPropagation();
                 if (event.key === "Enter") {
                   event.preventDefault();
-                  props.renamingCommittedRef.current = true;
+                  props.markRenameCommitted();
                   void props.commitRename(thread.id, props.renamingTitle, thread.title);
                 } else if (event.key === "Escape") {
                   event.preventDefault();
-                  props.renamingCommittedRef.current = true;
+                  props.markRenameCommitted();
                   props.cancelRename();
                 }
               }}
               onBlur={() => {
-                if (!props.renamingCommittedRef.current) {
+                if (!props.hasRenameCommitted()) {
                   void props.commitRename(thread.id, props.renamingTitle, thread.title);
                 }
               }}

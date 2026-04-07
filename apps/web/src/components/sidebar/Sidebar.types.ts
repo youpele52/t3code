@@ -39,8 +39,12 @@ export interface SharedProjectItemProps {
   renamingThreadId: ThreadId | null;
   renamingTitle: string;
   setRenamingTitle: (title: string) => void;
-  renamingInputRef: React.MutableRefObject<HTMLInputElement | null>;
-  renamingCommittedRef: React.MutableRefObject<boolean>;
+  /** Callback ref for the rename input element — handles focus/select on mount. */
+  onRenamingInputMount: (element: HTMLInputElement | null) => void;
+  /** Returns whether the rename has already been committed. */
+  hasRenameCommitted: () => boolean;
+  /** Marks the rename as committed to prevent double-commit on blur. */
+  markRenameCommitted: () => void;
   confirmingArchiveThreadId: ThreadId | null;
   setConfirmingArchiveThreadId: React.Dispatch<React.SetStateAction<ThreadId | null>>;
   confirmArchiveButtonRefs: React.MutableRefObject<Map<ThreadId, HTMLButtonElement>>;
@@ -51,6 +55,22 @@ export interface SharedProjectItemProps {
     worktreePath: string | null;
     envMode: "local" | "worktree";
   } | null;
+  // Project rename
+  renamingProjectId: ProjectId | null;
+  renamingProjectTitle: string;
+  setRenamingProjectTitle: (title: string) => void;
+  /** Callback ref for the rename input element — handles focus/select on mount. */
+  onProjectRenamingInputMount: (element: HTMLInputElement | null) => void;
+  /** Returns whether the project rename has already been committed. */
+  hasProjectRenameCommitted: () => boolean;
+  /** Marks the project rename as committed to prevent double-commit on blur. */
+  markProjectRenameCommitted: () => void;
+  commitProjectRename: (
+    projectId: ProjectId,
+    newTitle: string,
+    originalTitle: string,
+  ) => Promise<void>;
+  cancelProjectRename: () => void;
   attachThreadListAutoAnimateRef: (node: HTMLElement | null) => void;
   handleProjectTitlePointerDownCapture: (event: PointerEvent<HTMLButtonElement>) => void;
   handleProjectTitleClick: (event: MouseEvent<HTMLButtonElement>, projectId: ProjectId) => void;
@@ -114,12 +134,32 @@ export interface SidebarState {
   handlePickFolder: () => Promise<void>;
   /** Cancel the add-project flow, resetting both the form and the visibility flag. */
   cancelAddProject: () => void;
+  // Project rename
+  renamingProjectId: ProjectId | null;
+  renamingProjectTitle: string;
+  setRenamingProjectTitle: (title: string) => void;
+  /** Callback ref for the rename input element — handles focus/select on mount. */
+  onProjectRenamingInputMount: (element: HTMLInputElement | null) => void;
+  /** Returns whether the project rename has already been committed. */
+  hasProjectRenameCommitted: () => boolean;
+  /** Marks the project rename as committed to prevent double-commit on blur. */
+  markProjectRenameCommitted: () => void;
+  commitProjectRename: (
+    projectId: ProjectId,
+    newTitle: string,
+    originalTitle: string,
+  ) => Promise<void>;
+  cancelProjectRename: () => void;
   // Thread rename
   renamingThreadId: ThreadId | null;
   renamingTitle: string;
   setRenamingTitle: (title: string) => void;
-  renamingInputRef: React.MutableRefObject<HTMLInputElement | null>;
-  renamingCommittedRef: React.MutableRefObject<boolean>;
+  /** Callback ref for the rename input element — handles focus/select on mount. */
+  onRenamingInputMount: (element: HTMLInputElement | null) => void;
+  /** Returns whether the rename has already been committed. */
+  hasRenameCommitted: () => boolean;
+  /** Marks the rename as committed to prevent double-commit on blur. */
+  markRenameCommitted: () => void;
   cancelRename: () => void;
   commitRename: (threadId: ThreadId, newTitle: string, originalTitle: string) => Promise<void>;
   // Thread archive confirm

@@ -654,7 +654,7 @@ function resolveWsRpc(body: NormalizedWsRpcRequestBody): unknown {
       ],
     };
   }
-  if (tag === WS_METHODS.gitStatus) {
+  if (tag === WS_METHODS.gitRefreshStatus) {
     return {
       isRepo: true,
       hasOriginRemote: true,

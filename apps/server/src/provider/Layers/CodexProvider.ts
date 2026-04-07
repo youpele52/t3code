@@ -38,7 +38,7 @@ import { probeCodexAccount } from "../codexAppServer";
 import { CodexProvider } from "../Services/CodexProvider";
 import { ServerSettingsService } from "../../ws/serverSettings";
 import { ServerSettingsError } from "@t3tools/contracts";
-import { BUILT_IN_MODELS } from "./CodexProvider.models";
+import { BUILT_IN_MODELS, DEFAULT_CODEX_MODEL_CAPABILITIES } from "./CodexProvider.models";
 import { hasCustomModelProvider, parseAuthStatusFromOutput } from "./CodexProvider.auth";
 
 export { getCodexModelCapabilities } from "./CodexProvider.models";
@@ -98,7 +98,12 @@ export const checkCodexProviderStatus = Effect.fn("checkCodexProviderStatus")(fu
     Effect.map((settings) => settings.providers.codex),
   );
   const checkedAt = new Date().toISOString();
-  const models = providerModelsFromSettings(BUILT_IN_MODELS, PROVIDER, codexSettings.customModels);
+  const models = providerModelsFromSettings(
+    BUILT_IN_MODELS,
+    PROVIDER,
+    codexSettings.customModels,
+    DEFAULT_CODEX_MODEL_CAPABILITIES,
+  );
 
   if (!codexSettings.enabled) {
     return buildServerProvider({

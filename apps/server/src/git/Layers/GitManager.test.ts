@@ -720,6 +720,35 @@ it.layer(GitManagerTestLayer)("GitManager", (it) => {
     }),
   );
 
+  it.effect("status returns an explicit non-repo result for missing directories", () =>
+    Effect.gen(function* () {
+      const cwd = yield* makeTempDir("t3code-git-manager-missing-dir-");
+      const fs = yield* FileSystem.FileSystem;
+      const { manager } = yield* makeManager();
+
+      yield* fs.remove(cwd, { recursive: true });
+
+      const status = yield* manager.status({ cwd });
+
+      expect(status).toEqual({
+        isRepo: false,
+        hasOriginRemote: false,
+        isDefaultBranch: false,
+        branch: null,
+        hasWorkingTreeChanges: false,
+        workingTree: {
+          files: [],
+          insertions: 0,
+          deletions: 0,
+        },
+        hasUpstream: false,
+        aheadCount: 0,
+        behindCount: 0,
+        pr: null,
+      });
+    }),
+  );
+
   it.effect("status briefly caches repeated lookups for the same cwd", () =>
     Effect.gen(function* () {
       const repoDir = yield* makeTempDir("t3code-git-manager-");

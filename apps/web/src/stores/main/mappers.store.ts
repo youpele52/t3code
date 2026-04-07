@@ -21,6 +21,7 @@ import {
   type SidebarThreadSummary,
   type Thread,
 } from "../../models/types";
+import { sanitizeThreadErrorMessage } from "../../rpc/transportError";
 
 // ── Normalization helpers ─────────────────────────────────────────────
 
@@ -182,7 +183,7 @@ export function mapThread(thread: OrchestrationThread): Thread {
     session: thread.session ? mapSession(thread.session) : null,
     messages: thread.messages.map(mapMessage),
     proposedPlans: thread.proposedPlans.map(mapProposedPlan),
-    error: thread.session?.lastError ?? null,
+    error: sanitizeThreadErrorMessage(thread.session?.lastError),
     createdAt: thread.createdAt,
     archivedAt: thread.archivedAt,
     updatedAt: thread.updatedAt,

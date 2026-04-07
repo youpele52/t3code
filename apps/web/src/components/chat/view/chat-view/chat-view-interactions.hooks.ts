@@ -322,6 +322,7 @@ export function useChatViewInteractions({
     setComposerTrigger: base.setComposerTrigger,
     activePendingProgress: thread.activePendingProgress,
     activePendingUserInput: thread.activePendingUserInput,
+    isOpencodePendingUserInputMode: thread.isOpencodePendingUserInputMode,
     setPendingUserInputAnswersByRequestId: base.setPendingUserInputAnswersByRequestId,
     composerEditorRef: base.composerEditorRef,
   });
@@ -389,6 +390,8 @@ export function useChatViewInteractions({
     envMode,
     showPlanFollowUpPrompt: thread.showPlanFollowUpPrompt,
     activeProposedPlan: thread.activeProposedPlan,
+    isOpencodePendingUserInputMode: thread.isOpencodePendingUserInputMode,
+    activePendingUserInputRequestId: thread.activePendingUserInput?.requestId ?? null,
     activePendingProgress: thread.activePendingProgress,
     shouldAutoScrollRef: runtime.scrollBehavior.shouldAutoScrollRef,
     setOptimisticUserMessages: base.setOptimisticUserMessages,
@@ -410,6 +413,7 @@ export function useChatViewInteractions({
     onSubmitPlanFollowUp: planHandlers.onSubmitPlanFollowUp,
     handleInteractionModeChange: runtime.handleInteractionModeChange,
     onAdvanceActivePendingUserInput: pendingUserInputHandlers.onAdvanceActivePendingUserInput,
+    onRespondToUserInput: runtime.turnActions.onRespondToUserInput,
   });
 
   const addComposerImages = useAddComposerImages({
@@ -493,6 +497,7 @@ export function useChatViewInteractions({
     interactionMode: base.interactionMode,
     activePendingProgress: thread.activePendingProgress,
     activePendingUserInput: thread.activePendingUserInput,
+    isOpencodePendingUserInputMode: thread.isOpencodePendingUserInputMode,
     setComposerCursor: base.setComposerCursor,
     setComposerTrigger: base.setComposerTrigger,
     setComposerHighlightedItemId: base.setComposerHighlightedItemId,
@@ -530,15 +535,16 @@ export function useChatViewInteractions({
       composer.workspaceEntriesQuery.isLoading ||
       composer.workspaceEntriesQuery.isFetching);
 
-  const pendingAction = thread.activePendingProgress
-    ? {
-        questionIndex: thread.activePendingProgress.questionIndex,
-        isLastQuestion: thread.activePendingProgress.isLastQuestion,
-        canAdvance: thread.activePendingProgress.canAdvance,
-        isResponding: runtime.activePendingIsResponding,
-        isComplete: Boolean(thread.activePendingResolvedAnswers),
-      }
-    : null;
+  const pendingAction =
+    !thread.isOpencodePendingUserInputMode && thread.activePendingProgress
+      ? {
+          questionIndex: thread.activePendingProgress.questionIndex,
+          isLastQuestion: thread.activePendingProgress.isLastQuestion,
+          canAdvance: thread.activePendingProgress.canAdvance,
+          isResponding: runtime.activePendingIsResponding,
+          isComplete: Boolean(thread.activePendingResolvedAnswers),
+        }
+      : null;
 
   const onOpenTurnDiff = useCallback(
     (turnId: TurnId, filePath?: string) => {

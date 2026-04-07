@@ -28,6 +28,7 @@ import {
   updateProject,
   updateThreadState,
 } from "./helpers.store";
+import { sanitizeThreadErrorMessage } from "../../rpc/transportError";
 
 export function applyOrchestrationEvent(state: AppState, event: OrchestrationEvent): AppState {
   switch (event.type) {
@@ -333,7 +334,7 @@ export function applyOrchestrationEvent(state: AppState, event: OrchestrationEve
       return updateThreadState(state, event.payload.threadId, (thread) => ({
         ...thread,
         session: mapSession(event.payload.session),
-        error: event.payload.session.lastError ?? null,
+        error: sanitizeThreadErrorMessage(event.payload.session.lastError),
         latestTurn:
           event.payload.session.status === "running" && event.payload.session.activeTurnId !== null
             ? buildLatestTurn({

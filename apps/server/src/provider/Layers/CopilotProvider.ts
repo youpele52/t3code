@@ -153,6 +153,7 @@ export const checkCopilotProviderStatus = Effect.fn("checkCopilotProviderStatus"
     BUILT_IN_MODELS,
     PROVIDER,
     copilotSettings.customModels,
+    EMPTY_MODEL_CAPABILITIES,
   );
 
   if (!copilotSettings.enabled) {
@@ -183,7 +184,12 @@ export const checkCopilotProviderStatus = Effect.fn("checkCopilotProviderStatus"
       models.length > 0
         ? [
             ...models.map(mapCopilotModel),
-            ...providerModelsFromSettings([], PROVIDER, copilotSettings.customModels),
+            ...providerModelsFromSettings(
+              [],
+              PROVIDER,
+              copilotSettings.customModels,
+              EMPTY_MODEL_CAPABILITIES,
+            ),
           ]
         : builtInModels;
 

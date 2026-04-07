@@ -81,14 +81,14 @@ function parseUserInputQuestions(
           };
         })
         .filter((option): option is UserInputQuestion["options"][number] => option !== null);
-      if (options.length === 0) {
-        return null;
-      }
+      // Allow questions with zero options (e.g. OpenCode free-text TUI prompts).
+      // The composer handles this by letting the user type a custom answer.
       return {
         id: question.id,
         header: question.header,
         question: question.question,
         options,
+        multiSelect: question.multiSelect === true,
       };
     })
     .filter((question): question is UserInputQuestion => question !== null);

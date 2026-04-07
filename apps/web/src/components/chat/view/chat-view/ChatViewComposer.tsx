@@ -63,15 +63,15 @@ export function ChatViewComposer({
                 pendingCount={thread.pendingApprovals.length}
               />
             </div>
-          ) : thread.pendingUserInputs.length > 0 ? (
+          ) : thread.pendingUserInputs.length > 0 && !thread.isOpencodePendingUserInputMode ? (
             <div className="rounded-t-[19px] border-b border-border/65 bg-muted/20">
               <ComposerPendingUserInputPanel
                 pendingUserInputs={thread.pendingUserInputs}
                 respondingRequestIds={runtime.turnActions.respondingUserInputRequestIds}
                 answers={thread.activePendingDraftAnswers}
                 questionIndex={thread.activePendingQuestionIndex}
-                onSelectOption={
-                  interactions.pendingUserInputHandlers.onSelectActivePendingUserInputOption
+                onToggleOption={
+                  interactions.pendingUserInputHandlers.onToggleActivePendingUserInputOption
                 }
                 onAdvance={interactions.pendingUserInputHandlers.onAdvanceActivePendingUserInput}
               />
@@ -107,7 +107,8 @@ export function ChatViewComposer({
               </div>
             ) : null}
 
-            {!thread.isComposerApprovalState && thread.pendingUserInputs.length === 0 ? (
+            {!thread.isComposerApprovalState &&
+            (thread.pendingUserInputs.length === 0 || thread.isOpencodePendingUserInputMode) ? (
               <ComposerImagePreviews
                 composerImages={base.composerImages}
                 nonPersistedComposerImageIdSet={composer.nonPersistedComposerImageIdSet}
@@ -121,11 +122,14 @@ export function ChatViewComposer({
               value={
                 thread.isComposerApprovalState
                   ? ""
-                  : (thread.activePendingProgress?.customAnswer ?? base.prompt)
+                  : thread.isOpencodePendingUserInputMode
+                    ? base.prompt
+                    : (thread.activePendingProgress?.customAnswer ?? base.prompt)
               }
               cursor={base.composerCursor}
               terminalContexts={
-                !thread.isComposerApprovalState && thread.pendingUserInputs.length === 0
+                !thread.isComposerApprovalState &&
+                (thread.pendingUserInputs.length === 0 || thread.isOpencodePendingUserInputMode)
                   ? base.composerTerminalContexts
                   : []
               }
@@ -138,7 +142,9 @@ export function ChatViewComposer({
                   ? (thread.activePendingApproval?.detail ??
                     "Resolve this approval request to continue")
                   : thread.activePendingProgress
-                    ? "Type your own answer, or leave this blank to use the selected option"
+                    ? thread.isOpencodePendingUserInputMode
+                      ? "Reply to OpenCode to continue"
+                      : "Type your own answer, or leave this blank to use the selected option"
                     : thread.showPlanFollowUpPrompt && thread.activeProposedPlan
                       ? "Add feedback to refine the plan, or leave this blank to implement it"
                       : thread.phase === "disconnected"
@@ -216,7 +222,9 @@ export function ChatViewComposer({
                   pendingAction={interactions.pendingAction}
                   isRunning={thread.phase === "running"}
                   showPlanFollowUpPrompt={
-                    thread.pendingUserInputs.length === 0 && thread.showPlanFollowUpPrompt
+                    (thread.pendingUserInputs.length === 0 ||
+                      thread.isOpencodePendingUserInputMode) &&
+                    thread.showPlanFollowUpPrompt
                   }
                   promptHasText={base.prompt.trim().length > 0}
                   isSendBusy={thread.isSendBusy}

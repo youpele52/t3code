@@ -288,6 +288,7 @@ export function toUserInputQuestions(payload: Record<string, unknown> | undefine
         header,
         question: prompt,
         options,
+        multiSelect: question.multiSelect === true,
       };
     })
     .filter(
@@ -298,6 +299,7 @@ export function toUserInputQuestions(payload: Record<string, unknown> | undefine
         header: string;
         question: string;
         options: Array<{ label: string; description: string }>;
+        multiSelect: boolean;
       } => question !== undefined,
     );
 

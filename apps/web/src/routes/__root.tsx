@@ -9,6 +9,11 @@ import { APP_DISPLAY_NAME } from "../config/branding";
 import { AppSidebarLayout } from "../components/layout/AppSidebarLayout";
 import { Button } from "../components/ui/button";
 import { AnchoredToastProvider, ToastProvider } from "../components/ui/toast";
+import {
+  SlowRpcAckToastCoordinator,
+  WebSocketConnectionCoordinator,
+  WebSocketConnectionSurface,
+} from "../components/WebSocketConnectionSurface";
 import { readNativeApi } from "../rpc/nativeApi";
 import { PendingApprovalNavigation } from "../notifications/pendingApprovalNavigation";
 import { TaskCompletionNotifications } from "../notifications/taskCompletion";
@@ -42,11 +47,15 @@ function RootRouteView() {
       <AnchoredToastProvider>
         <ServerStateBootstrap />
         <EventRouter />
+        <WebSocketConnectionCoordinator />
+        <SlowRpcAckToastCoordinator />
         <PendingApprovalNavigation />
         <TaskCompletionNotifications />
-        <AppSidebarLayout>
-          <Outlet />
-        </AppSidebarLayout>
+        <WebSocketConnectionSurface>
+          <AppSidebarLayout>
+            <Outlet />
+          </AppSidebarLayout>
+        </WebSocketConnectionSurface>
       </AnchoredToastProvider>
     </ToastProvider>
   );
