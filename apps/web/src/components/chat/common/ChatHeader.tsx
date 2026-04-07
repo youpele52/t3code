@@ -6,14 +6,14 @@ import {
 } from "@t3tools/contracts";
 import { memo } from "react";
 import GitActionsControl from "../../git/GitActionsControl";
-import { DiffIcon, TerminalSquareIcon } from "lucide-react";
+import { DiffIcon, PanelLeftCloseIcon, PanelLeftIcon, TerminalSquareIcon } from "lucide-react";
 import { Badge } from "../../ui/badge";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import ProjectScriptsControl, {
   type NewProjectScriptInput,
 } from "../../project/ProjectScriptsControl";
 import { Toggle } from "../../ui/toggle";
-import { SidebarTrigger } from "../../ui/sidebar";
+import { useSidebar } from "../../ui/sidebar";
 import { OpenInPicker } from "./OpenInPicker";
 import { useIsThreadRunning } from "../../../stores/main";
 
@@ -65,11 +65,11 @@ export const ChatHeader = memo(function ChatHeader({
   onToggleDiff,
 }: ChatHeaderProps) {
   const isThreadRunning = useIsThreadRunning(activeThreadId);
+  const { open, toggleSidebar } = useSidebar();
 
   return (
     <div className="@container/header-actions flex min-w-0 flex-1 items-center gap-2">
       <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden sm:gap-3">
-        <SidebarTrigger className="size-7 shrink-0 md:hidden" />
         <h2
           className="min-w-0 shrink truncate text-sm font-medium text-foreground"
           title={activeThreadTitle}
@@ -124,6 +124,27 @@ export const ChatHeader = memo(function ChatHeader({
           />
         )}
         {activeProjectName && <GitActionsControl gitCwd={gitCwd} activeThreadId={activeThreadId} />}
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Toggle
+                className="shrink-0"
+                pressed={open}
+                onPressedChange={toggleSidebar}
+                aria-label="Toggle sidebar"
+                variant="outline"
+                size="xs"
+              >
+                {open ? (
+                  <PanelLeftCloseIcon className="size-3" />
+                ) : (
+                  <PanelLeftIcon className="size-3" />
+                )}
+              </Toggle>
+            }
+          />
+          <TooltipPopup side="bottom">{open ? "Hide sidebar" : "Show sidebar"}</TooltipPopup>
+        </Tooltip>
         <Tooltip>
           <TooltipTrigger
             render={
