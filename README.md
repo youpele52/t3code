@@ -1,54 +1,67 @@
 # T3 Code
 
-T3 Code is a minimal web GUI for coding agents (currently Codex and Claude, more coming soon).
+T3 Code is a minimal web GUI for coding agents.
+
+## Supported Providers
+
+- **Codex** (OpenAI) — install [Codex CLI](https://github.com/openai/codex) and run `codex login`
+- **Claude** (Anthropic) — install Claude Code and run `claude auth login`
+- **Copilot** (GitHub) — authenticate via GitHub CLI or VS Code
+- **OpenCode** — see [OpenCode docs](https://opencode.ai)
 
 ## Installation
 
-> [!WARNING]
-> T3 Code currently supports Codex and Claude.
-> Install and authenticate at least one provider before use:
->
-> - Codex: install [Codex CLI](https://github.com/openai/codex) and run `codex login`
-> - Claude: install Claude Code and run `claude auth login`
+### Prerequisites
 
-### Run without installing
+Install and authenticate at least one provider:
+- **Codex**: install [Codex CLI](https://github.com/openai/codex) and run `codex login`
+- **Claude**: install Claude Code and run `claude auth login`
+- **Copilot**: authenticate via GitHub CLI or VS Code
+- **OpenCode**: see [OpenCode docs](https://opencode.ai)
 
-```bash
-npx t3
-```
-
-### Desktop app
-
-Install the latest version of the desktop app from [GitHub Releases](https://github.com/pingdotgg/t3code/releases), or from your favorite package registry:
-
-#### Windows (`winget`)
+### From Source
 
 ```bash
-winget install T3Tools.T3Code
+git clone https://github.com/pingdotgg/t3code.git
+cd t3code
+bun install
+bun dev
 ```
 
-#### macOS (Homebrew)
+### Package Managers (Coming Soon)
+
+Homebrew, winget, and AUR packages are planned but not yet available.
+
+## Development
+
+This is a monorepo with a Node.js/Bun server and a React/Vite web app.
 
 ```bash
-brew install --cask t3-code
+# Install dependencies
+bun install
+
+# Start full dev stack (server + web)
+bun dev
+
+# Run checks
+bun fmt
+bun lint
+bun typecheck
+bun run test
 ```
 
-#### Arch Linux (AUR)
+See [AGENTS.md](./AGENTS.md) for detailed development guidance, toolchain quirks, and architecture notes.
 
-```bash
-yay -S t3code-bin
-```
+## Status
 
-## Some notes
+This project is early and evolving rapidly. Expect breaking changes.
 
-We are very very early in this project. Expect bugs.
-
-We are not accepting contributions yet.
-
-Observability guide: [docs/observability.md](./docs/observability.md)
-
-## If you REALLY want to contribute still.... read this first
-
-Read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening an issue or PR.
+We are not accepting contributions yet. Read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening issues or PRs.
 
 Need support? Join the [Discord](https://discord.gg/jn4EGJjrvv).
+
+## Documentation
+
+- [AGENTS.md](./AGENTS.md) — Development guide for contributors
+- [CONTRIBUTING.md](./CONTRIBUTING.md) — Contribution guidelines
+- [docs/observability.md](./docs/observability.md) — Observability guide
