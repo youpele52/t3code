@@ -59,6 +59,8 @@ export interface ActiveOpencodeSession {
   lastError: string | undefined;
   activeTurnId: TurnId | undefined;
   lastUsage: ThreadTokenUsageSnapshot | undefined;
+  /** True while the session is in a retry/rate-limit back-off loop. */
+  wasRetrying: boolean;
 }
 
 export interface OpencodeAdapterLiveOptions {

@@ -1,5 +1,5 @@
 import { type MessageId } from "@t3tools/contracts";
-import { type TimelineEntry } from "../../../logic/session";
+import { type TimelineEntry, type PendingUserInput } from "../../../logic/session";
 import { type WorkLogEntry } from "../../../logic/session";
 import { buildTurnDiffTree, type TurnDiffTreeNode } from "../../../lib/turnDiffTree";
 import { type ChatMessage, type ProposedPlan, type TurnDiffSummary } from "../../../models/types";
@@ -34,6 +34,12 @@ export type MessagesTimelineRow =
       id: string;
       createdAt: string;
       proposedPlan: ProposedPlan;
+    }
+  | {
+      kind: "user-input-question";
+      id: string;
+      createdAt: string;
+      pendingUserInput: PendingUserInput;
     }
   | { kind: "working"; id: string; createdAt: string | null };
 
@@ -106,6 +112,16 @@ export function deriveMessagesTimelineRows(input: {
       continue;
     }
 
+    if (timelineEntry.kind === "user-input-question") {
+      nextRows.push({
+        kind: "user-input-question",
+        id: timelineEntry.id,
+        createdAt: timelineEntry.createdAt,
+        pendingUserInput: timelineEntry.pendingUserInput,
+      });
+      continue;
+    }
+
     nextRows.push({
       kind: "message",
       id: timelineEntry.id,
@@ -143,6 +159,8 @@ export function estimateMessagesTimelineRowHeight(
       return estimateWorkRowHeight(row, input);
     case "proposed-plan":
       return estimateTimelineProposedPlanHeight(row.proposedPlan);
+    case "user-input-question":
+      return estimateUserInputQuestionRowHeight(row.pendingUserInput);
     case "working":
       return 40;
     case "message": {
@@ -178,6 +196,12 @@ function estimateWorkRowHeight(
 function estimateTimelineProposedPlanHeight(proposedPlan: ProposedPlan): number {
   const estimatedLines = Math.max(1, Math.ceil(proposedPlan.planMarkdown.length / 72));
   return 120 + Math.min(estimatedLines * 22, 880);
+}
+
+function estimateUserInputQuestionRowHeight(pendingUserInput: PendingUserInput): number {
+  // Card chrome + header + question rows with options
+  const optionLineCount = pendingUserInput.questions.reduce((sum, q) => sum + q.options.length, 0);
+  return 80 + pendingUserInput.questions.length * 40 + optionLineCount * 28;
 }
 
 function estimateChangedFilesCardHeight(turnDiffSummary: TurnDiffSummary): number {

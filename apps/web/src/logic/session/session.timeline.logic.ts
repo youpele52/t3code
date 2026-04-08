@@ -108,6 +108,7 @@ export function deriveTimelineEntries(
   messages: ChatMessage[],
   proposedPlans: ProposedPlan[],
   workEntries: import("./worklog.logic").WorkLogEntry[],
+  pendingUserInputs?: import("./session.logic").PendingUserInput[],
 ): TimelineEntry[] {
   const messageRows: TimelineEntry[] = messages.map((message) => ({
     id: message.id,
@@ -127,7 +128,13 @@ export function deriveTimelineEntries(
     createdAt: entry.createdAt,
     entry,
   }));
-  return [...messageRows, ...proposedPlanRows, ...workRows].toSorted((a, b) =>
+  const userInputRows: TimelineEntry[] = (pendingUserInputs ?? []).map((pendingUserInput) => ({
+    id: `user-input-question:${pendingUserInput.requestId}`,
+    kind: "user-input-question",
+    createdAt: pendingUserInput.createdAt,
+    pendingUserInput,
+  }));
+  return [...messageRows, ...proposedPlanRows, ...workRows, ...userInputRows].toSorted((a, b) =>
     a.createdAt.localeCompare(b.createdAt),
   );
 }

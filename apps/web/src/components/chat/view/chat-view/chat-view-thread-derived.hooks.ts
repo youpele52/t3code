@@ -127,8 +127,7 @@ export function useChatViewThreadDerivedState(base: ChatViewBaseState) {
     () => derivePendingUserInputs(activeThread?.activities ?? []),
     [activeThread?.activities],
   );
-  const isOpencodePendingUserInputMode =
-    activeThread?.session?.provider === "opencode" && pendingUserInputs.length > 0;
+  const isOpencodePendingUserInputMode = pendingUserInputs.length > 0;
 
   const activePendingUserInput = pendingUserInputs[0] ?? null;
   const activePendingDraftAnswers = useMemo(
@@ -190,7 +189,6 @@ export function useChatViewThreadDerivedState(base: ChatViewBaseState) {
 
   const showPlanFollowUpPrompt =
     !isOpencodePendingUserInputMode &&
-    pendingUserInputs.length === 0 &&
     interactionMode === "plan" &&
     latestTurnSettled &&
     hasActionableProposedPlan(activeProposedPlan);
@@ -231,11 +229,8 @@ export function useChatViewThreadDerivedState(base: ChatViewBaseState) {
   const workingVerb = workingVerbRef.current ?? randomSpinnerVerb();
   const isComposerApprovalState = activePendingApproval !== null;
   const hasComposerHeader =
-    isComposerApprovalState ||
-    (!isOpencodePendingUserInputMode && pendingUserInputs.length > 0) ||
-    (showPlanFollowUpPrompt && activeProposedPlan !== null);
-  const composerFooterHasWideActions =
-    showPlanFollowUpPrompt || (!isOpencodePendingUserInputMode && activePendingProgress !== null);
+    isComposerApprovalState || (showPlanFollowUpPrompt && activeProposedPlan !== null);
+  const composerFooterHasWideActions = showPlanFollowUpPrompt;
 
   const completionSummary = useMemo(() => {
     if (!latestTurnSettled) return null;

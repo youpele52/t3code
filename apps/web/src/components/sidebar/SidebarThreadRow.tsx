@@ -372,8 +372,8 @@ export function SidebarThreadRow(props: SidebarThreadRowProps) {
                 <span
                   className={`text-[10px] ${
                     isHighlighted
-                      ? "text-foreground/72 dark:text-foreground/82"
-                      : "text-muted-foreground/40"
+                      ? "text-foreground/80 dark:text-foreground/85"
+                      : "text-muted-foreground/70"
                   }`}
                 >
                   {formatRelativeTimeLabel(thread.updatedAt ?? thread.createdAt)}

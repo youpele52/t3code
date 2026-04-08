@@ -6,7 +6,6 @@ import { ComposerFooterLeading } from "../../composer/ComposerFooterLeading";
 import { ComposerImagePreviews } from "../../composer/ComposerImagePreviews";
 import { ComposerPendingApprovalActions } from "../../composer/ComposerPendingApprovalActions";
 import { ComposerPendingApprovalPanel } from "../../composer/ComposerPendingApprovalPanel";
-import { ComposerPendingUserInputPanel } from "../../composer/ComposerPendingUserInputPanel";
 import { ComposerPlanFollowUpBanner } from "../../composer/ComposerPlanFollowUpBanner";
 import { ComposerPrimaryActions } from "../../composer/ComposerPrimaryActions";
 import { ComposerPromptEditor } from "../../composer/ComposerPromptEditor";
@@ -63,19 +62,6 @@ export function ChatViewComposer({
                 pendingCount={thread.pendingApprovals.length}
               />
             </div>
-          ) : thread.pendingUserInputs.length > 0 && !thread.isOpencodePendingUserInputMode ? (
-            <div className="rounded-t-[19px] border-b border-border/65 bg-muted/20">
-              <ComposerPendingUserInputPanel
-                pendingUserInputs={thread.pendingUserInputs}
-                respondingRequestIds={runtime.turnActions.respondingUserInputRequestIds}
-                answers={thread.activePendingDraftAnswers}
-                questionIndex={thread.activePendingQuestionIndex}
-                onToggleOption={
-                  interactions.pendingUserInputHandlers.onToggleActivePendingUserInputOption
-                }
-                onAdvance={interactions.pendingUserInputHandlers.onAdvanceActivePendingUserInput}
-              />
-            </div>
           ) : thread.showPlanFollowUpPrompt && thread.activeProposedPlan ? (
             <div className="rounded-t-[19px] border-b border-border/65 bg-muted/20">
               <ComposerPlanFollowUpBanner
@@ -107,8 +93,7 @@ export function ChatViewComposer({
               </div>
             ) : null}
 
-            {!thread.isComposerApprovalState &&
-            (thread.pendingUserInputs.length === 0 || thread.isOpencodePendingUserInputMode) ? (
+            {!thread.isComposerApprovalState && !thread.isOpencodePendingUserInputMode ? (
               <ComposerImagePreviews
                 composerImages={base.composerImages}
                 nonPersistedComposerImageIdSet={composer.nonPersistedComposerImageIdSet}
@@ -119,17 +104,10 @@ export function ChatViewComposer({
 
             <ComposerPromptEditor
               ref={base.composerEditorRef}
-              value={
-                thread.isComposerApprovalState
-                  ? ""
-                  : thread.isOpencodePendingUserInputMode
-                    ? base.prompt
-                    : (thread.activePendingProgress?.customAnswer ?? base.prompt)
-              }
+              value={thread.isComposerApprovalState ? "" : base.prompt}
               cursor={base.composerCursor}
               terminalContexts={
-                !thread.isComposerApprovalState &&
-                (thread.pendingUserInputs.length === 0 || thread.isOpencodePendingUserInputMode)
+                !thread.isComposerApprovalState && !thread.isOpencodePendingUserInputMode
                   ? base.composerTerminalContexts
                   : []
               }
@@ -141,10 +119,8 @@ export function ChatViewComposer({
                 thread.isComposerApprovalState
                   ? (thread.activePendingApproval?.detail ??
                     "Resolve this approval request to continue")
-                  : thread.activePendingProgress
-                    ? thread.isOpencodePendingUserInputMode
-                      ? "Reply to OpenCode to continue"
-                      : "Type your own answer, or leave this blank to use the selected option"
+                  : thread.isOpencodePendingUserInputMode
+                    ? "Type your answer to continue..."
                     : thread.showPlanFollowUpPrompt && thread.activeProposedPlan
                       ? "Add feedback to refine the plan, or leave this blank to implement it"
                       : thread.phase === "disconnected"
@@ -221,11 +197,7 @@ export function ChatViewComposer({
                   compact={runtime.scrollBehavior.isComposerPrimaryActionsCompact}
                   pendingAction={interactions.pendingAction}
                   isRunning={thread.phase === "running"}
-                  showPlanFollowUpPrompt={
-                    (thread.pendingUserInputs.length === 0 ||
-                      thread.isOpencodePendingUserInputMode) &&
-                    thread.showPlanFollowUpPrompt
-                  }
+                  showPlanFollowUpPrompt={thread.showPlanFollowUpPrompt}
                   promptHasText={base.prompt.trim().length > 0}
                   isSendBusy={thread.isSendBusy}
                   isConnecting={base.isConnecting}

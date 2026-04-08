@@ -29,6 +29,57 @@ import {
 export { FULL_ACCESS_AUTO_APPROVE_AFTER_MS };
 
 /**
+ * Shared logic for handling an OpenCode "session idle" transition, emitted
+ * either via `session.status { type: "idle" }` or the top-level `session.idle`
+ * event. Clears the active turn and emits a `turn.completed` +
+ * `session.state.changed(ready)` pair.
+ */
+function handleSessionIdle(
+  session: ActiveOpencodeSession,
+  turnId: TurnId | undefined,
+  stamp: { eventId: EventId; createdAt: string },
+  raw: { source: "opencode.sdk.session-event"; method: string; payload: unknown },
+  nextEventId: Effect.Effect<EventId>,
+  createdAt: string,
+): Effect.Effect<ReadonlyArray<ProviderRuntimeEvent>> {
+  return Effect.gen(function* () {
+    const completedTurnId = turnId;
+    session.activeTurnId = undefined;
+    session.wasRetrying = false;
+    session.turns.at(-1)?.items.push(raw);
+
+    const readyEventId = yield* nextEventId;
+    const events: ProviderRuntimeEvent[] = [
+      {
+        ...eventBase({
+          eventId: stamp.eventId,
+          createdAt,
+          threadId: session.threadId,
+          ...(completedTurnId ? { turnId: completedTurnId } : {}),
+          raw,
+        }),
+        type: "turn.completed",
+        payload: {
+          state: "completed",
+          ...(session.lastUsage ? { usage: session.lastUsage } : {}),
+        },
+      },
+      {
+        ...eventBase({
+          eventId: readyEventId,
+          createdAt,
+          threadId: session.threadId,
+          raw,
+        }),
+        type: "session.state.changed",
+        payload: { state: "ready", reason: "session.idle" },
+      },
+    ];
+    return events;
+  });
+}
+
+/**
  * Map an OpenCode SSE event to zero or more ProviderRuntimeEvents.
  */
 export function makeMapEvent(
@@ -266,11 +317,33 @@ export function makeMapEvent(
         }
 
         case "session.status": {
-          const status = (event.properties as { status: { type: string } }).status;
+          const status = (
+            event.properties as {
+              status: { type: string; message?: string };
+            }
+          ).status;
 
           if (status.type === "busy") {
             const existingTurnId = session.activeTurnId;
             if (existingTurnId) {
+              // If we were in a waiting/retry state, transition back to running.
+              if (session.wasRetrying) {
+                session.wasRetrying = false;
+                const resumeEventId = yield* nextEventId;
+                return [
+                  {
+                    ...eventBase({
+                      eventId: resumeEventId,
+                      createdAt,
+                      threadId: session.threadId,
+                      ...(existingTurnId ? { turnId: existingTurnId } : {}),
+                      raw,
+                    }),
+                    type: "session.state.changed",
+                    payload: { state: "running", reason: "session.retry.resumed" },
+                  },
+                ];
+              }
               session.turns.at(-1)?.items.push(event);
               return [];
             }
@@ -295,40 +368,40 @@ export function makeMapEvent(
           }
 
           if (status.type === "idle") {
-            const completedTurnId = turnId;
-            session.activeTurnId = undefined;
-            session.turns.at(-1)?.items.push(event);
+            return yield* handleSessionIdle(session, turnId, stamp, raw, nextEventId, createdAt);
+          }
 
-            const readyEventId = yield* nextEventId;
+          if (status.type === "retry") {
+            // OpenCode is waiting to retry (e.g. rate-limited). Surface this in
+            // the UI as a "waiting" state so the user sees a meaningful status
+            // instead of the spinner hanging indefinitely.
+            session.wasRetrying = true;
+            const retryStatus = status as { type: "retry"; message?: string; next?: number };
+            const reason = retryStatus.message
+              ? `Retrying: ${retryStatus.message}`
+              : "session.retry.waiting";
             return [
               {
                 ...eventBase({
                   eventId: stamp.eventId,
                   createdAt,
                   threadId: session.threadId,
-                  ...(completedTurnId ? { turnId: completedTurnId } : {}),
-                  raw,
-                }),
-                type: "turn.completed",
-                payload: {
-                  state: "completed",
-                  ...(session.lastUsage ? { usage: session.lastUsage } : {}),
-                },
-              },
-              {
-                ...eventBase({
-                  eventId: readyEventId,
-                  createdAt,
-                  threadId: session.threadId,
+                  ...(turnId ? { turnId } : {}),
                   raw,
                 }),
                 type: "session.state.changed",
-                payload: { state: "ready", reason: "session.idle" },
+                payload: { state: "waiting", reason },
               },
             ];
           }
 
           return [];
+        }
+
+        case "session.idle": {
+          // Top-level session.idle event — treat identically to
+          // session.status { type: "idle" }.
+          return yield* handleSessionIdle(session, turnId, stamp, raw, nextEventId, createdAt);
         }
 
         case "permission.updated": {

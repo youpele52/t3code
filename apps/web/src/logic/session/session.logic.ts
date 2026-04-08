@@ -101,6 +101,12 @@ export type TimelineEntry =
       kind: "work";
       createdAt: string;
       entry: import("./worklog.logic").WorkLogEntry;
+    }
+  | {
+      id: string;
+      kind: "user-input-question";
+      createdAt: string;
+      pendingUserInput: PendingUserInput;
     };
 
 // ── Format utilities ──────────────────────────────────────────────────

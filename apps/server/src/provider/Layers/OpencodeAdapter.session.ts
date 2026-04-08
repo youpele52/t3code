@@ -279,6 +279,7 @@ export function makeSessionMethods(deps: SessionMethodDeps) {
         lastError: undefined,
         activeTurnId: undefined,
         lastUsage: undefined,
+        wasRetrying: false,
       };
 
       sessions.set(input.threadId, record);

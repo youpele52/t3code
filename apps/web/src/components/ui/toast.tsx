@@ -12,6 +12,7 @@ import {
   InfoIcon,
   LoaderCircleIcon,
   TriangleAlertIcon,
+  type LucideIcon,
   XIcon,
 } from "lucide-react";
 
@@ -193,6 +194,40 @@ function ToastCloseButton({ className }: { className?: string }) {
   );
 }
 
+function ToastTitleAndDescription({
+  Icon,
+  description,
+  hideCopyButton,
+}: {
+  Icon: LucideIcon | null;
+  description: unknown;
+  hideCopyButton: boolean | undefined;
+}) {
+  return (
+    <div className="flex min-w-0 flex-1 gap-2">
+      {Icon && (
+        <div
+          className="[&>svg]:h-lh [&>svg]:w-4 [&_svg]:pointer-events-none [&_svg]:shrink-0 mt-0.5"
+          data-slot="toast-icon"
+        >
+          <Icon className="in-data-[type=loading]:animate-spin in-data-[type=error]:text-destructive in-data-[type=info]:text-info in-data-[type=success]:text-success in-data-[type=warning]:text-warning in-data-[type=loading]:opacity-80" />
+        </div>
+      )}
+
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <Toast.Title className="min-w-0 wrap-break-word font-medium" data-slot="toast-title" />
+        <Toast.Description
+          className="min-w-0 select-text wrap-break-word text-muted-foreground"
+          data-slot="toast-description"
+        />
+        {typeof description === "string" && !hideCopyButton ? (
+          <CopyErrorButton text={description} />
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function Toasts({ position = "top-right" }: { position: ToastPosition }) {
   const { toasts } = Toast.useToastManager<ThreadToastData>();
   const activeThreadId = useActiveThreadIdFromRoute();
@@ -238,6 +273,11 @@ function Toasts({ position = "top-right" }: { position: ToastPosition }) {
             visibleIndex,
             visibleToastLayout.items.length,
           );
+          const actionProps = toast.actionProps;
+          const showErrorCopyButton =
+            toast.type === "error" &&
+            typeof toast.description === "string" &&
+            !toast.data?.hideCopyButton;
 
           return (
             <Toast.Root
@@ -310,49 +350,26 @@ function Toasts({ position = "top-right" }: { position: ToastPosition }) {
               />
               <Toast.Content
                 className={cn(
-                  "pointer-events-auto flex items-center justify-between gap-1.5 overflow-hidden px-3.5 py-3 text-sm transition-opacity duration-250 data-expanded:opacity-100",
+                  "pointer-events-auto overflow-hidden px-3.5 py-3 text-sm transition-opacity duration-250 data-expanded:opacity-100 relative flex flex-col gap-3",
                   hideCollapsedContent &&
                     "not-data-expanded:pointer-events-none not-data-expanded:opacity-0",
                 )}
               >
-                <div className="flex min-w-0 flex-1 gap-2">
-                  {Icon && (
-                    <div
-                      className="[&>svg]:h-lh [&>svg]:w-4 [&_svg]:pointer-events-none [&_svg]:shrink-0"
-                      data-slot="toast-icon"
+                <ToastCloseButton className="absolute top-3 right-3" />
+                <ToastTitleAndDescription
+                  Icon={Icon}
+                  description={showErrorCopyButton ? toast.description : null}
+                  hideCopyButton={!showErrorCopyButton}
+                />
+                {actionProps && (
+                  <div className="flex items-center justify-end gap-2 pt-2">
+                    <Toast.Action
+                      className={cn(buttonVariants({ size: "xs" }), "shrink-0")}
+                      data-slot="toast-action"
                     >
-                      <Icon className="in-data-[type=loading]:animate-spin in-data-[type=error]:text-destructive in-data-[type=info]:text-info in-data-[type=success]:text-success in-data-[type=warning]:text-warning in-data-[type=loading]:opacity-80" />
-                    </div>
-                  )}
-
-                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <div className="flex items-center justify-between gap-1">
-                      <Toast.Title
-                        className="min-w-0 wrap-break-word font-medium"
-                        data-slot="toast-title"
-                      />
-                      <div className="flex items-center gap-1">
-                        {toast.type === "error" &&
-                          typeof toast.description === "string" &&
-                          !toast.data?.hideCopyButton && (
-                            <CopyErrorButton text={toast.description} />
-                          )}
-                        <ToastCloseButton />
-                      </div>
-                    </div>
-                    <Toast.Description
-                      className="min-w-0 select-text wrap-break-word text-muted-foreground"
-                      data-slot="toast-description"
-                    />
+                      {actionProps.children}
+                    </Toast.Action>
                   </div>
-                </div>
-                {toast.actionProps && (
-                  <Toast.Action
-                    className={cn(buttonVariants({ size: "xs" }), "shrink-0")}
-                    data-slot="toast-action"
-                  >
-                    {toast.actionProps.children}
-                  </Toast.Action>
                 )}
               </Toast.Content>
             </Toast.Root>
@@ -385,6 +402,11 @@ function AnchoredToasts() {
             const Icon = toast.type ? TOAST_ICONS[toast.type as keyof typeof TOAST_ICONS] : null;
             const tooltipStyle = toast.data?.tooltipStyle ?? false;
             const positionerProps = toast.positionerProps;
+            const actionProps = toast.actionProps;
+            const showErrorCopyButton =
+              toast.type === "error" &&
+              typeof toast.description === "string" &&
+              !toast.data?.hideCopyButton;
 
             if (!positionerProps?.anchor) {
               return null;
@@ -413,45 +435,26 @@ function AnchoredToasts() {
                       <Toast.Title data-slot="toast-title" />
                     </Toast.Content>
                   ) : (
-                    <Toast.Content className="pointer-events-auto flex items-center justify-between gap-1.5 overflow-hidden px-3.5 py-3 text-sm">
-                      <div className="flex min-w-0 flex-1 gap-2">
-                        {Icon && (
-                          <div
-                            className="[&>svg]:h-lh [&>svg]:w-4 [&_svg]:pointer-events-none [&_svg]:shrink-0"
-                            data-slot="toast-icon"
+                    <Toast.Content
+                      className={cn(
+                        "pointer-events-auto overflow-hidden px-3.5 py-3 text-sm relative flex flex-col gap-3",
+                      )}
+                    >
+                      <ToastCloseButton className="absolute top-3 right-3" />
+                      <ToastTitleAndDescription
+                        Icon={Icon}
+                        description={showErrorCopyButton ? toast.description : null}
+                        hideCopyButton={!showErrorCopyButton}
+                      />
+                      {actionProps && (
+                        <div className="flex items-center justify-end gap-2 pt-2">
+                          <Toast.Action
+                            className={cn(buttonVariants({ size: "xs" }), "shrink-0")}
+                            data-slot="toast-action"
                           >
-                            <Icon className="in-data-[type=loading]:animate-spin in-data-[type=error]:text-destructive in-data-[type=info]:text-info in-data-[type=success]:text-success in-data-[type=warning]:text-warning in-data-[type=loading]:opacity-80" />
-                          </div>
-                        )}
-
-                        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                          <div className="flex items-center gap-1">
-                            <Toast.Title
-                              className="min-w-0 wrap-break-word font-medium"
-                              data-slot="toast-title"
-                            />
-                            <div className="flex items-center gap-1">
-                              {toast.type === "error" &&
-                                typeof toast.description === "string" &&
-                                !toast.data?.hideCopyButton && (
-                                  <CopyErrorButton text={toast.description} />
-                                )}
-                              <ToastCloseButton />
-                            </div>
-                          </div>
-                          <Toast.Description
-                            className="min-w-0 select-text wrap-break-word text-muted-foreground"
-                            data-slot="toast-description"
-                          />
+                            {actionProps.children}
+                          </Toast.Action>
                         </div>
-                      </div>
-                      {toast.actionProps && (
-                        <Toast.Action
-                          className={cn(buttonVariants({ size: "xs" }), "shrink-0")}
-                          data-slot="toast-action"
-                        >
-                          {toast.actionProps.children}
-                        </Toast.Action>
                       )}
                     </Toast.Content>
                   )}

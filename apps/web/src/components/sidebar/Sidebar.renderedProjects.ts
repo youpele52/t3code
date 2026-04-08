@@ -101,11 +101,7 @@ export function useSidebarRenderedProjects({
         );
         const activeThreadId = routeThreadId ?? undefined;
         const isThreadListExpanded = expandedThreadListsByProject.has(project.id);
-        const pinnedCollapsedThread =
-          !project.expanded && activeThreadId
-            ? (projectThreads.find((thread) => thread.id === activeThreadId) ?? null)
-            : null;
-        const shouldShowThreadPanel = project.expanded || pinnedCollapsedThread !== null;
+        const shouldShowThreadPanel = project.expanded;
         const {
           hasHiddenThreads,
           hiddenThreads,
@@ -120,9 +116,7 @@ export function useSidebarRenderedProjects({
           hiddenThreads.map((thread) => resolveProjectThreadStatus(thread)),
         );
         const orderedProjectThreadIds = projectThreads.map((thread) => thread.id);
-        const renderedThreadIds = pinnedCollapsedThread
-          ? [pinnedCollapsedThread.id]
-          : visibleProjectThreads.map((thread) => thread.id);
+        const renderedThreadIds = visibleProjectThreads.map((thread) => thread.id);
         const showEmptyThreadState = project.expanded && projectThreads.length === 0;
 
         return {

@@ -193,10 +193,17 @@ export function useChatViewTimelineState({ base, thread }: ChatViewTimelineState
     };
   }, [activeThread, handoffAttachmentPreviews, optimisticUserMessages, setOptimisticUserMessages]);
 
+  const { pendingUserInputs } = thread;
+
   const timelineEntries = useMemo(
     () =>
-      deriveTimelineEntries(timelineMessages, activeThread?.proposedPlans ?? [], workLogEntries),
-    [activeThread?.proposedPlans, timelineMessages, workLogEntries],
+      deriveTimelineEntries(
+        timelineMessages,
+        activeThread?.proposedPlans ?? [],
+        workLogEntries,
+        pendingUserInputs,
+      ),
+    [activeThread?.proposedPlans, pendingUserInputs, timelineMessages, workLogEntries],
   );
   const { turnDiffSummaries, inferredCheckpointTurnCountByTurnId } =
     useTurnDiffSummaries(activeThread);

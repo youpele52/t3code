@@ -15,6 +15,7 @@ import { Toggle } from "../../ui/toggle";
 import { useSidebar } from "../../ui/sidebar";
 import { OpenInPicker } from "./OpenInPicker";
 import { useIsThreadRunning } from "../../../stores/main";
+import { truncateThreadName } from "../../sidebar/Sidebar.logic";
 
 const truncateThreadName = (name: string, maxLength: number = 20): string => {
   if (name.length <= maxLength) return name;

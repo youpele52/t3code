@@ -427,6 +427,48 @@ export const MessagesTimeline = memo(function MessagesTimeline({
           />
         </div>
       )}
+
+      {row.kind === "user-input-question" && (
+        <div className="min-w-0 px-1 py-0.5">
+          <div className="rounded-xl border border-border/60 bg-card/40 px-4 py-3">
+            <p className="mb-2.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
+              Input required
+            </p>
+            <div className="space-y-4">
+              {row.pendingUserInput.questions.map((question, index) => (
+                <div key={question.id}>
+                  <p className="mb-1 text-sm font-medium text-foreground/90">
+                    {row.pendingUserInput.questions.length > 1
+                      ? `${index + 1}. ${question.header || question.question}`
+                      : question.header || question.question}
+                  </p>
+                  {question.header && question.question !== question.header && (
+                    <p className="mb-1.5 text-sm text-muted-foreground/80">{question.question}</p>
+                  )}
+                  {question.options.length > 0 && (
+                    <ul className="space-y-1 pl-3">
+                      {question.options.map((option, optIndex) => (
+                        <li key={optIndex} className="text-sm text-muted-foreground/70">
+                          <span className="font-medium text-foreground/70">{option.label}</span>
+                          {option.description ? (
+                            <span className="text-muted-foreground/55">
+                              {" "}
+                              — {option.description}
+                            </span>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 text-[11px] text-muted-foreground/45">
+              Type your answer below and press send to continue.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 
