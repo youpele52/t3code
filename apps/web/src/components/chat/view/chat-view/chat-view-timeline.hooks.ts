@@ -1,4 +1,4 @@
-import { type MessageId, type TurnId } from "@t3tools/contracts";
+import { type MessageId, type TurnId } from "@bigcode/contracts";
 import { useCallback, useEffect, useMemo } from "react";
 
 import {

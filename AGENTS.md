@@ -19,10 +19,10 @@ Long term maintainability is a core priority. Before adding new functionality, c
 
 ## Package Roles
 
-- `apps/server`: Named `"t3"` in package.json (not `@t3tools/server`). Node.js/Bun WebSocket server. Starts provider sub-processes, serves the React web app, manages provider sessions. Use `--filter=t3` in turbo commands.
-- `apps/web`: `@t3tools/web`. React/Vite UI. Owns session UX, conversation/event rendering, and client-side state. Connects to the server via WebSocket at `/ws?token=<value>`.
-- `packages/contracts`: `@t3tools/contracts`. Schema-only — no runtime logic. Has both a barrel `src/index.ts` (legacy) and subpath exports. Prefer direct subpath imports for new code: `import { ... } from "@t3tools/contracts/orchestration/..."`. TypeScript resolves directly to source (`"types": "./src/index.ts"`), no build needed for ESM consumers.
-- `packages/shared`: `@t3tools/shared`. Runtime utilities. **No barrel index** — always use subpath exports: `@t3tools/shared/git`, `@t3tools/shared/String`, `@t3tools/shared/Net`, etc.
+- `apps/server`: Named `"t3"` in package.json (not `@bigcode/server`). Node.js/Bun WebSocket server. Starts provider sub-processes, serves the React web app, manages provider sessions. Use `--filter=t3` in turbo commands.
+- `apps/web`: `@bigcode/web`. React/Vite UI. Owns session UX, conversation/event rendering, and client-side state. Connects to the server via WebSocket at `/ws?token=<value>`.
+- `packages/contracts`: `@bigcode/contracts`. Schema-only — no runtime logic. Has both a barrel `src/index.ts` (legacy) and subpath exports. Prefer direct subpath imports for new code: `import { ... } from "@bigcode/contracts/orchestration/..."`. TypeScript resolves directly to source (`"types": "./src/index.ts"`), no build needed for ESM consumers.
+- `packages/shared`: `@bigcode/shared`. Runtime utilities. **No barrel index** — always use subpath exports: `@bigcode/shared/git`, `@bigcode/shared/String`, `@bigcode/shared/Net`, etc.
 
 ## Developer Commands
 
@@ -35,7 +35,7 @@ bun fmt:check        # CI format check (read-only)
 bun lint             # lint (oxlint)
 bun typecheck        # tsc --noEmit across all packages (via turbo)
 bun run test         # all tests via Vitest (via turbo) — NEVER use bun test
-bun build:contracts  # build @t3tools/contracts (required before server/web if not using bun dev)
+bun build:contracts  # build @bigcode/contracts (required before server/web if not using bun dev)
 bun clean            # remove node_modules, dist, .turbo everywhere
 ```
 
@@ -62,13 +62,13 @@ bun run --cwd apps/web test:browser                             # Playwright (ne
 
 **SQLite migrations:** Adding a migration requires: (1) create file in `apps/server/src/persistence/Migrations/`, (2) import it in `Migrations.ts`, (3) add to `migrationEntries`. No separate migration script — runs automatically on server startup.
 
-**`bun dev` depends on `@t3tools/contracts#build`** per `turbo.json`. If contracts fail to build, the entire dev command fails. Run `bun build:contracts` to debug contracts in isolation.
+**`bun dev` depends on `@bigcode/contracts#build`** per `turbo.json`. If contracts fail to build, the entire dev command fails. Run `bun build:contracts` to debug contracts in isolation.
 
 **Server tests are intentionally sequential:** `apps/server/vitest.config.ts` sets `fileParallelism: false` and `testTimeout: 60_000`. Server tests exercise SQLite, git, and orchestration runtimes — parallelism causes flakes.
 
 **Path alias:** `~/*` → `apps/web/src/*` (in both tsconfig and Vite config).
 
-**`@t3tools/web` is a devDependency of `apps/server`:** In dev, the server proxies to the Vite dev server. In production, it embeds `dist/client/`.
+**`@bigcode/web` is a devDependency of `apps/server`:** In dev, the server proxies to the Vite dev server. In production, it embeds `dist/client/`.
 
 ## Providers
 

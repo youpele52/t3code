@@ -1,1 +1,1 @@
-export { buildBootstrapInput, type BootstrapInputResult } from "@t3tools/shared/history";
+export { buildBootstrapInput, type BootstrapInputResult } from "@bigcode/shared/history";

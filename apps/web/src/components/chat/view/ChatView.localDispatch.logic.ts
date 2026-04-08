@@ -1,4 +1,4 @@
-import type { ApprovalRequestId } from "@t3tools/contracts";
+import type { ApprovalRequestId } from "@bigcode/contracts";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { SessionPhase, Thread } from "../../../models/types";
 import {

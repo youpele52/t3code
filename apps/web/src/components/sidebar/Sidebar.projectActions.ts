@@ -8,7 +8,7 @@ import {
 } from "react";
 import type React from "react";
 import { type DragCancelEvent, type DragStartEvent, type DragEndEvent } from "@dnd-kit/core";
-import { DEFAULT_MODEL_BY_PROVIDER, type ProjectId, type ThreadId } from "@t3tools/contracts";
+import { DEFAULT_MODEL_BY_PROVIDER, type ProjectId, type ThreadId } from "@bigcode/contracts";
 import { isNonEmpty as isNonEmptyString } from "effect/String";
 import { isMacPlatform, newCommandId, newProjectId } from "../../lib/utils";
 import { useUiStateStore } from "../../stores/ui";

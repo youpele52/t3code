@@ -1,6 +1,6 @@
 import { Effect, Layer, Stream } from "effect";
 import { describe, expect, it, vi } from "vitest";
-import type { OrchestrationReadModel } from "@t3tools/contracts";
+import type { OrchestrationReadModel } from "@bigcode/contracts";
 
 import { OrchestrationEngineService } from "../../orchestration/Services/OrchestrationEngine.ts";
 import { TerminalManager } from "../../terminal/Services/Manager.ts";

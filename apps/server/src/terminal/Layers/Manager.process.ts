@@ -1,5 +1,5 @@
-import { type TerminalEvent } from "@t3tools/contracts";
-import { makeKeyedCoalescingWorker } from "@t3tools/shared/KeyedCoalescingWorker";
+import { type TerminalEvent } from "@bigcode/contracts";
+import { makeKeyedCoalescingWorker } from "@bigcode/shared/KeyedCoalescingWorker";
 import { Effect, Exit, Fiber, FileSystem, Option, Scope, Semaphore, SynchronizedRef } from "effect";
 
 import { TerminalCwdError, TerminalSessionLookupError } from "../Services/Manager";

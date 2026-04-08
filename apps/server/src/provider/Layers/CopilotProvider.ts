@@ -1,4 +1,4 @@
-import type { CopilotSettings, ModelCapabilities, ServerProviderModel } from "@t3tools/contracts";
+import type { CopilotSettings, ModelCapabilities, ServerProviderModel } from "@bigcode/contracts";
 import { Cache, Duration, Effect, Equal, Layer, Result, Stream } from "effect";
 import { CopilotClient, type ModelInfo } from "@github/copilot-sdk";
 
@@ -167,7 +167,7 @@ export const checkCopilotProviderStatus = Effect.fn("checkCopilotProviderStatus"
         version: null,
         status: "warning",
         auth: { status: "unknown" },
-        message: "GitHub Copilot is disabled in T3 Code settings.",
+        message: "GitHub Copilot is disabled in bigCode settings.",
       },
     });
   }

@@ -1,4 +1,4 @@
-import { DEFAULT_UNIFIED_SETTINGS } from "@t3tools/contracts/settings";
+import { DEFAULT_UNIFIED_SETTINGS } from "@bigcode/contracts/settings";
 import { Equal } from "effect";
 import { useCallback, useMemo } from "react";
 import { useTheme } from "../../hooks/useTheme";

@@ -6,7 +6,7 @@ import {
   type ExecuteGitInput,
   type ExecuteGitResult,
 } from "../Services/GitCore.ts";
-import { GitCommandError } from "@t3tools/contracts";
+import { GitCommandError } from "@bigcode/contracts";
 import { ServerConfig } from "../../startup/config.ts";
 import { makeRawExecute, wrapExecuteWithMetrics, makeGitHelpers } from "./GitCoreExecutor.ts";
 import { makeGitStatusOps } from "./GitStatus.ts";

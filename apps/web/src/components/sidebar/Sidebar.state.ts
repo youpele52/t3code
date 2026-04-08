@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { type ProjectId, ThreadId } from "@t3tools/contracts";
+import { type ProjectId, ThreadId } from "@bigcode/contracts";
 import { useLocation, useNavigate, useParams } from "@tanstack/react-router";
 import { isElectron } from "../../config/env";
 import { isLinuxPlatform } from "../../lib/utils";

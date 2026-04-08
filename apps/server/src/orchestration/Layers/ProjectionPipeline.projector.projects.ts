@@ -4,7 +4,7 @@
  * @module ProjectionPipeline.projector.projects
  */
 import { Effect, Option } from "effect";
-import type { OrchestrationEvent } from "@t3tools/contracts";
+import type { OrchestrationEvent } from "@bigcode/contracts";
 import {
   ORCHESTRATION_PROJECTOR_NAMES,
   type AttachmentSideEffects,

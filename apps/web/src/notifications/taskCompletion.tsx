@@ -1,4 +1,4 @@
-import { ThreadId } from "@t3tools/contracts";
+import { ThreadId } from "@bigcode/contracts";
 import { useEffect, useRef } from "react";
 import { useNavigate } from "@tanstack/react-router";
 

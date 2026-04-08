@@ -1,6 +1,6 @@
-import { type OrchestrationEvent } from "@t3tools/contracts";
+import { type OrchestrationEvent } from "@bigcode/contracts";
 import { Cause, Effect, Layer, Scope, Stream } from "effect";
-import { type DrainableWorker, makeDrainableWorker } from "@t3tools/shared/DrainableWorker";
+import { type DrainableWorker, makeDrainableWorker } from "@bigcode/shared/DrainableWorker";
 
 import {
   ProviderCommandReactor,

@@ -13,26 +13,26 @@ import type {
   CheckpointRef,
   ProviderInteractionMode,
   RuntimeMode,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import {
   DEFAULT_RUNTIME_MODE as _DEFAULT_RUNTIME_MODE,
   DEFAULT_PROVIDER_INTERACTION_MODE as _DEFAULT_PROVIDER_INTERACTION_MODE,
   DEFAULT_TERMINAL_ID as _DEFAULT_TERMINAL_ID,
   DEFAULT_THREAD_TERMINAL_HEIGHT as _DEFAULT_THREAD_TERMINAL_HEIGHT,
   MAX_TERMINALS_PER_GROUP as _MAX_TERMINALS_PER_GROUP,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 
 export type SessionPhase = "disconnected" | "connecting" | "ready" | "running";
 
-/** @deprecated Import `DEFAULT_RUNTIME_MODE` from `@t3tools/contracts` directly. */
+/** @deprecated Import `DEFAULT_RUNTIME_MODE` from `@bigcode/contracts` directly. */
 export const DEFAULT_RUNTIME_MODE: RuntimeMode = _DEFAULT_RUNTIME_MODE;
-/** @deprecated Import `DEFAULT_PROVIDER_INTERACTION_MODE` from `@t3tools/contracts` directly. */
+/** @deprecated Import `DEFAULT_PROVIDER_INTERACTION_MODE` from `@bigcode/contracts` directly. */
 export const DEFAULT_INTERACTION_MODE: ProviderInteractionMode = _DEFAULT_PROVIDER_INTERACTION_MODE;
-/** @deprecated Import `DEFAULT_THREAD_TERMINAL_HEIGHT` from `@t3tools/contracts` directly. */
+/** @deprecated Import `DEFAULT_THREAD_TERMINAL_HEIGHT` from `@bigcode/contracts` directly. */
 export const DEFAULT_THREAD_TERMINAL_HEIGHT = _DEFAULT_THREAD_TERMINAL_HEIGHT;
-/** @deprecated Import `DEFAULT_TERMINAL_ID` from `@t3tools/contracts` directly. */
+/** @deprecated Import `DEFAULT_TERMINAL_ID` from `@bigcode/contracts` directly. */
 export const DEFAULT_THREAD_TERMINAL_ID = _DEFAULT_TERMINAL_ID;
-/** @deprecated Import `MAX_TERMINALS_PER_GROUP` from `@t3tools/contracts` directly. */
+/** @deprecated Import `MAX_TERMINALS_PER_GROUP` from `@bigcode/contracts` directly. */
 export const MAX_TERMINALS_PER_GROUP = _MAX_TERMINALS_PER_GROUP;
 export type ProjectScript = ContractProjectScript;
 

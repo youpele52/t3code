@@ -1,4 +1,4 @@
-import type { ThreadId } from "@t3tools/contracts";
+import type { ThreadId } from "@bigcode/contracts";
 import { DeepMutable } from "effect/Types";
 import { getLocalStorageItem } from "../../hooks/useLocalStorage";
 import {

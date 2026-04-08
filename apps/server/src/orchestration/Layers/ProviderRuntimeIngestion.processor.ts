@@ -12,7 +12,7 @@ import {
   CheckpointRef,
   ThreadId,
   type ProviderRuntimeEvent,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { Effect } from "effect";
 
 import { type ProviderServiceShape } from "../../provider/Services/ProviderService.ts";

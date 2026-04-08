@@ -34,14 +34,14 @@ This allows gradual migration as files are naturally touched, avoiding the risk 
 **Primary Concerns**:
 
 1. **Maintenance Overhead**: Every new file requires manually updating the barrel export
-2. **Loss of Explicit Dependencies**: Imports like `from "@t3tools/contracts"` don't show the source module
+2. **Loss of Explicit Dependencies**: Imports like `from "@bigcode/contracts"` don't show the source module
 3. **Build Performance**: Bundlers must parse entire dependency graph even for single imports
 4. **Circular Dependency Risk**: Barrel files can hide or create circular references
 5. **Extra Layer**: Adds unnecessary indirection between source and consumer
 
 ### Why This Works for Internal Packages
 
-Since `@t3tools/contracts` is an **internal monorepo package** (not published to npm):
+Since `@bigcode/contracts` is an **internal monorepo package** (not published to npm):
 
 - Consumers are in the same repository
 - Team controls both package and consumers
@@ -68,7 +68,7 @@ export * from "./constants/websocket.constant";
 
 ```typescript
 // Unclear where these come from
-import { PROVIDERS, DEFAULT_MODEL, WS_METHODS } from "@t3tools/contracts";
+import { PROVIDERS, DEFAULT_MODEL, WS_METHODS } from "@bigcode/contracts";
 ```
 
 **Problems**:
@@ -88,9 +88,9 @@ import { PROVIDERS, DEFAULT_MODEL, WS_METHODS } from "@t3tools/contracts";
 
 ```typescript
 // Explicit and clear
-import { PROVIDERS } from "@t3tools/contracts/constants/provider.constant";
-import { DEFAULT_MODEL } from "@t3tools/contracts/constants/model.constant";
-import { WS_METHODS } from "@t3tools/contracts/constants/websocket.constant";
+import { PROVIDERS } from "@bigcode/contracts/constants/provider.constant";
+import { DEFAULT_MODEL } from "@bigcode/contracts/constants/model.constant";
+import { WS_METHODS } from "@bigcode/contracts/constants/websocket.constant";
 ```
 
 **Benefits**:
@@ -152,13 +152,13 @@ export * from "./workspace/project";
 
 ### Phase 2: Find All Import Statements (15 minutes)
 
-Search for all files that import from `@t3tools/contracts` to understand the scope of changes.
+Search for all files that import from `@bigcode/contracts` to understand the scope of changes.
 
 **Search command**:
 
 ```bash
-# Find all imports from @t3tools/contracts
-grep -r "from \"@t3tools/contracts\"" apps/ packages/ --include="*.ts" --include="*.tsx"
+# Find all imports from @bigcode/contracts
+grep -r "from \"@bigcode/contracts\"" apps/ packages/ --include="*.ts" --include="*.tsx"
 ```
 
 **Expected locations**:
@@ -183,11 +183,11 @@ Configure TypeScript to support direct imports with clean paths.
 {
   "compilerOptions": {
     "paths": {
-      "@t3tools/contracts/constants/*": ["./packages/contracts/src/constants/*"],
-      "@t3tools/contracts/core/*": ["./packages/contracts/src/core/*"],
-      "@t3tools/contracts/orchestration/*": ["./packages/contracts/src/orchestration/*"],
-      "@t3tools/contracts/workspace/*": ["./packages/contracts/src/workspace/*"],
-      "@t3tools/contracts/server/*": ["./packages/contracts/src/server/*"]
+      "@bigcode/contracts/constants/*": ["./packages/contracts/src/constants/*"],
+      "@bigcode/contracts/core/*": ["./packages/contracts/src/core/*"],
+      "@bigcode/contracts/orchestration/*": ["./packages/contracts/src/orchestration/*"],
+      "@bigcode/contracts/workspace/*": ["./packages/contracts/src/workspace/*"],
+      "@bigcode/contracts/server/*": ["./packages/contracts/src/server/*"]
     }
   }
 }
@@ -196,13 +196,13 @@ Configure TypeScript to support direct imports with clean paths.
 **Note**: This is optional but provides cleaner import paths. Without it, imports would be:
 
 ```typescript
-import { PROVIDERS } from "@t3tools/contracts/src/constants/provider.constant";
+import { PROVIDERS } from "@bigcode/contracts/src/constants/provider.constant";
 ```
 
 With path aliases:
 
 ```typescript
-import { PROVIDERS } from "@t3tools/contracts/constants/provider.constant";
+import { PROVIDERS } from "@bigcode/contracts/constants/provider.constant";
 ```
 
 ---
@@ -217,7 +217,7 @@ Configure the package to support direct imports.
 
 ```json
 {
-  "name": "@t3tools/contracts",
+  "name": "@bigcode/contracts",
   "exports": {
     "./constants/*": "./src/constants/*",
     "./core/*": "./src/core/*",
@@ -247,30 +247,30 @@ Systematically update all imports across the codebase.
 
 ```typescript
 // Before
-import { PROVIDERS, PROVIDER_DISPLAY_NAMES } from "@t3tools/contracts";
+import { PROVIDERS, PROVIDER_DISPLAY_NAMES } from "@bigcode/contracts";
 
 // After
-import { PROVIDERS, PROVIDER_DISPLAY_NAMES } from "@t3tools/contracts/constants/provider.constant";
+import { PROVIDERS, PROVIDER_DISPLAY_NAMES } from "@bigcode/contracts/constants/provider.constant";
 ```
 
 ```typescript
 // Before
-import { ProviderKind, RuntimeMode } from "@t3tools/contracts";
+import { ProviderKind, RuntimeMode } from "@bigcode/contracts";
 
 // After
-import { ProviderKind } from "@t3tools/contracts/orchestration/provider";
-import { RuntimeMode } from "@t3tools/contracts/orchestration/orchestration";
+import { ProviderKind } from "@bigcode/contracts/orchestration/provider";
+import { RuntimeMode } from "@bigcode/contracts/orchestration/orchestration";
 ```
 
 ```typescript
 // Before
-import { WS_METHODS, ORCHESTRATION_WS_METHODS } from "@t3tools/contracts";
+import { WS_METHODS, ORCHESTRATION_WS_METHODS } from "@bigcode/contracts";
 
 // After
 import {
   WS_METHODS,
   ORCHESTRATION_WS_METHODS,
-} from "@t3tools/contracts/constants/websocket.constant";
+} from "@bigcode/contracts/constants/websocket.constant";
 ```
 
 **Approach**:
@@ -307,7 +307,7 @@ Document the new import pattern for the team.
 **Create**: `packages/contracts/README.md`
 
 ````markdown
-# @t3tools/contracts
+# @bigcode/contracts
 
 Shared contracts, types, and constants for the bigCode application.
 
@@ -321,23 +321,23 @@ Import directly from the source module:
 
 ```typescript
 // Constants
-import { PROVIDERS } from "@t3tools/contracts/constants/provider.constant";
-import { DEFAULT_MODEL } from "@t3tools/contracts/constants/model.constant";
-import { WS_METHODS } from "@t3tools/contracts/constants/websocket.constant";
+import { PROVIDERS } from "@bigcode/contracts/constants/provider.constant";
+import { DEFAULT_MODEL } from "@bigcode/contracts/constants/model.constant";
+import { WS_METHODS } from "@bigcode/contracts/constants/websocket.constant";
 
 // Core types
-import { ModelSelection } from "@t3tools/contracts/core/model";
-import { ClientSettings } from "@t3tools/contracts/core/settings";
+import { ModelSelection } from "@bigcode/contracts/core/model";
+import { ClientSettings } from "@bigcode/contracts/core/settings";
 
 // Orchestration
-import { ProviderKind } from "@t3tools/contracts/orchestration/provider";
-import { RuntimeMode } from "@t3tools/contracts/orchestration/orchestration";
+import { ProviderKind } from "@bigcode/contracts/orchestration/provider";
+import { RuntimeMode } from "@bigcode/contracts/orchestration/orchestration";
 
 // Server
-import { RpcMethod } from "@t3tools/contracts/server/rpc";
+import { RpcMethod } from "@bigcode/contracts/server/rpc";
 
 // Workspace
-import { GitStatus } from "@t3tools/contracts/workspace/git";
+import { GitStatus } from "@bigcode/contracts/workspace/git";
 ```
 ````
 
@@ -381,7 +381,7 @@ packages/contracts/src/
 
 **Search for imports**:
 ```bash
-grep -r "from \"@t3tools/contracts\"" apps/ packages/ --include="*.ts" --include="*.tsx" | wc -l
+grep -r "from \"@bigcode/contracts\"" apps/ packages/ --include="*.ts" --include="*.tsx" | wc -l
 ````
 
 **Expected**: 200-300 import statements to update
@@ -402,49 +402,49 @@ grep -r "from \"@t3tools/contracts\"" apps/ packages/ --include="*.ts" --include
 
 | Old Import                  | New Import                                                     |
 | --------------------------- | -------------------------------------------------------------- |
-| `from "@t3tools/contracts"` | `from "@t3tools/contracts/constants/provider.constant"`        |
-| `from "@t3tools/contracts"` | `from "@t3tools/contracts/constants/model.constant"`           |
-| `from "@t3tools/contracts"` | `from "@t3tools/contracts/constants/websocket.constant"`       |
-| `from "@t3tools/contracts"` | `from "@t3tools/contracts/constants/runtime.constant"`         |
-| `from "@t3tools/contracts"` | `from "@t3tools/contracts/constants/terminal.constant"`        |
-| `from "@t3tools/contracts"` | `from "@t3tools/contracts/constants/settings.constant"`        |
-| `from "@t3tools/contracts"` | `from "@t3tools/contracts/constants/storage.constant"`         |
-| `from "@t3tools/contracts"` | `from "@t3tools/contracts/constants/git.constant"`             |
-| `from "@t3tools/contracts"` | `from "@t3tools/contracts/constants/providerRuntime.constant"` |
+| `from "@bigcode/contracts"` | `from "@bigcode/contracts/constants/provider.constant"`        |
+| `from "@bigcode/contracts"` | `from "@bigcode/contracts/constants/model.constant"`           |
+| `from "@bigcode/contracts"` | `from "@bigcode/contracts/constants/websocket.constant"`       |
+| `from "@bigcode/contracts"` | `from "@bigcode/contracts/constants/runtime.constant"`         |
+| `from "@bigcode/contracts"` | `from "@bigcode/contracts/constants/terminal.constant"`        |
+| `from "@bigcode/contracts"` | `from "@bigcode/contracts/constants/settings.constant"`        |
+| `from "@bigcode/contracts"` | `from "@bigcode/contracts/constants/storage.constant"`         |
+| `from "@bigcode/contracts"` | `from "@bigcode/contracts/constants/git.constant"`             |
+| `from "@bigcode/contracts"` | `from "@bigcode/contracts/constants/providerRuntime.constant"` |
 
 ### Core
 
 | Export                              | New Import Path                              |
 | ----------------------------------- | -------------------------------------------- |
-| `Schema`, `Effect`, etc.            | `from "@t3tools/contracts/core/baseSchemas"` |
-| `ModelSelection`, `AppModelOptions` | `from "@t3tools/contracts/core/model"`       |
-| `ClientSettings`, `ServerSettings`  | `from "@t3tools/contracts/core/settings"`    |
+| `Schema`, `Effect`, etc.            | `from "@bigcode/contracts/core/baseSchemas"` |
+| `ModelSelection`, `AppModelOptions` | `from "@bigcode/contracts/core/model"`       |
+| `ClientSettings`, `ServerSettings`  | `from "@bigcode/contracts/core/settings"`    |
 
 ### Orchestration
 
 | Export                                   | New Import Path                                           |
 | ---------------------------------------- | --------------------------------------------------------- |
-| `ProviderKind`, `ProviderApprovalPolicy` | `from "@t3tools/contracts/orchestration/provider"`        |
-| `RuntimeMode`, `ProviderInteractionMode` | `from "@t3tools/contracts/orchestration/orchestration"`   |
-| `RuntimeEvent`, `RuntimeSession`         | `from "@t3tools/contracts/orchestration/providerRuntime"` |
+| `ProviderKind`, `ProviderApprovalPolicy` | `from "@bigcode/contracts/orchestration/provider"`        |
+| `RuntimeMode`, `ProviderInteractionMode` | `from "@bigcode/contracts/orchestration/orchestration"`   |
+| `RuntimeEvent`, `RuntimeSession`         | `from "@bigcode/contracts/orchestration/providerRuntime"` |
 
 ### Server
 
 | Export                           | New Import Path                                |
 | -------------------------------- | ---------------------------------------------- |
-| `IpcMessage`, `IpcChannel`       | `from "@t3tools/contracts/server/ipc"`         |
-| `Keybinding`, `KeybindingAction` | `from "@t3tools/contracts/server/keybindings"` |
-| `ServerConfig`, `ServerPaths`    | `from "@t3tools/contracts/server/server"`      |
-| `RpcMethod`, `WsRpcRequest`      | `from "@t3tools/contracts/server/rpc"`         |
+| `IpcMessage`, `IpcChannel`       | `from "@bigcode/contracts/server/ipc"`         |
+| `Keybinding`, `KeybindingAction` | `from "@bigcode/contracts/server/keybindings"` |
+| `ServerConfig`, `ServerPaths`    | `from "@bigcode/contracts/server/server"`      |
+| `RpcMethod`, `WsRpcRequest`      | `from "@bigcode/contracts/server/rpc"`         |
 
 ### Workspace
 
 | Export                              | New Import Path                                |
 | ----------------------------------- | ---------------------------------------------- |
-| `Terminal`, `TerminalSession`       | `from "@t3tools/contracts/workspace/terminal"` |
-| `GitStatus`, `GitBranch`            | `from "@t3tools/contracts/workspace/git"`      |
-| `EditorConfig`, `EditorPreferences` | `from "@t3tools/contracts/workspace/editor"`   |
-| `Project`, `ProjectScript`          | `from "@t3tools/contracts/workspace/project"`  |
+| `Terminal`, `TerminalSession`       | `from "@bigcode/contracts/workspace/terminal"` |
+| `GitStatus`, `GitBranch`            | `from "@bigcode/contracts/workspace/git"`      |
+| `EditorConfig`, `EditorPreferences` | `from "@bigcode/contracts/workspace/editor"`   |
+| `Project`, `ProjectScript`          | `from "@bigcode/contracts/workspace/project"`  |
 
 ---
 
@@ -492,10 +492,10 @@ bun run test
 
 ```bash
 # Should return no results
-grep -r "from \"@t3tools/contracts\";" apps/ packages/ --include="*.ts" --include="*.tsx"
+grep -r "from \"@bigcode/contracts\";" apps/ packages/ --include="*.ts" --include="*.tsx"
 
 # Only these patterns should exist:
-grep -r "from \"@t3tools/contracts/" apps/ packages/ --include="*.ts" --include="*.tsx"
+grep -r "from \"@bigcode/contracts/" apps/ packages/ --include="*.ts" --include="*.tsx"
 ```
 
 #### 2. Verify Barrel File Deleted
@@ -676,7 +676,7 @@ import {
   PROVIDER_DISPLAY_NAMES,
   ProviderKind,
   ModelSelection,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 ```
 
 **Problems**:
@@ -692,10 +692,10 @@ import {
 **File**: `apps/web/src/modelSelection.ts`
 
 ```typescript
-import { PROVIDERS, PROVIDER_DISPLAY_NAMES } from "@t3tools/contracts/constants/provider.constant";
-import { DEFAULT_MODEL } from "@t3tools/contracts/constants/model.constant";
-import { ProviderKind } from "@t3tools/contracts/orchestration/provider";
-import { ModelSelection } from "@t3tools/contracts/core/model";
+import { PROVIDERS, PROVIDER_DISPLAY_NAMES } from "@bigcode/contracts/constants/provider.constant";
+import { DEFAULT_MODEL } from "@bigcode/contracts/constants/model.constant";
+import { ProviderKind } from "@bigcode/contracts/orchestration/provider";
+import { ModelSelection } from "@bigcode/contracts/core/model";
 ```
 
 **Benefits**:

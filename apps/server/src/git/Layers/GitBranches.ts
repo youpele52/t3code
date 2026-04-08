@@ -5,8 +5,8 @@
  */
 import { Effect, FileSystem } from "effect";
 
-import { GitCommandError } from "@t3tools/contracts";
-import { dedupeRemoteBranchesWithLocalMatches } from "@t3tools/shared/git";
+import { GitCommandError } from "@bigcode/contracts";
+import { dedupeRemoteBranchesWithLocalMatches } from "@bigcode/shared/git";
 import { type GitCoreShape } from "../Services/GitCore.ts";
 import { parseRemoteNames } from "../remoteRefs.ts";
 import { parseRemoteRefWithRemoteNames } from "../remoteRefs.ts";

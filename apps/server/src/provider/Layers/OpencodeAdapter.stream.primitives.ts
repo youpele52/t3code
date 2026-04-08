@@ -7,7 +7,7 @@
 import { type Event as OpencodeEvent } from "@opencode-ai/sdk";
 import { Effect, Queue, Random } from "effect";
 
-import { EventId, TurnId, type ProviderRuntimeEvent } from "@t3tools/contracts";
+import { EventId, TurnId, type ProviderRuntimeEvent } from "@bigcode/contracts";
 
 import { eventBase } from "./OpencodeAdapter.stream.utils.ts";
 import type { EventNdjsonLogger } from "./EventNdjsonLogger.ts";
@@ -16,7 +16,7 @@ import type { EventNdjsonLogger } from "./EventNdjsonLogger.ts";
 
 /** Function type for creating synthetic provider runtime events. */
 export type SyntheticEventFn = <TType extends ProviderRuntimeEvent["type"]>(
-  threadId: import("@t3tools/contracts").ThreadId,
+  threadId: import("@bigcode/contracts").ThreadId,
   type: TType,
   payload: Extract<ProviderRuntimeEvent, { type: TType }>["payload"],
   extra?: { turnId?: TurnId; itemId?: string; requestId?: string },
@@ -41,7 +41,7 @@ export function makeEmit(runtimeEventQueue: Queue.Queue<ProviderRuntimeEvent>) {
 
 export const logNativeEvent = Effect.fn("logNativeEvent")(function* (
   nativeEventLogger: EventNdjsonLogger | undefined,
-  threadId: import("@t3tools/contracts").ThreadId,
+  threadId: import("@bigcode/contracts").ThreadId,
   event: OpencodeEvent,
 ) {
   if (!nativeEventLogger) {
@@ -61,7 +61,7 @@ export function makeSyntheticEventFn(
   makeEventStamp: () => Effect.Effect<{ eventId: EventId; createdAt: string }>,
 ) {
   const fn = <TType extends ProviderRuntimeEvent["type"]>(
-    threadId: import("@t3tools/contracts").ThreadId,
+    threadId: import("@bigcode/contracts").ThreadId,
     type: TType,
     payload: Extract<ProviderRuntimeEvent, { type: TType }>["payload"],
     extra?: { turnId?: TurnId; itemId?: string; requestId?: string },

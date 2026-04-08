@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { DEFAULT_TERMINAL_ID } from "@t3tools/contracts";
+import { DEFAULT_TERMINAL_ID } from "@bigcode/contracts";
 import { Effect, FileSystem } from "effect";
 
 import { TerminalHistoryError } from "../Services/Manager";

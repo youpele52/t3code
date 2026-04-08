@@ -1,4 +1,4 @@
-import { type TerminalSessionSnapshot } from "@t3tools/contracts";
+import { type TerminalSessionSnapshot } from "@bigcode/contracts";
 import { Effect, Option } from "effect";
 
 import { increment, terminalSessionsTotal } from "../../observability/Metrics";

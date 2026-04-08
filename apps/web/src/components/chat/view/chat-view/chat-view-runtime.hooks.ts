@@ -3,7 +3,7 @@ import {
   type ProviderInteractionMode,
   type RuntimeMode,
   type ThreadId,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { useCallback, useMemo } from "react";
 
 import { readNativeApi } from "../../../../rpc/nativeApi";

@@ -3,12 +3,12 @@ import { randomUUID } from "node:crypto";
 import { Effect, FileSystem, Layer, Option, Path, Schema, Scope, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
-import { CodexModelSelection } from "@t3tools/contracts";
-import { sanitizeBranchFragment, sanitizeFeatureBranchName } from "@t3tools/shared/git";
+import { CodexModelSelection } from "@bigcode/contracts";
+import { sanitizeBranchFragment, sanitizeFeatureBranchName } from "@bigcode/shared/git";
 
 import { resolveAttachmentPath } from "../../attachments/attachmentStore.ts";
 import { ServerConfig } from "../../startup/config.ts";
-import { TextGenerationError } from "@t3tools/contracts";
+import { TextGenerationError } from "@bigcode/contracts";
 import {
   type BranchNameGenerationInput,
   type ThreadTitleGenerationResult,
@@ -30,7 +30,7 @@ import {
 } from "../Utils.ts";
 import { getCodexModelCapabilities } from "../../provider/Layers/CodexProvider.ts";
 import { ServerSettingsService } from "../../ws/serverSettings.ts";
-import { normalizeCodexModelOptionsWithCapabilities } from "@t3tools/shared/model";
+import { normalizeCodexModelOptionsWithCapabilities } from "@bigcode/shared/model";
 
 const CODEX_GIT_TEXT_GENERATION_REASONING_EFFORT = "low";
 const CODEX_TIMEOUT_MS = 180_000;

@@ -1,4 +1,4 @@
-import { type OrchestrationEvent, ThreadId, type OrchestrationReadModel } from "@t3tools/contracts";
+import { type OrchestrationEvent, ThreadId, type OrchestrationReadModel } from "@bigcode/contracts";
 import { create } from "zustand";
 import { type Project, type SidebarThreadSummary, type Thread } from "../../models/types";
 import { applyOrchestrationEvent, applyOrchestrationEvents } from "./events.store";

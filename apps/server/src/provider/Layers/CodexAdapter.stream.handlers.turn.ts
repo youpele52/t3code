@@ -1,7 +1,7 @@
 /**
  * Turn and item event handlers — maps Codex turn/item notification methods to ProviderRuntimeEvents.
  */
-import { type ProviderEvent, type ProviderRuntimeEvent, type ThreadId } from "@t3tools/contracts";
+import { type ProviderEvent, type ProviderRuntimeEvent, type ThreadId } from "@bigcode/contracts";
 
 import { asNumber, asObject, asString } from "./CodexAdapter.types.ts";
 import { mapItemLifecycle, runtimeEventBase } from "./CodexAdapter.stream.base.ts";

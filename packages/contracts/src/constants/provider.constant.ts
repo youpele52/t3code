@@ -1,5 +1,5 @@
 /**
- * All available provider kinds in the T3 Code application.
+ * All available provider kinds in the bigCode application.
  *
  * Providers represent different AI coding assistant backends that can be used
  * for code generation, chat, and other AI-powered features.

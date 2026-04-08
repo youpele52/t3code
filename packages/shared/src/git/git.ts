@@ -5,7 +5,7 @@ import type {
   GitStatusRemoteResult,
   GitStatusResult,
   GitStatusStreamEvent,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 
 /**
  * Sanitize an arbitrary string into a valid, lowercase git branch fragment.

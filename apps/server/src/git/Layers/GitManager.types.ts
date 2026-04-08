@@ -6,7 +6,7 @@
  *
  * @module GitManager.types
  */
-import type { GitActionProgressEvent, GitStackedAction } from "@t3tools/contracts";
+import type { GitActionProgressEvent, GitStackedAction } from "@bigcode/contracts";
 
 export type StripProgressContext<T> = T extends unknown
   ? Omit<T, "actionId" | "cwd" | "action">

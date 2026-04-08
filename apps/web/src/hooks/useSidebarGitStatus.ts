@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { type ThreadId } from "@t3tools/contracts";
+import { type ThreadId } from "@bigcode/contracts";
 import { useQueries } from "@tanstack/react-query";
 import { gitStatusQueryOptions } from "../lib/gitReactQuery";
 import { type ThreadPr } from "../components/sidebar/SidebarThreadRow";

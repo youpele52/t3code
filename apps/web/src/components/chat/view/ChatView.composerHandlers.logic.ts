@@ -4,7 +4,7 @@ import {
   type ApprovalRequestId,
   type ThreadId,
   type UserInputQuestion,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { useCallback } from "react";
 import {
   type ComposerTrigger,

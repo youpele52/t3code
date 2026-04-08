@@ -8,7 +8,7 @@ import {
   MAX_KEYBINDINGS_COUNT,
   ResolvedKeybindingRule,
   ResolvedKeybindingsConfig,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { Mutable } from "effect/Types";
 import { Effect, Option, Predicate, Schema, SchemaIssue, SchemaTransformation } from "effect";
 import {

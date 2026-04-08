@@ -12,7 +12,7 @@ import {
   type ProviderRuntimeEvent,
   type ProviderRuntimeTurnStatus,
   ThreadId,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { Effect } from "effect";
 
 import {

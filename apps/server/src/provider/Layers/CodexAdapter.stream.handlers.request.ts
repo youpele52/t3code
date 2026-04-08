@@ -7,7 +7,7 @@ import {
   type ProviderUserInputAnswers,
   type ThreadId,
   ProviderApprovalDecision,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { Schema } from "effect";
 
 import { asNumber, asObject, asString } from "./CodexAdapter.types.ts";

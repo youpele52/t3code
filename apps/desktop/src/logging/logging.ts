@@ -4,8 +4,8 @@ import * as Path from "node:path";
 
 import { app } from "electron";
 
-import { RotatingFileSink } from "@t3tools/shared/logging";
-import { parsePersistedServerObservabilitySettings } from "@t3tools/shared/serverSettings";
+import { RotatingFileSink } from "@bigcode/shared/logging";
+import { parsePersistedServerObservabilitySettings } from "@bigcode/shared/serverSettings";
 
 // ---------------------------------------------------------------------------
 // Timestamp / scope helpers

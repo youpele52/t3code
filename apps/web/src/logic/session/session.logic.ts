@@ -6,7 +6,7 @@ import {
   type UserInputQuestion,
   type ThreadId,
   type TurnId,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 
 import type { ChatMessage, ProposedPlan, ThreadSession } from "../../models/types";
 

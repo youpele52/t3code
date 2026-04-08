@@ -1,4 +1,4 @@
-import type { ApprovalRequestId, ProviderApprovalDecision, ThreadId } from "@t3tools/contracts";
+import type { ApprovalRequestId, ProviderApprovalDecision, ThreadId } from "@bigcode/contracts";
 import { useCallback, useState } from "react";
 import { newCommandId } from "~/lib/utils";
 import { readNativeApi } from "../../../rpc/nativeApi";

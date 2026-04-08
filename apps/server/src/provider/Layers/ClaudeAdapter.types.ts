@@ -21,7 +21,7 @@ import type {
   ThreadTokenUsageSnapshot,
   TurnId,
   UserInputQuestion,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import type { Deferred, Fiber, Queue } from "effect";
 import type { EventNdjsonLogger } from "./EventNdjsonLogger.ts";
 

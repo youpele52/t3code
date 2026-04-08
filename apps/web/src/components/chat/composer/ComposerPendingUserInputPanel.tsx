@@ -1,4 +1,4 @@
-import { type ApprovalRequestId } from "@t3tools/contracts";
+import { type ApprovalRequestId } from "@bigcode/contracts";
 import { memo, useCallback, useEffect, useRef } from "react";
 import { type PendingUserInput } from "../../../logic/session";
 import {

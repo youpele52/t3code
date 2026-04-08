@@ -13,7 +13,7 @@
 import { type Event as OpencodeEvent } from "@opencode-ai/sdk";
 import { Effect, ServiceMap } from "effect";
 
-import { type EventId, type ProviderRuntimeEvent } from "@t3tools/contracts";
+import { type EventId, type ProviderRuntimeEvent } from "@bigcode/contracts";
 
 import type { ActiveOpencodeSession } from "./OpencodeAdapter.types.ts";
 import { withOpencodeDirectory, toMessage } from "./OpencodeAdapter.stream.utils.ts";

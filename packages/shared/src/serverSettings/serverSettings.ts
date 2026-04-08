@@ -1,4 +1,4 @@
-import { ServerSettings } from "@t3tools/contracts";
+import { ServerSettings } from "@bigcode/contracts";
 import { Schema } from "effect";
 import { fromLenientJson } from "../schemaJson/schemaJson";
 

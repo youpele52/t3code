@@ -10,7 +10,7 @@ vi.mock("../wsRpcClient", () => ({
 }));
 
 import type { InfiniteData } from "@tanstack/react-query";
-import type { GitListBranchesResult } from "@t3tools/contracts";
+import type { GitListBranchesResult } from "@bigcode/contracts";
 
 import {
   gitBranchSearchInfiniteQueryOptions,

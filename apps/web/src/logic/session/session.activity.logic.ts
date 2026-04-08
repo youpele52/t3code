@@ -9,7 +9,7 @@ import {
   type OrchestrationThreadActivity,
   type TurnId,
   type UserInputQuestion,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 
 import type { PendingApproval, PendingUserInput, ActivePlanState } from "./session.logic";
 

@@ -1,4 +1,4 @@
-import { type ContextMenuItem, type NativeApi } from "@t3tools/contracts";
+import { type ContextMenuItem, type NativeApi } from "@bigcode/contracts";
 
 import { showContextMenuFallback } from "../utils/context-menu";
 import { resetRequestLatencyStateForTests } from "./requestLatencyState";

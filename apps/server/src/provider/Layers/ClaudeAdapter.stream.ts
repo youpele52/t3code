@@ -7,7 +7,7 @@
  *
  * @module ClaudeAdapter.stream
  */
-import { type EventId, type ProviderRuntimeEvent, ThreadId } from "@t3tools/contracts";
+import { type EventId, type ProviderRuntimeEvent, ThreadId } from "@bigcode/contracts";
 import { Cause, Deferred, Effect, Exit, Fiber, Queue, Stream } from "effect";
 
 import {

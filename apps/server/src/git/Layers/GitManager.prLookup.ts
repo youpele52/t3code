@@ -8,7 +8,7 @@
  */
 import { Effect } from "effect";
 
-import type { GitRunStackedActionResult } from "@t3tools/contracts";
+import type { GitRunStackedActionResult } from "@bigcode/contracts";
 import type { GitCoreShape } from "../Services/GitCore.ts";
 import type { GitHubCliShape } from "../Services/GitHubCli.ts";
 import {

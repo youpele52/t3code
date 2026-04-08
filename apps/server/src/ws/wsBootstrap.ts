@@ -14,7 +14,7 @@ import {
   type GitCreateWorktreeInput,
   type GitCreateWorktreeResult,
   type GitCommandError,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import type { OrchestrationDispatchError } from "../orchestration/Errors.ts";
 import type {
   ProjectSetupScriptRunnerInput,

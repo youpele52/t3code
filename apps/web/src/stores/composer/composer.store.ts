@@ -149,7 +149,7 @@ export const useComposerDraftStore = create<ComposerDraftStoreState>()(
  * iterable helper for bootstrap/recovery paths that discover multiple server
  * threads at once.
  */
-export function clearPromotedDraftThread(threadId: import("@t3tools/contracts").ThreadId): void {
+export function clearPromotedDraftThread(threadId: import("@bigcode/contracts").ThreadId): void {
   if (!useComposerDraftStore.getState().getDraftThread(threadId)) {
     return;
   }
@@ -157,7 +157,7 @@ export function clearPromotedDraftThread(threadId: import("@t3tools/contracts").
 }
 
 export function clearPromotedDraftThreads(
-  serverThreadIds: Iterable<import("@t3tools/contracts").ThreadId>,
+  serverThreadIds: Iterable<import("@bigcode/contracts").ThreadId>,
 ): void {
   for (const threadId of serverThreadIds) {
     clearPromotedDraftThread(threadId);

@@ -2,8 +2,8 @@
  * Pure helper utilities for ProviderCommandReactor.
  * No Effect services or side-effects — all functions are stateless transforms.
  */
-import { type OrchestrationSession, type RuntimeMode } from "@t3tools/contracts";
-import { CommandId } from "@t3tools/contracts";
+import { type OrchestrationSession, type RuntimeMode } from "@bigcode/contracts";
+import { CommandId } from "@bigcode/contracts";
 import { Cause, Schema } from "effect";
 
 import { ProviderAdapterRequestError, ProviderServiceError } from "../../provider/Errors.ts";

@@ -1,4 +1,4 @@
-import { ThreadId, type TerminalEvent } from "@t3tools/contracts";
+import { ThreadId, type TerminalEvent } from "@bigcode/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { selectTerminalEventEntries, selectThreadTerminalState } from "./helpers.store";

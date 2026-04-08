@@ -14,7 +14,7 @@ import {
   type GitStatusRemoteResult,
   type GitStatusStreamEvent,
   type GitManagerServiceError,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { GitCore } from "../Services/GitCore.ts";
 import {
   GitStatusBroadcaster,

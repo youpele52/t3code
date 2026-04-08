@@ -1,4 +1,4 @@
-import { type MessageId, type TurnId } from "@t3tools/contracts";
+import { type MessageId, type TurnId } from "@bigcode/contracts";
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   measureElement as measureVirtualElement,
@@ -27,7 +27,7 @@ import {
 } from "./MessagesTimeline.assistantMessage";
 import { Undo2Icon } from "lucide-react";
 import { deriveDisplayedUserMessageState } from "~/lib/terminalContext";
-import { type TimestampFormat } from "@t3tools/contracts/settings";
+import { type TimestampFormat } from "@bigcode/contracts/settings";
 import { formatTimestamp } from "../../../utils/timestamp";
 
 const ALWAYS_UNVIRTUALIZED_TAIL_ROWS = 8;

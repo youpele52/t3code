@@ -1,4 +1,4 @@
-import { type ProjectId, ThreadId } from "@t3tools/contracts";
+import { type ProjectId, ThreadId } from "@bigcode/contracts";
 import { type AppState } from "./main.store";
 import { type Project, type SidebarThreadSummary, type Thread } from "../../models/types";
 import { EMPTY_THREAD_IDS, updateThreadState } from "./helpers.store";

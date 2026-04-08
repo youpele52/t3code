@@ -5,8 +5,8 @@
  * the `project.created`, `project.meta-updated`, and `project.deleted`
  * event handlers.
  */
-import type { OrchestrationEvent, OrchestrationReadModel, ThreadId } from "@t3tools/contracts";
-import { OrchestrationThread } from "@t3tools/contracts";
+import type { OrchestrationEvent, OrchestrationReadModel, ThreadId } from "@bigcode/contracts";
+import { OrchestrationThread } from "@bigcode/contracts";
 import { Effect, Schema } from "effect";
 
 import { toProjectorDecodeError, type OrchestrationProjectorDecodeError } from "./Errors.ts";

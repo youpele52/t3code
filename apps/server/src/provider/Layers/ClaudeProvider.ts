@@ -3,7 +3,7 @@ import type {
   ModelCapabilities,
   ServerProvider,
   ServerProviderModel,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { Cache, Duration, Effect, Equal, Layer, Option, Result, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import { query as claudeQuery } from "@anthropic-ai/claude-agent-sdk";
@@ -20,7 +20,7 @@ import {
 import { makeManagedServerProvider } from "../makeManagedServerProvider";
 import { ClaudeProvider } from "../Services/ClaudeProvider";
 import { ServerSettingsService } from "../../ws/serverSettings";
-import { ServerSettingsError } from "@t3tools/contracts";
+import { ServerSettingsError } from "@bigcode/contracts";
 import {
   adjustModelsForSubscription,
   claudeAuthMetadata,
@@ -190,7 +190,7 @@ export const checkClaudeProviderStatus = Effect.fn("checkClaudeProviderStatus")(
         version: null,
         status: "warning",
         auth: { status: "unknown" },
-        message: "Claude is disabled in T3 Code settings.",
+        message: "Claude is disabled in bigCode settings.",
       },
     });
   }

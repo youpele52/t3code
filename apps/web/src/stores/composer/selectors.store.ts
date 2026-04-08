@@ -3,9 +3,9 @@ import {
   type ProviderKind,
   type ServerProvider,
   type ThreadId,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { useMemo } from "react";
-import { UnifiedSettings } from "@t3tools/contracts/settings";
+import { UnifiedSettings } from "@bigcode/contracts/settings";
 import {
   EMPTY_THREAD_DRAFT,
   type ComposerThreadDraftState,

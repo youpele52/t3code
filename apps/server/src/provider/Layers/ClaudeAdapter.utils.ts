@@ -14,8 +14,8 @@ import {
   type TurnId,
   ApprovalRequestId,
   type ProviderSendTurnInput,
-} from "@t3tools/contracts";
-import { applyClaudePromptEffortPrefix, trimOrNull } from "@t3tools/shared/model";
+} from "@bigcode/contracts";
+import { applyClaudePromptEffortPrefix, trimOrNull } from "@bigcode/shared/model";
 import { Cause } from "effect";
 
 import { getClaudeModelCapabilities } from "./ClaudeProvider.ts";

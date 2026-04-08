@@ -1,5 +1,5 @@
-import { NetService } from "@t3tools/shared/Net";
-import { parsePersistedServerObservabilitySettings } from "@t3tools/shared/serverSettings";
+import { NetService } from "@bigcode/shared/Net";
+import { parsePersistedServerObservabilitySettings } from "@bigcode/shared/serverSettings";
 import { Config, Effect, FileSystem, LogLevel, Option, Path, Schema } from "effect";
 import { Argument, Command, Flag, GlobalFlag } from "effect/unstable/cli";
 
@@ -76,62 +76,110 @@ const autoBootstrapProjectFromCwdFlag = Flag.boolean("auto-bootstrap-project-fro
 );
 const logWebSocketEventsFlag = Flag.boolean("log-websocket-events").pipe(
   Flag.withDescription(
-    "Emit server-side logs for outbound WebSocket push traffic (equivalent to T3CODE_LOG_WS_EVENTS).",
+    "Emit server-side logs for outbound WebSocket push traffic (equivalent to BIGCODE_LOG_WS_EVENTS).",
   ),
   Flag.withAlias("log-ws-events"),
   Flag.optional,
 );
 
+const aliasedConfig = <A>(primary: Config.Config<A>, legacy: Config.Config<A>) =>
+  Config.all({
+    primary: primary.pipe(Config.option),
+    legacy: legacy.pipe(Config.option),
+  }).pipe(Config.map(({ primary, legacy }) => Option.firstSomeOf([primary, legacy])));
+
+const aliasedWithDefault = <A>(
+  primary: Config.Config<A>,
+  legacy: Config.Config<A>,
+  defaultValue: A,
+) =>
+  aliasedConfig(primary, legacy).pipe(
+    Config.map((value) => Option.getOrElse(value, () => defaultValue)),
+  );
+
+const aliasedOptional = <A>(primary: Config.Config<A>, legacy: Config.Config<A>) =>
+  aliasedConfig(primary, legacy).pipe(Config.map(Option.getOrUndefined));
+
 const EnvServerConfig = Config.all({
-  logLevel: Config.logLevel("T3CODE_LOG_LEVEL").pipe(Config.withDefault("Info")),
-  traceMinLevel: Config.logLevel("T3CODE_TRACE_MIN_LEVEL").pipe(Config.withDefault("Info")),
-  traceTimingEnabled: Config.boolean("T3CODE_TRACE_TIMING_ENABLED").pipe(Config.withDefault(true)),
-  traceFile: Config.string("T3CODE_TRACE_FILE").pipe(
-    Config.option,
-    Config.map(Option.getOrUndefined),
+  logLevel: aliasedWithDefault(
+    Config.logLevel("BIGCODE_LOG_LEVEL"),
+    Config.logLevel("T3CODE_LOG_LEVEL"),
+    "Info",
   ),
-  traceMaxBytes: Config.int("T3CODE_TRACE_MAX_BYTES").pipe(Config.withDefault(10 * 1024 * 1024)),
-  traceMaxFiles: Config.int("T3CODE_TRACE_MAX_FILES").pipe(Config.withDefault(10)),
-  traceBatchWindowMs: Config.int("T3CODE_TRACE_BATCH_WINDOW_MS").pipe(Config.withDefault(200)),
-  otlpTracesUrl: Config.string("T3CODE_OTLP_TRACES_URL").pipe(
-    Config.option,
-    Config.map(Option.getOrUndefined),
+  traceMinLevel: aliasedWithDefault(
+    Config.logLevel("BIGCODE_TRACE_MIN_LEVEL"),
+    Config.logLevel("T3CODE_TRACE_MIN_LEVEL"),
+    "Info",
   ),
-  otlpMetricsUrl: Config.string("T3CODE_OTLP_METRICS_URL").pipe(
-    Config.option,
-    Config.map(Option.getOrUndefined),
+  traceTimingEnabled: aliasedWithDefault(
+    Config.boolean("BIGCODE_TRACE_TIMING_ENABLED"),
+    Config.boolean("T3CODE_TRACE_TIMING_ENABLED"),
+    true,
   ),
-  otlpExportIntervalMs: Config.int("T3CODE_OTLP_EXPORT_INTERVAL_MS").pipe(
-    Config.withDefault(10_000),
+  traceFile: aliasedOptional(
+    Config.string("BIGCODE_TRACE_FILE"),
+    Config.string("T3CODE_TRACE_FILE"),
   ),
-  otlpServiceName: Config.string("T3CODE_OTLP_SERVICE_NAME").pipe(Config.withDefault("t3-server")),
-  mode: Config.schema(RuntimeMode, "T3CODE_MODE").pipe(
-    Config.option,
-    Config.map(Option.getOrUndefined),
+  traceMaxBytes: aliasedWithDefault(
+    Config.int("BIGCODE_TRACE_MAX_BYTES"),
+    Config.int("T3CODE_TRACE_MAX_BYTES"),
+    10 * 1024 * 1024,
   ),
-  port: Config.port("T3CODE_PORT").pipe(Config.option, Config.map(Option.getOrUndefined)),
-  host: Config.string("T3CODE_HOST").pipe(Config.option, Config.map(Option.getOrUndefined)),
-  t3Home: Config.string("T3CODE_HOME").pipe(Config.option, Config.map(Option.getOrUndefined)),
+  traceMaxFiles: aliasedWithDefault(
+    Config.int("BIGCODE_TRACE_MAX_FILES"),
+    Config.int("T3CODE_TRACE_MAX_FILES"),
+    10,
+  ),
+  traceBatchWindowMs: aliasedWithDefault(
+    Config.int("BIGCODE_TRACE_BATCH_WINDOW_MS"),
+    Config.int("T3CODE_TRACE_BATCH_WINDOW_MS"),
+    200,
+  ),
+  otlpTracesUrl: aliasedOptional(
+    Config.string("BIGCODE_OTLP_TRACES_URL"),
+    Config.string("T3CODE_OTLP_TRACES_URL"),
+  ),
+  otlpMetricsUrl: aliasedOptional(
+    Config.string("BIGCODE_OTLP_METRICS_URL"),
+    Config.string("T3CODE_OTLP_METRICS_URL"),
+  ),
+  otlpExportIntervalMs: aliasedWithDefault(
+    Config.int("BIGCODE_OTLP_EXPORT_INTERVAL_MS"),
+    Config.int("T3CODE_OTLP_EXPORT_INTERVAL_MS"),
+    10_000,
+  ),
+  otlpServiceName: aliasedWithDefault(
+    Config.string("BIGCODE_OTLP_SERVICE_NAME"),
+    Config.string("T3CODE_OTLP_SERVICE_NAME"),
+    "bigcode-server",
+  ),
+  mode: aliasedOptional(
+    Config.schema(RuntimeMode, "BIGCODE_MODE"),
+    Config.schema(RuntimeMode, "T3CODE_MODE"),
+  ),
+  port: aliasedOptional(Config.port("BIGCODE_PORT"), Config.port("T3CODE_PORT")),
+  host: aliasedOptional(Config.string("BIGCODE_HOST"), Config.string("T3CODE_HOST")),
+  t3Home: aliasedOptional(Config.string("BIGCODE_HOME"), Config.string("T3CODE_HOME")),
   devUrl: Config.url("VITE_DEV_SERVER_URL").pipe(Config.option, Config.map(Option.getOrUndefined)),
-  noBrowser: Config.boolean("T3CODE_NO_BROWSER").pipe(
-    Config.option,
-    Config.map(Option.getOrUndefined),
+  noBrowser: aliasedOptional(
+    Config.boolean("BIGCODE_NO_BROWSER"),
+    Config.boolean("T3CODE_NO_BROWSER"),
   ),
-  authToken: Config.string("T3CODE_AUTH_TOKEN").pipe(
-    Config.option,
-    Config.map(Option.getOrUndefined),
+  authToken: aliasedOptional(
+    Config.string("BIGCODE_AUTH_TOKEN"),
+    Config.string("T3CODE_AUTH_TOKEN"),
   ),
-  bootstrapFd: Config.int("T3CODE_BOOTSTRAP_FD").pipe(
-    Config.option,
-    Config.map(Option.getOrUndefined),
+  bootstrapFd: aliasedOptional(
+    Config.int("BIGCODE_BOOTSTRAP_FD"),
+    Config.int("T3CODE_BOOTSTRAP_FD"),
   ),
-  autoBootstrapProjectFromCwd: Config.boolean("T3CODE_AUTO_BOOTSTRAP_PROJECT_FROM_CWD").pipe(
-    Config.option,
-    Config.map(Option.getOrUndefined),
+  autoBootstrapProjectFromCwd: aliasedOptional(
+    Config.boolean("BIGCODE_AUTO_BOOTSTRAP_PROJECT_FROM_CWD"),
+    Config.boolean("T3CODE_AUTO_BOOTSTRAP_PROJECT_FROM_CWD"),
   ),
-  logWebSocketEvents: Config.boolean("T3CODE_LOG_WS_EVENTS").pipe(
-    Config.option,
-    Config.map(Option.getOrUndefined),
+  logWebSocketEvents: aliasedOptional(
+    Config.boolean("BIGCODE_LOG_WS_EVENTS"),
+    Config.boolean("T3CODE_LOG_WS_EVENTS"),
   ),
 });
 
@@ -354,8 +402,8 @@ const commandFlags = {
   logWebSocketEvents: logWebSocketEventsFlag,
 } as const;
 
-const rootCommand = Command.make("t3", commandFlags).pipe(
-  Command.withDescription("Run the T3 Code server."),
+const rootCommand = Command.make("bigcode", commandFlags).pipe(
+  Command.withDescription("Run the bigCode server."),
   Command.withHandler((flags) =>
     Effect.gen(function* () {
       const logLevel = yield* GlobalFlag.LogLevel;

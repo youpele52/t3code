@@ -1,4 +1,4 @@
-import { DEFAULT_UNIFIED_SETTINGS } from "@t3tools/contracts/settings";
+import { DEFAULT_UNIFIED_SETTINGS } from "@bigcode/contracts/settings";
 import { Equal } from "effect";
 import { useSettings, useUpdateSettings } from "../../hooks/useSettings";
 import {
@@ -60,7 +60,7 @@ export function GeneralSettingsSection() {
     <SettingsSection title="General">
       <SettingsRow
         title="Theme"
-        description="Choose how T3 Code looks across the app."
+        description="Choose how bigCode looks across the app."
         resetAction={
           theme !== "system" ? (
             <SettingResetButton label="theme" onClick={() => setTheme("system")} />

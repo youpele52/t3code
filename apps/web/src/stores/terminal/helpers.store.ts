@@ -6,7 +6,7 @@
  * to keep each file focused and testable in isolation.
  */
 
-import { ThreadId, type TerminalEvent } from "@t3tools/contracts";
+import { ThreadId, type TerminalEvent } from "@bigcode/contracts";
 import {
   DEFAULT_THREAD_TERMINAL_HEIGHT,
   DEFAULT_THREAD_TERMINAL_ID,

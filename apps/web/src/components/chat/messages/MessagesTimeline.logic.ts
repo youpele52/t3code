@@ -1,4 +1,4 @@
-import { type MessageId } from "@t3tools/contracts";
+import { type MessageId } from "@bigcode/contracts";
 import { type TimelineEntry, type PendingUserInput } from "../../../logic/session";
 import { type WorkLogEntry } from "../../../logic/session";
 import { buildTurnDiffTree, type TurnDiffTreeNode } from "../../../lib/turnDiffTree";

@@ -17,7 +17,7 @@ import {
   type ProviderSendTurnInput,
   type ProviderSession,
   type UserInputQuestion,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import {
   type PermissionRequestResult,
   type SessionConfig,
@@ -31,7 +31,7 @@ import { ServerSettingsService } from "../../ws/serverSettings.ts";
 import { makeEventNdjsonLogger } from "./EventNdjsonLogger.ts";
 import { ProviderAdapterRequestError, ProviderAdapterSessionNotFoundError } from "../Errors.ts";
 import { CopilotAdapter, type CopilotAdapterShape } from "../Services/CopilotAdapter.ts";
-import { FULL_ACCESS_AUTO_APPROVE_AFTER_MS } from "@t3tools/shared/approvals";
+import { FULL_ACCESS_AUTO_APPROVE_AFTER_MS } from "@bigcode/shared/approvals";
 import {
   PROVIDER,
   USER_INPUT_QUESTION_ID,

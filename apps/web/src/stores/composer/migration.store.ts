@@ -1,4 +1,4 @@
-import { type ModelSelection, type ProviderKind } from "@t3tools/contracts";
+import { type ModelSelection, type ProviderKind } from "@bigcode/contracts";
 import {
   EMPTY_PERSISTED_DRAFT_STORE_STATE,
   type LegacyPersistedComposerDraftStoreState,

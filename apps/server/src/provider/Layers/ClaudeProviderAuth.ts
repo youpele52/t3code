@@ -9,9 +9,9 @@ import type {
   ServerProviderAuth,
   ServerProviderModel,
   ServerProviderState,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { Option, Result, Schema } from "effect";
-import { decodeJsonResult } from "@t3tools/shared/schemaJson";
+import { decodeJsonResult } from "@bigcode/shared/schemaJson";
 
 import { detailFromResult, extractAuthBoolean, type CommandResult } from "../providerSnapshot";
 

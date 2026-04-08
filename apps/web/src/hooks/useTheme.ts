@@ -6,7 +6,8 @@ type ThemeSnapshot = {
   systemDark: boolean;
 };
 
-const STORAGE_KEY = "t3code:theme";
+const STORAGE_KEY = "bigcode:theme";
+const LEGACY_STORAGE_KEYS = ["t3code:theme"] as const;
 const MEDIA_QUERY = "(prefers-color-scheme: dark)";
 
 let listeners: Array<() => void> = [];
@@ -21,7 +22,7 @@ function getSystemDark(): boolean {
 }
 
 function getStored(): Theme {
-  const raw = localStorage.getItem(STORAGE_KEY);
+  const raw = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEYS[0]);
   if (raw === "light" || raw === "dark" || raw === "system") return raw;
   return "system";
 }
@@ -108,6 +109,9 @@ export function useTheme() {
 
   const setTheme = useCallback((next: Theme) => {
     localStorage.setItem(STORAGE_KEY, next);
+    for (const legacyKey of LEGACY_STORAGE_KEYS) {
+      localStorage.removeItem(legacyKey);
+    }
     applyTheme(next, true);
     emitChange();
   }, []);

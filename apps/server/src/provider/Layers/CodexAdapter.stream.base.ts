@@ -9,7 +9,7 @@ import {
   type ProviderRuntimeEvent,
   type CanonicalItemType,
   ThreadId,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 
 import { asObject, asString } from "./CodexAdapter.types.ts";
 import {

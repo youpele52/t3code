@@ -1,4 +1,4 @@
-import { type ProviderInteractionMode, type ProviderKind, type ThreadId } from "@t3tools/contracts";
+import { type ProviderInteractionMode, type ProviderKind, type ThreadId } from "@bigcode/contracts";
 import { useCallback } from "react";
 import {
   type ComposerTrigger,

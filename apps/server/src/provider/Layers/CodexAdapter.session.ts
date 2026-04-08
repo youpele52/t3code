@@ -6,7 +6,7 @@
  *
  * @module CodexAdapter.session
  */
-import { type ProviderEvent, type ProviderSendTurnInput, ThreadId } from "@t3tools/contracts";
+import { type ProviderEvent, type ProviderSendTurnInput, ThreadId } from "@bigcode/contracts";
 import { Effect, FileSystem, Queue, Stream } from "effect";
 
 import {
@@ -292,7 +292,7 @@ export const makeCodexAdapter = Effect.fn("makeCodexAdapter")(function* (
     });
 
   const runtimeEventQueue =
-    yield* Queue.unbounded<import("@t3tools/contracts").ProviderRuntimeEvent>();
+    yield* Queue.unbounded<import("@bigcode/contracts").ProviderRuntimeEvent>();
 
   const writeNativeEvent = Effect.fn("writeNativeEvent")(function* (event: ProviderEvent) {
     if (!nativeEventLogger) {

@@ -6,7 +6,7 @@ import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import readline from "node:readline";
 
-import { EventId, ThreadId, type ProviderEvent, type ProviderSession } from "@t3tools/contracts";
+import { EventId, ThreadId, type ProviderEvent, type ProviderSession } from "@bigcode/contracts";
 import { Effect } from "effect";
 
 import { readCodexAccountSnapshot, resolveCodexModelForAccount } from "../provider/codexAccount";

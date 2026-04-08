@@ -4,7 +4,7 @@ import {
   type OrchestrationCommand,
   OrchestrationDispatchCommandError,
   PROVIDER_SEND_TURN_MAX_IMAGE_BYTES,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 
 import { createAttachmentId, resolveAttachmentPath } from "../attachments/attachmentStore";
 import { ServerConfig } from "../startup/config";

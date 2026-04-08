@@ -6,7 +6,9 @@ import { defineConfig } from "vite";
 import pkg from "./package.json" with { type: "json" };
 
 const port = Number(process.env.PORT ?? 5733);
-const sourcemapEnv = process.env.T3CODE_WEB_SOURCEMAP?.trim().toLowerCase();
+const sourcemapEnv = (process.env.BIGCODE_WEB_SOURCEMAP ?? process.env.T3CODE_WEB_SOURCEMAP)
+  ?.trim()
+  .toLowerCase();
 
 const buildSourcemap =
   sourcemapEnv === "0" || sourcemapEnv === "false"

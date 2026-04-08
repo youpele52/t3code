@@ -1,6 +1,6 @@
 import * as SqlClient from "effect/unstable/sql/SqlClient";
 import * as SqlSchema from "effect/unstable/sql/SqlSchema";
-import { ModelSelection, ParentThreadReference } from "@t3tools/contracts";
+import { ModelSelection, ParentThreadReference } from "@bigcode/contracts";
 import { Effect, Layer, Option, Schema, Struct } from "effect";
 
 import { toPersistenceSqlError } from "../Errors.ts";

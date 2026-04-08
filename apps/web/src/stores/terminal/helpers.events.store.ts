@@ -8,7 +8,7 @@
  * @module helpers.events.store
  */
 
-import { ThreadId, type TerminalEvent } from "@t3tools/contracts";
+import { ThreadId, type TerminalEvent } from "@bigcode/contracts";
 
 import type { TerminalEventEntry, ThreadTerminalLaunchContext } from "./helpers.store";
 import { EMPTY_TERMINAL_EVENT_ENTRIES, MAX_TERMINAL_EVENT_BUFFER } from "./helpers.store";

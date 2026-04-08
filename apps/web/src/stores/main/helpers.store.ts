@@ -1,5 +1,5 @@
-import { type ProjectId, ThreadId } from "@t3tools/contracts";
-import { type OrchestrationReadModel } from "@t3tools/contracts";
+import { type ProjectId, ThreadId } from "@bigcode/contracts";
+import { type OrchestrationReadModel } from "@bigcode/contracts";
 import {
   buildSidebarThreadSummary,
   mapProject,

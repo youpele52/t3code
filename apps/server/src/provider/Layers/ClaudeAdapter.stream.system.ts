@@ -7,7 +7,7 @@
  * @module ClaudeAdapter.stream.system
  */
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
-import { type EventId, RuntimeTaskId, type ProviderRuntimeEvent } from "@t3tools/contracts";
+import { type EventId, RuntimeTaskId, type ProviderRuntimeEvent } from "@bigcode/contracts";
 import { Effect } from "effect";
 
 import {

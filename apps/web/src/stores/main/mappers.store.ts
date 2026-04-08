@@ -7,8 +7,8 @@ import {
   type OrchestrationSessionStatus,
   type OrchestrationThread,
   type ProviderKind,
-} from "@t3tools/contracts";
-import { resolveModelSlugForProvider } from "@t3tools/shared/model";
+} from "@bigcode/contracts";
+import { resolveModelSlugForProvider } from "@bigcode/shared/model";
 import {
   derivePendingApprovals,
   derivePendingUserInputs,

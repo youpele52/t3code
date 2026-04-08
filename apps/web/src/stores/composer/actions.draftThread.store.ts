@@ -5,7 +5,7 @@ import {
   type ProviderInteractionMode,
   type RuntimeMode,
   type ThreadId,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import type { StoreApi } from "zustand";
 import { revokeObjectPreviewUrl } from "./normalization.store";
 import {

@@ -1,6 +1,6 @@
 import type { Fiber } from "effect";
 
-import type { TerminalSessionStatus } from "@t3tools/contracts";
+import type { TerminalSessionStatus } from "@bigcode/contracts";
 import type { PtyAdapterShape, PtyExitEvent, PtyProcess } from "../Services/PTY";
 import type { TerminalSubprocessChecker } from "./Manager.shell";
 

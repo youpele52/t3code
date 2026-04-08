@@ -16,8 +16,8 @@ import {
   ThreadId,
   type ProviderSession,
   PROVIDER_SEND_TURN_MAX_INPUT_CHARS,
-} from "@t3tools/contracts";
-import { buildBootstrapInput, hasImageAttachments } from "@t3tools/shared/history";
+} from "@bigcode/contracts";
+import { buildBootstrapInput, hasImageAttachments } from "@bigcode/shared/history";
 import { Cause, Effect, Equal, Schema } from "effect";
 
 import { resolveThreadWorkspaceCwd } from "../../checkpointing/Utils.ts";
@@ -112,15 +112,15 @@ export const ensureSessionForThread = (services: SessionOpServices) =>
     }
 
     const desiredRuntimeMode = thread.runtimeMode;
-    const currentProvider: import("@t3tools/contracts").ProviderKind | undefined = Schema.is(
+    const currentProvider: import("@bigcode/contracts").ProviderKind | undefined = Schema.is(
       ProviderKind,
     )(thread.session?.providerName)
       ? thread.session.providerName
       : undefined;
     const requestedModelSelection = options?.modelSelection;
-    const threadProvider: import("@t3tools/contracts").ProviderKind =
+    const threadProvider: import("@bigcode/contracts").ProviderKind =
       currentProvider ?? thread.modelSelection.provider;
-    const preferredProvider: import("@t3tools/contracts").ProviderKind =
+    const preferredProvider: import("@bigcode/contracts").ProviderKind =
       requestedModelSelection !== undefined && requestedModelSelection.provider !== threadProvider
         ? requestedModelSelection.provider
         : (currentProvider ?? threadProvider);
@@ -148,7 +148,7 @@ export const ensureSessionForThread = (services: SessionOpServices) =>
 
     const startProviderSession = (input?: {
       readonly resumeCursor?: unknown;
-      readonly provider?: import("@t3tools/contracts").ProviderKind;
+      readonly provider?: import("@bigcode/contracts").ProviderKind;
       readonly fresh?: boolean;
     }) =>
       (input?.fresh ? providerService.startSessionFresh : providerService.startSession)(threadId, {

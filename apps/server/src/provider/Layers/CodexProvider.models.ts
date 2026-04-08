@@ -3,7 +3,7 @@
  *
  * @module CodexProvider.models
  */
-import type { ModelCapabilities, ServerProviderModel } from "@t3tools/contracts";
+import type { ModelCapabilities, ServerProviderModel } from "@bigcode/contracts";
 
 export const BUILT_IN_MODELS: ReadonlyArray<ServerProviderModel> = [
   {

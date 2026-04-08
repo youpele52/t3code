@@ -126,7 +126,9 @@ export function resolveAboutCommitHash(rootDir: string): string | null {
     return aboutCommitHashCache;
   }
 
-  const envCommitHash = normalizeCommitHash(process.env.T3CODE_COMMIT_HASH);
+  const envCommitHash = normalizeCommitHash(
+    process.env.BIGCODE_COMMIT_HASH ?? process.env.T3CODE_COMMIT_HASH,
+  );
   if (envCommitHash) {
     aboutCommitHashCache = envCommitHash;
     return aboutCommitHashCache;

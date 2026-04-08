@@ -1,6 +1,6 @@
-import { type OrchestrationEvent, type ProviderRuntimeEvent } from "@t3tools/contracts";
+import { type OrchestrationEvent, type ProviderRuntimeEvent } from "@bigcode/contracts";
 import { Cause, Effect, Layer, Stream } from "effect";
-import { makeDrainableWorker } from "@t3tools/shared/DrainableWorker";
+import { makeDrainableWorker } from "@bigcode/shared/DrainableWorker";
 
 import { CheckpointStore } from "../../checkpointing/Services/CheckpointStore.ts";
 import { ProviderService } from "../../provider/Services/ProviderService.ts";

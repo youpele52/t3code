@@ -7,7 +7,7 @@ import {
   type PointerEvent,
   type SetStateAction,
 } from "react";
-import type { ProjectId, ThreadId } from "@t3tools/contracts";
+import type { ProjectId, ThreadId } from "@bigcode/contracts";
 import { ProjectFavicon } from "../project/ProjectFavicon";
 import {
   resolveSidebarNewThreadEnvMode,

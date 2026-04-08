@@ -11,7 +11,7 @@ import {
   type OrchestrationThreadActivity,
   type ToolLifecycleItemType,
   type TurnId,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 
 export interface WorkLogEntry {
   id: string;

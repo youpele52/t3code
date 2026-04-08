@@ -1,5 +1,5 @@
-import { projectScriptCwd, projectScriptRuntimeEnv } from "@t3tools/shared/projectScripts";
-import type { ThreadId } from "@t3tools/contracts";
+import { projectScriptCwd, projectScriptRuntimeEnv } from "@bigcode/shared/projectScripts";
+import type { ThreadId } from "@bigcode/contracts";
 import { useCallback, useMemo, useState } from "react";
 import { randomUUID } from "~/lib/utils";
 import { useProjectById, useThreadById } from "../../../stores/main";

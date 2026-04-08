@@ -1,9 +1,9 @@
-import type { GitBranch } from "@t3tools/contracts";
+import type { GitBranch } from "@bigcode/contracts";
 import { Schema } from "effect";
 export {
   dedupeRemoteBranchesWithLocalMatches,
   deriveLocalBranchNameFromRemoteRef,
-} from "@t3tools/shared/git";
+} from "@bigcode/shared/git";
 
 export const EnvMode = Schema.Literals(["local", "worktree"]);
 export type EnvMode = typeof EnvMode.Type;

@@ -1,5 +1,5 @@
-import { type TerminalSessionSnapshot } from "@t3tools/contracts";
-import { type TerminalEvent } from "@t3tools/contracts";
+import { type TerminalSessionSnapshot } from "@bigcode/contracts";
+import { type TerminalEvent } from "@bigcode/contracts";
 import { Effect, Fiber, Option, type Scope } from "effect";
 
 import { type PtyAdapterShape, type PtyProcess } from "../Services/PTY";

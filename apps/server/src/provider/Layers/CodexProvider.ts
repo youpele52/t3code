@@ -1,4 +1,4 @@
-import type { CodexSettings } from "@t3tools/contracts";
+import type { CodexSettings } from "@bigcode/contracts";
 import {
   Cache,
   Duration,
@@ -37,7 +37,7 @@ import {
 import { probeCodexAccount } from "../codexAppServer";
 import { CodexProvider } from "../Services/CodexProvider";
 import { ServerSettingsService } from "../../ws/serverSettings";
-import { ServerSettingsError } from "@t3tools/contracts";
+import { ServerSettingsError } from "@bigcode/contracts";
 import { BUILT_IN_MODELS, DEFAULT_CODEX_MODEL_CAPABILITIES } from "./CodexProvider.models";
 import { hasCustomModelProvider, parseAuthStatusFromOutput } from "./CodexProvider.auth";
 
@@ -86,7 +86,7 @@ export const checkCodexProviderStatus = Effect.fn("checkCodexProviderStatus")(fu
     readonly homePath?: string;
   }) => Effect.Effect<CodexAccountSnapshot | undefined>,
 ): Effect.fn.Return<
-  import("@t3tools/contracts").ServerProvider,
+  import("@bigcode/contracts").ServerProvider,
   ServerSettingsError,
   | ChildProcessSpawner.ChildProcessSpawner
   | FileSystem.FileSystem
@@ -116,7 +116,7 @@ export const checkCodexProviderStatus = Effect.fn("checkCodexProviderStatus")(fu
         version: null,
         status: "warning",
         auth: { status: "unknown" },
-        message: "Codex is disabled in T3 Code settings.",
+        message: "Codex is disabled in bigCode settings.",
       },
     });
   }

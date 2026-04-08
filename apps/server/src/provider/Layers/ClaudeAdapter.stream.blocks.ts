@@ -7,7 +7,7 @@
  * @module ClaudeAdapter.stream.blocks
  */
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
-import { type EventId, type ProviderRuntimeEvent } from "@t3tools/contracts";
+import { type EventId, type ProviderRuntimeEvent } from "@bigcode/contracts";
 import { Effect, Random } from "effect";
 
 import { nativeProviderRefs } from "./ClaudeAdapter.utils.ts";

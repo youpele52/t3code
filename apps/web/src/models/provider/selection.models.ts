@@ -3,10 +3,10 @@ import {
   type ModelSelection,
   type ProviderKind,
   type ServerProvider,
-} from "@t3tools/contracts";
-import { normalizeModelSlug, resolveSelectableModel } from "@t3tools/shared/model";
+} from "@bigcode/contracts";
+import { normalizeModelSlug, resolveSelectableModel } from "@bigcode/shared/model";
 import { getComposerProviderState } from "../../components/chat/provider/composerProviderRegistry";
-import { UnifiedSettings } from "@t3tools/contracts/settings";
+import { UnifiedSettings } from "@bigcode/contracts/settings";
 import { cloneModelSelection, createModelSelection } from "./selection-helpers.models";
 import {
   getDefaultServerModel,

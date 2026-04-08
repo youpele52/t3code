@@ -8,7 +8,7 @@ import type {
   ThreadTokenUsageSnapshot,
   TurnId,
   ProviderSession,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import type { OpencodeClient } from "@opencode-ai/sdk";
 import type { EventNdjsonLogger } from "./EventNdjsonLogger.ts";
 

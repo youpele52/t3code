@@ -4,8 +4,8 @@
  * Handles: thread.created, thread.deleted, thread.archived, thread.unarchived,
  * thread.meta-updated, thread.runtime-mode-set, thread.interaction-mode-set
  */
-import type { OrchestrationEvent, OrchestrationReadModel } from "@t3tools/contracts";
-import { OrchestrationThread } from "@t3tools/contracts";
+import type { OrchestrationEvent, OrchestrationReadModel } from "@bigcode/contracts";
+import { OrchestrationThread } from "@bigcode/contracts";
 import { Effect } from "effect";
 
 import type { OrchestrationProjectorDecodeError } from "./Errors.ts";

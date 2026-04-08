@@ -6,8 +6,8 @@ import * as Path from "node:path";
 import { app, BrowserWindow, dialog, protocol } from "electron";
 import * as Effect from "effect/Effect";
 
-import { NetService } from "@t3tools/shared/Net";
-import type { RotatingFileSink } from "@t3tools/shared/logging";
+import { NetService } from "@bigcode/shared/Net";
+import type { RotatingFileSink } from "@bigcode/shared/logging";
 import {
   clearUpdatePollTimer,
   checkForUpdates,
@@ -72,12 +72,15 @@ const NOTIFICATIONS_SHOW_CHANNEL = "desktop:notifications-show";
 // Constants
 // ---------------------------------------------------------------------------
 
-const BASE_DIR = process.env.T3CODE_HOME?.trim() || Path.join(OS.homedir(), ".t3");
+const BASE_DIR =
+  process.env.BIGCODE_HOME?.trim() ||
+  process.env.T3CODE_HOME?.trim() ||
+  Path.join(OS.homedir(), ".t3");
 const STATE_DIR = Path.join(BASE_DIR, "userdata");
 const DESKTOP_SCHEME = "t3";
 const ROOT_DIR = Path.resolve(__dirname, "../../..");
 const isDevelopment = Boolean(process.env.VITE_DEV_SERVER_URL);
-const APP_DISPLAY_NAME = isDevelopment ? "T3 Code (Dev)" : "T3 Code (Alpha)";
+const APP_DISPLAY_NAME = isDevelopment ? "bigCode (Dev)" : "bigCode (Alpha)";
 const APP_USER_MODEL_ID = "com.t3tools.t3code";
 const LINUX_DESKTOP_ENTRY_NAME = isDevelopment ? "t3code-dev.desktop" : "t3code.desktop";
 const LINUX_WM_CLASS = isDevelopment ? "t3code-dev" : "t3code";
@@ -149,7 +152,7 @@ function handleFatalStartupError(stage: string, error: unknown): void {
   console.error(`[desktop] fatal startup error (${stage})`, error);
   if (!isQuitting) {
     isQuitting = true;
-    dialog.showErrorBox("T3 Code failed to start", `Stage: ${stage}\n${message}${detail}`);
+    dialog.showErrorBox("bigCode failed to start", `Stage: ${stage}\n${message}${detail}`);
   }
   stopBackend();
   restoreStdIoCapture?.();
@@ -204,12 +207,12 @@ function registerDesktopProtocol(): void {
  * Resolve the Electron userData directory path.
  *
  * Electron derives the default userData path from `productName` in
- * package.json, which currently produces directories with spaces and
- * parentheses (e.g. `~/.config/T3 Code (Alpha)` on Linux). This is
+ * package.json, which would produce directories with spaces and parentheses
+ * (e.g. `~/.config/bigCode (Alpha)` on Linux). This is
  * unfriendly for shell usage and violates Linux naming conventions.
  *
  * We override it to a clean lowercase name (`t3code`). If the legacy
- * directory already exists we keep using it so existing users don't
+ * `T3 Code (...)` directory already exists we keep using it so existing users don't
  * lose their Chromium profile data (localStorage, cookies, sessions).
  */
 function resolveUserDataPath(): string {

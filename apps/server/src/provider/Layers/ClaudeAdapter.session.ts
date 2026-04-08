@@ -21,8 +21,8 @@ import {
   type ProviderSessionStartInput,
   ThreadId,
   ClaudeCodeEffort,
-} from "@t3tools/contracts";
-import { resolveApiModelId, resolveEffort } from "@t3tools/shared/model";
+} from "@bigcode/contracts";
+import { resolveApiModelId, resolveEffort } from "@bigcode/shared/model";
 import { Cause, Effect, FileSystem, Fiber, Queue, Random, Ref, Stream } from "effect";
 
 import { resolveAttachmentPath } from "../../attachments/attachmentStore.ts";

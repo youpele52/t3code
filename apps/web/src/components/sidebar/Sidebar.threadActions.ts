@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState, type MouseEvent } from "react";
-import { type ThreadId, type ProjectId } from "@t3tools/contracts";
+import { type ThreadId, type ProjectId } from "@bigcode/contracts";
 import { isMacPlatform, newCommandId } from "../../lib/utils";
 import { useUiStateStore } from "../../stores/ui";
 import { useThreadSelectionStore } from "../../stores/thread";

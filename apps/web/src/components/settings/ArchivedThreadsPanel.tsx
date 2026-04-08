@@ -1,5 +1,5 @@
 import { ArchiveIcon, ArchiveX } from "lucide-react";
-import { type ThreadId } from "@t3tools/contracts";
+import { type ThreadId } from "@bigcode/contracts";
 import { useCallback, useMemo, useState } from "react";
 import { useSettings } from "../../hooks/useSettings";
 import { useStore } from "../../stores/main";

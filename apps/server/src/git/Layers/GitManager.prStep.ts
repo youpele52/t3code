@@ -10,7 +10,7 @@ import { randomUUID } from "node:crypto";
 
 import { Effect, FileSystem, Path } from "effect";
 
-import type { ModelSelection } from "@t3tools/contracts";
+import type { ModelSelection } from "@bigcode/contracts";
 
 import type { GitCoreShape } from "../Services/GitCore.ts";
 import type { GitHubCliShape } from "../Services/GitHubCli.ts";

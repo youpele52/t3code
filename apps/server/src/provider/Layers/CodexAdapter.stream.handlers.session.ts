@@ -1,7 +1,7 @@
 /**
  * Session event handlers — maps Codex session notification methods to ProviderRuntimeEvents.
  */
-import { type ProviderEvent, type ProviderRuntimeEvent, type ThreadId } from "@t3tools/contracts";
+import { type ProviderEvent, type ProviderRuntimeEvent, type ThreadId } from "@bigcode/contracts";
 import { asObject } from "./CodexAdapter.types.ts";
 import { runtimeEventBase } from "./CodexAdapter.stream.base.ts";
 

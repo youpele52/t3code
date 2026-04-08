@@ -6,7 +6,7 @@
 import { randomUUID } from "node:crypto";
 
 import { Effect } from "effect";
-import type { GitActionProgressEvent, GitStackedAction } from "@t3tools/contracts";
+import type { GitActionProgressEvent, GitStackedAction } from "@bigcode/contracts";
 
 import type { GitRunStackedActionOptions } from "../Services/GitManager.ts";
 import type { GitActionProgressPayload } from "./GitManager.types.ts";

@@ -1,4 +1,4 @@
-import { TurnId } from "@t3tools/contracts";
+import { TurnId } from "@bigcode/contracts";
 
 import {
   type CodexSessionContext,
@@ -97,12 +97,12 @@ export function isResponse(value: unknown): value is JsonRpcResponse {
 // ---------------------------------------------------------------------------
 
 export function readRouteFields(params: unknown): {
-  turnId?: import("@t3tools/contracts").TurnId;
-  itemId?: import("@t3tools/contracts").ProviderItemId;
+  turnId?: import("@bigcode/contracts").TurnId;
+  itemId?: import("@bigcode/contracts").ProviderItemId;
 } {
   const route: {
-    turnId?: import("@t3tools/contracts").TurnId;
-    itemId?: import("@t3tools/contracts").ProviderItemId;
+    turnId?: import("@bigcode/contracts").TurnId;
+    itemId?: import("@bigcode/contracts").ProviderItemId;
   } = {};
 
   const turnId = toTurnId(
@@ -134,7 +134,7 @@ export function readProviderConversationId(params: unknown): string | undefined 
 export function readChildParentTurnId(
   context: CodexSessionContext,
   params: unknown,
-): import("@t3tools/contracts").TurnId | undefined {
+): import("@bigcode/contracts").TurnId | undefined {
   const providerConversationId = readProviderConversationId(params);
   if (!providerConversationId) {
     return undefined;
@@ -145,7 +145,7 @@ export function readChildParentTurnId(
 export function rememberCollabReceiverTurns(
   context: CodexSessionContext,
   params: unknown,
-  parentTurnId: import("@t3tools/contracts").TurnId | undefined,
+  parentTurnId: import("@bigcode/contracts").TurnId | undefined,
 ): void {
   if (!parentTurnId) {
     return;

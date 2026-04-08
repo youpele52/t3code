@@ -1,7 +1,7 @@
 import type React from "react";
 import type { MouseEvent, KeyboardEvent, PointerEvent } from "react";
 import type { DragCancelEvent, DragStartEvent, DragEndEvent } from "@dnd-kit/core";
-import type { ProjectId, ThreadId } from "@t3tools/contracts";
+import type { ProjectId, ThreadId } from "@bigcode/contracts";
 import type { useStore } from "../../stores/main";
 import type { useDesktopUpdateState } from "../../hooks/useDesktopUpdateState";
 import type { useHandleNewThread } from "../../hooks/useHandleNewThread";

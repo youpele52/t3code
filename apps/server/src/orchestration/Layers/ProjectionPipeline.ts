@@ -6,7 +6,7 @@
  *
  * @module ProjectionPipeline
  */
-import { type OrchestrationEvent } from "@t3tools/contracts";
+import { type OrchestrationEvent } from "@bigcode/contracts";
 import { Effect, FileSystem, Layer, Option, Path, Stream } from "effect";
 import * as SqlClient from "effect/unstable/sql/SqlClient";
 

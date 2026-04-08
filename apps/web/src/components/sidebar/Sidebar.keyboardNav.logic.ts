@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { type ThreadId, type ResolvedKeybindingsConfig } from "@t3tools/contracts";
+import { type ThreadId, type ResolvedKeybindingsConfig } from "@bigcode/contracts";
 import { isTerminalFocused } from "../../lib/terminalFocus";
 import {
   resolveShortcutCommand,

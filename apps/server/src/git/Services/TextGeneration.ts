@@ -8,9 +8,9 @@
  */
 import { ServiceMap } from "effect";
 import type { Effect } from "effect";
-import type { ChatAttachment, ModelSelection, ProviderKind } from "@t3tools/contracts";
+import type { ChatAttachment, ModelSelection, ProviderKind } from "@bigcode/contracts";
 
-import type { TextGenerationError } from "@t3tools/contracts";
+import type { TextGenerationError } from "@bigcode/contracts";
 
 /** Providers that support git text generation (commit messages, PR content, branch names). */
 export type TextGenerationProvider = ProviderKind;

@@ -7,7 +7,7 @@ import {
   type ProviderModelOptions,
   type RuntimeMode,
   type ThreadId,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import * as Equal from "effect/Equal";
 import type { StoreApi } from "zustand";
 import { cloneModelSelection, createModelSelection } from "../../models/provider";

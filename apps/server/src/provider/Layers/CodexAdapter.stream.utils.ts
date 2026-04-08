@@ -14,7 +14,7 @@ import {
   RuntimeTaskId,
   ProviderItemId,
   TurnId,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 
 import { asArray, asNumber, asObject, asString } from "./CodexAdapter.types.ts";
 

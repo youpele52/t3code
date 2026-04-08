@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { type DesktopUpdateState } from "@t3tools/contracts";
+import { type DesktopUpdateState } from "@bigcode/contracts";
 import { isElectron } from "../config/env";
 import { toastManager } from "../components/ui/toast";
 import {

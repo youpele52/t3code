@@ -16,8 +16,8 @@ import {
   type ProviderUserInputAnswers,
   type RuntimeMode,
   type UserInputQuestion,
-} from "@t3tools/contracts";
-import { FULL_ACCESS_AUTO_APPROVE_AFTER_MS } from "@t3tools/shared/approvals";
+} from "@bigcode/contracts";
+import { FULL_ACCESS_AUTO_APPROVE_AFTER_MS } from "@bigcode/shared/approvals";
 import { Deferred, Effect, Fiber, Random, Ref } from "effect";
 
 import {

@@ -1,4 +1,4 @@
-import type { SidebarProjectSortOrder, SidebarThreadSortOrder } from "@t3tools/contracts/settings";
+import type { SidebarProjectSortOrder, SidebarThreadSortOrder } from "@bigcode/contracts/settings";
 import type { SidebarThreadSummary, Thread } from "../../models/types";
 import { cn } from "../../lib/utils";
 import { isLatestTurnSettled } from "../../logic/session";

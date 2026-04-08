@@ -9,7 +9,7 @@ import {
   ProjectId,
   type ServerProvider,
   ThreadId,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { page } from "vitest/browser";
 import { useCallback } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -19,7 +19,7 @@ import { TraitsPicker } from "./TraitsPicker";
 import { useComposerDraftStore } from "../../../stores/composer";
 import { useComposerThreadDraft, useEffectiveComposerModelState } from "../../../stores/composer";
 import { COMPOSER_DRAFT_STORAGE_KEY, ComposerThreadDraftState } from "../../../stores/composer";
-import { DEFAULT_CLIENT_SETTINGS } from "@t3tools/contracts/settings";
+import { DEFAULT_CLIENT_SETTINGS } from "@bigcode/contracts/settings";
 
 // ── Claude TraitsPicker tests ─────────────────────────────────────────
 

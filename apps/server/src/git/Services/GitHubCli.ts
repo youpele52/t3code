@@ -9,7 +9,7 @@ import { ServiceMap } from "effect";
 import type { Effect } from "effect";
 
 import type { ProcessRunResult } from "../../utils/processRunner";
-import type { GitHubCliError } from "@t3tools/contracts";
+import type { GitHubCliError } from "@bigcode/contracts";
 
 export interface GitHubPullRequestSummary {
   readonly number: number;

@@ -1,7 +1,7 @@
 /**
  * Thread and realtime event handlers — maps Codex thread notification methods to ProviderRuntimeEvents.
  */
-import { type ProviderEvent, type ProviderRuntimeEvent, type ThreadId } from "@t3tools/contracts";
+import { type ProviderEvent, type ProviderRuntimeEvent, type ThreadId } from "@bigcode/contracts";
 
 import { asString, asObject } from "./CodexAdapter.types.ts";
 import { runtimeEventBase } from "./CodexAdapter.stream.base.ts";

@@ -1,4 +1,4 @@
-import { EDITORS, EditorId, NativeApi } from "@t3tools/contracts";
+import { EDITORS, EditorId, NativeApi } from "@bigcode/contracts";
 import {
   getLocalStorageItem,
   setLocalStorageItem,
@@ -6,10 +6,13 @@ import {
 } from "../../hooks/useLocalStorage";
 import { useMemo } from "react";
 
-const LAST_EDITOR_KEY = "t3code:last-editor";
+const LAST_EDITOR_KEY = "bigcode:last-editor";
+const LEGACY_LAST_EDITOR_KEYS = ["t3code:last-editor"] as const;
 
 export function usePreferredEditor(availableEditors: ReadonlyArray<EditorId>) {
-  const [lastEditor, setLastEditor] = useLocalStorage(LAST_EDITOR_KEY, null, EditorId);
+  const [lastEditor, setLastEditor] = useLocalStorage(LAST_EDITOR_KEY, null, EditorId, {
+    legacyKeys: LEGACY_LAST_EDITOR_KEYS,
+  });
 
   const effectiveEditor = useMemo(() => {
     if (lastEditor && availableEditors.includes(lastEditor)) return lastEditor;
@@ -23,10 +26,15 @@ export function resolveAndPersistPreferredEditor(
   availableEditors: readonly EditorId[],
 ): EditorId | null {
   const availableEditorIds = new Set(availableEditors);
-  const stored = getLocalStorageItem(LAST_EDITOR_KEY, EditorId);
+  const stored = getLocalStorageItem(LAST_EDITOR_KEY, EditorId, {
+    legacyKeys: LEGACY_LAST_EDITOR_KEYS,
+  });
   if (stored && availableEditorIds.has(stored)) return stored;
   const editor = EDITORS.find((editor) => availableEditorIds.has(editor.id))?.id ?? null;
-  if (editor) setLocalStorageItem(LAST_EDITOR_KEY, editor, EditorId);
+  if (editor)
+    setLocalStorageItem(LAST_EDITOR_KEY, editor, EditorId, {
+      legacyKeys: LEGACY_LAST_EDITOR_KEYS,
+    });
   return editor ?? null;
 }
 

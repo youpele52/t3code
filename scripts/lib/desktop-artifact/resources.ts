@@ -166,6 +166,7 @@ function resolveGitHubPublishConfig():
     }
   | undefined {
   const rawRepo =
+    process.env.BIGCODE_DESKTOP_UPDATE_REPOSITORY?.trim() ||
     process.env.T3CODE_DESKTOP_UPDATE_REPOSITORY?.trim() ||
     process.env.GITHUB_REPOSITORY?.trim() ||
     "";

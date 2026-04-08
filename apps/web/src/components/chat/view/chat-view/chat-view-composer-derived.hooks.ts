@@ -1,4 +1,4 @@
-import { type ModelSelection, type ProviderKind } from "@t3tools/contracts";
+import { type ModelSelection, type ProviderKind } from "@bigcode/contracts";
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
@@ -6,8 +6,8 @@ import { useMemo } from "react";
 import { gitStatusQueryOptions } from "~/lib/gitReactQuery";
 import { projectSearchEntriesQueryOptions } from "~/lib/projectReactQuery";
 
-import { normalizeModelSlug } from "@t3tools/shared/model";
-import { projectScriptCwd } from "@t3tools/shared/projectScripts";
+import { normalizeModelSlug } from "@bigcode/shared/model";
+import { projectScriptCwd } from "@bigcode/shared/projectScripts";
 import {
   useServerAvailableEditors,
   useServerConfig,

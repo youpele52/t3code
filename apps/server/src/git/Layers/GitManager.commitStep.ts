@@ -9,9 +9,9 @@
  */
 import { Effect } from "effect";
 
-import type { ModelSelection } from "@t3tools/contracts";
-import type { GitActionProgressEvent } from "@t3tools/contracts";
-import { resolveAutoFeatureBranchName, sanitizeFeatureBranchName } from "@t3tools/shared/git";
+import type { ModelSelection } from "@bigcode/contracts";
+import type { GitActionProgressEvent } from "@bigcode/contracts";
+import { resolveAutoFeatureBranchName, sanitizeFeatureBranchName } from "@bigcode/shared/git";
 
 import type { GitCoreShape } from "../Services/GitCore.ts";
 import type { TextGenerationShape } from "../Services/TextGeneration.ts";

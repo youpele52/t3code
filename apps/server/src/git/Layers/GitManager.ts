@@ -17,7 +17,7 @@ import {
   GitRunStackedActionResult,
   type GitStatusLocalResult,
   type GitStatusRemoteResult,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 
 import { GitManager, type GitManagerShape } from "../Services/GitManager.ts";
 import { GitCore, GitStatusDetails } from "../Services/GitCore.ts";
@@ -25,7 +25,7 @@ import { GitHubCli } from "../Services/GitHubCli.ts";
 import { TextGeneration } from "../Services/TextGeneration.ts";
 import { ProjectSetupScriptRunner } from "../../project/Services/ProjectSetupScriptRunner.ts";
 import { ServerSettingsService } from "../../ws/serverSettings.ts";
-import type { GitManagerServiceError } from "@t3tools/contracts";
+import type { GitManagerServiceError } from "@bigcode/contracts";
 
 import { isCommitAction } from "./GitManager.types.ts";
 import {
@@ -48,7 +48,7 @@ const LOCAL_STATUS_CACHE_TTL = Duration.seconds(1);
 const REMOTE_STATUS_CACHE_TTL = Duration.seconds(5);
 const STATUS_RESULT_CACHE_CAPACITY = 2_048;
 
-function isNotGitRepositoryError(error: import("@t3tools/contracts").GitCommandError): boolean {
+function isNotGitRepositoryError(error: import("@bigcode/contracts").GitCommandError): boolean {
   return error.message.toLowerCase().includes("not a git repository");
 }
 

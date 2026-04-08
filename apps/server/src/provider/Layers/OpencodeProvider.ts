@@ -1,4 +1,4 @@
-import type { ModelCapabilities, OpencodeSettings, ServerProviderModel } from "@t3tools/contracts";
+import type { ModelCapabilities, OpencodeSettings, ServerProviderModel } from "@bigcode/contracts";
 import { Cache, Duration, Effect, Equal, Layer, Result, Stream } from "effect";
 import type { OpencodeClient } from "@opencode-ai/sdk";
 
@@ -158,7 +158,7 @@ export const checkOpencodeProviderStatus = Effect.fn("checkOpencodeProviderStatu
         version: null,
         status: "warning",
         auth: { status: "unknown" },
-        message: "OpenCode is disabled in T3 Code settings.",
+        message: "OpenCode is disabled in bigCode settings.",
       },
     });
   }

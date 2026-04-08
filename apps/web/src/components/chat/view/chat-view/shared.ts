@@ -3,7 +3,7 @@ import {
   type ServerProvider,
   type ThreadId,
   OrchestrationThreadActivity,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 
 import { type PendingUserInputDraftAnswer } from "../../../../logic/user-input";
 

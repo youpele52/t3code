@@ -3,7 +3,7 @@ import type {
   ProjectScript,
   ResolvedKeybindingsConfig,
   ThreadId,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { memo } from "react";
 import GitActionsControl from "../../git/GitActionsControl";
 import { DiffIcon, PanelLeftCloseIcon, PanelLeftIcon, TerminalSquareIcon } from "lucide-react";
@@ -16,11 +16,6 @@ import { useSidebar } from "../../ui/sidebar";
 import { OpenInPicker } from "./OpenInPicker";
 import { useIsThreadRunning } from "../../../stores/main";
 import { truncateThreadName } from "../../sidebar/Sidebar.logic";
-
-const truncateThreadName = (name: string, maxLength: number = 20): string => {
-  if (name.length <= maxLength) return name;
-  return `${name.slice(0, maxLength)}...`;
-};
 
 interface ChatHeaderProps {
   activeThreadId: ThreadId;

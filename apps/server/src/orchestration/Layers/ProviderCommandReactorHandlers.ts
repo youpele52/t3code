@@ -11,7 +11,7 @@ import {
   type OrchestrationSession,
   ThreadId,
   type TurnId,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { Cache, Cause, Duration, Effect, Option, Scope } from "effect";
 
 import { GitCore } from "../../git/Services/GitCore.ts";
@@ -42,7 +42,7 @@ import type { ProviderServiceError } from "../../provider/Errors.ts";
 import type { OrchestrationDispatchError } from "../Errors.ts";
 
 type ProviderIntentEvent = Extract<
-  import("@t3tools/contracts").OrchestrationEvent,
+  import("@bigcode/contracts").OrchestrationEvent,
   {
     type:
       | "thread.runtime-mode-set"

@@ -1,4 +1,4 @@
-import { type ModelSelection, type ThreadId } from "@t3tools/contracts";
+import { type ModelSelection, type ThreadId } from "@bigcode/contracts";
 import { useMemo } from "react";
 import { LRUCache } from "../../../lib/lruCache";
 import { useStore } from "../../../stores/main";

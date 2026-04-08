@@ -1,4 +1,4 @@
-import { type KeybindingCommand, type ProjectScript, type ProjectId } from "@t3tools/contracts";
+import { type KeybindingCommand, type ProjectScript, type ProjectId } from "@bigcode/contracts";
 import { useCallback } from "react";
 import { isElectron } from "../../../config/env";
 import { decodeProjectScriptKeybindingRule } from "~/lib/projectScriptKeybindings";

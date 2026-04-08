@@ -4,7 +4,7 @@ import type {
   GitStackedAction,
   GitStatusResult,
   ThreadId,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useEffectEvent, useRef } from "react";
 import {

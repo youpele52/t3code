@@ -1,6 +1,6 @@
-import { type ProjectScript, type ThreadId, TerminalOpenInput } from "@t3tools/contracts";
+import { type ProjectScript, type ThreadId, TerminalOpenInput } from "@bigcode/contracts";
 import { useCallback } from "react";
-import { projectScriptRuntimeEnv } from "@t3tools/shared/projectScripts";
+import { projectScriptRuntimeEnv } from "@bigcode/shared/projectScripts";
 import { DEFAULT_THREAD_TERMINAL_ID, MAX_TERMINALS_PER_GROUP } from "../../../models/types";
 import { randomUUID } from "~/lib/utils";
 import { readNativeApi } from "../../../rpc/nativeApi";

@@ -12,11 +12,11 @@ import {
   type ProviderRuntimeEvent,
   type ThreadTokenUsageSnapshot,
   type UserInputQuestion,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { type Event as OpencodeEvent } from "@opencode-ai/sdk";
 import { Effect } from "effect";
 
-import { FULL_ACCESS_AUTO_APPROVE_AFTER_MS } from "@t3tools/shared/approvals";
+import { FULL_ACCESS_AUTO_APPROVE_AFTER_MS } from "@bigcode/shared/approvals";
 
 import type { ActiveOpencodeSession } from "./OpencodeAdapter.types.ts";
 import {

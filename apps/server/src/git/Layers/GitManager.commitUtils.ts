@@ -6,7 +6,7 @@
  *
  * @module GitManager.commitUtils
  */
-import type { GitRunStackedActionResult } from "@t3tools/contracts";
+import type { GitRunStackedActionResult } from "@bigcode/contracts";
 
 export const COMMIT_TIMEOUT_MS = 10 * 60_000;
 export const MAX_PROGRESS_TEXT_LENGTH = 500;

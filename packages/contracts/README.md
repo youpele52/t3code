@@ -1,4 +1,4 @@
-# @t3tools/contracts
+# @bigcode/contracts
 
 Shared contracts, types, and constants for the bigCode application.
 
@@ -12,23 +12,23 @@ Import directly from source modules for explicit dependencies:
 
 ```typescript
 // Constants
-import { PROVIDERS } from "@t3tools/contracts/constants/provider.constant";
-import { DEFAULT_MODEL } from "@t3tools/contracts/constants/model.constant";
-import { WS_METHODS } from "@t3tools/contracts/constants/websocket.constant";
+import { PROVIDERS } from "@bigcode/contracts/constants/provider.constant";
+import { DEFAULT_MODEL } from "@bigcode/contracts/constants/model.constant";
+import { WS_METHODS } from "@bigcode/contracts/constants/websocket.constant";
 
 // Core types
-import { ModelSelection } from "@t3tools/contracts/core/model";
-import { ClientSettings } from "@t3tools/contracts/core/settings";
+import { ModelSelection } from "@bigcode/contracts/core/model";
+import { ClientSettings } from "@bigcode/contracts/core/settings";
 
 // Orchestration
-import { ProviderKind } from "@t3tools/contracts/orchestration/provider";
-import { RuntimeMode } from "@t3tools/contracts/orchestration/orchestration";
+import { ProviderKind } from "@bigcode/contracts/orchestration/provider";
+import { RuntimeMode } from "@bigcode/contracts/orchestration/orchestration";
 
 // Server
-import { RpcMethod } from "@t3tools/contracts/server/rpc";
+import { RpcMethod } from "@bigcode/contracts/server/rpc";
 
 // Workspace
-import { GitStatus } from "@t3tools/contracts/workspace/git";
+import { GitStatus } from "@bigcode/contracts/workspace/git";
 ```
 
 **Benefits**:
@@ -44,7 +44,7 @@ The barrel export is still supported for backward compatibility:
 
 ```typescript
 // Works, but not recommended for new code
-import { PROVIDERS, DEFAULT_MODEL, ProviderKind } from "@t3tools/contracts";
+import { PROVIDERS, DEFAULT_MODEL, ProviderKind } from "@bigcode/contracts";
 ```
 
 **Drawbacks**:
@@ -94,15 +94,15 @@ When touching existing files, consider migrating from barrel to direct imports:
 **Before**:
 
 ```typescript
-import { PROVIDERS, ProviderKind, ModelSelection } from "@t3tools/contracts";
+import { PROVIDERS, ProviderKind, ModelSelection } from "@bigcode/contracts";
 ```
 
 **After**:
 
 ```typescript
-import { PROVIDERS } from "@t3tools/contracts/constants/provider.constant";
-import { ProviderKind } from "@t3tools/contracts/orchestration/provider";
-import { ModelSelection } from "@t3tools/contracts/core/model";
+import { PROVIDERS } from "@bigcode/contracts/constants/provider.constant";
+import { ProviderKind } from "@bigcode/contracts/orchestration/provider";
+import { ModelSelection } from "@bigcode/contracts/core/model";
 ```
 
 This migration is **optional** and can be done incrementally as files are modified.

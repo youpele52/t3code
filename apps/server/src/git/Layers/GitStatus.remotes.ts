@@ -5,7 +5,7 @@
  */
 import { Effect, Path } from "effect";
 
-import { GitCommandError } from "@t3tools/contracts";
+import { GitCommandError } from "@bigcode/contracts";
 import { parseRemoteNames } from "../remoteRefs.ts";
 import { parseDefaultBranchFromRemoteHeadRef, createGitCommandError } from "./GitCoreUtils.ts";
 import { type GitHelpers } from "./GitCoreExecutor.ts";

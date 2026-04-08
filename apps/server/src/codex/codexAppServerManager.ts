@@ -11,7 +11,7 @@ import {
   type ProviderSession,
   type ProviderTurnStartResult,
   type ProviderUserInputAnswers,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { Effect, ServiceMap } from "effect";
 
 import {

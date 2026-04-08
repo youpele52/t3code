@@ -13,7 +13,7 @@ import {
   type ProviderSession,
   type ProviderTurnStartResult,
   type ProviderUserInputAnswers,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 
 import { resolveCodexModelForAccount } from "../provider/codexAccount";
 import { buildCodexCollaborationMode, normalizeCodexModelSlug } from "./codexModeInstructions";

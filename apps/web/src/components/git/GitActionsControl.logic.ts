@@ -2,7 +2,7 @@ import type {
   GitRunStackedActionResult,
   GitStackedAction,
   GitStatusResult,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 
 export type GitActionIconName = "commit" | "push" | "pr";
 
@@ -360,7 +360,7 @@ export function resolveLiveThreadBranchUpdate(input: {
 }
 
 // Re-export from shared for backwards compatibility in this module's exports
-export { resolveAutoFeatureBranchName } from "@t3tools/shared/git";
+export { resolveAutoFeatureBranchName } from "@bigcode/shared/git";
 
 export function formatElapsedDescription(startedAtMs: number | null): string | undefined {
   if (startedAtMs === null) {

@@ -7,7 +7,7 @@
 
 ## Executive Summary
 
-This document outlines a comprehensive refactoring initiative to extract and centralize all repeated constants throughout the T3 Code application into a well-organized constants folder structure in `packages/contracts/src/constants/`.
+This document outlines a comprehensive refactoring initiative to extract and centralize all repeated constants throughout the bigCode application into a well-organized constants folder structure in `packages/contracts/src/constants/`.
 
 ## Table of Contents
 
@@ -26,7 +26,7 @@ This document outlines a comprehensive refactoring initiative to extract and cen
 
 ### Current State
 
-The T3 Code codebase suffers from significant constant duplication:
+The bigCode codebase suffers from significant constant duplication:
 
 - **996+ occurrences** of provider string literals (`"codex"`, `"claudeAgent"`, `"copilot"`, `"opencode"`) across **106 files**
 - **294 occurrences** of WebSocket method names across **10 files**
@@ -94,7 +94,7 @@ We've chosen to centralize all constants in the `packages/contracts` package for
 #### Why `packages/contracts`?
 
 1. **Already the Source of Truth**: This package defines shared types, schemas, and domain models used by both `apps/web` and `apps/server`
-2. **Existing Import Pattern**: Both apps heavily import from `@t3tools/contracts`, so no new import patterns needed
+2. **Existing Import Pattern**: Both apps heavily import from `@bigcode/contracts`, so no new import patterns needed
 3. **Type Co-location**: Constants can live alongside their related schemas for better type safety
 4. **Single Dependency**: Avoids circular dependencies between apps and shared packages
 5. **Architectural Consistency**: Follows the existing pattern where domain knowledge lives in contracts
@@ -156,7 +156,7 @@ packages/contracts/src/constants/
 
 ````typescript
 /**
- * All available provider kinds in the T3 Code application.
+ * All available provider kinds in the bigCode application.
  *
  * Providers represent different AI coding assistant backends that can be used
  * for code generation, chat, and other AI-powered features.
@@ -330,7 +330,7 @@ export const MODEL_SLUG_ALIASES_BY_PROVIDER = {
 
 ```typescript
 /**
- * WebSocket RPC method names for the T3 Code server.
+ * WebSocket RPC method names for the bigCode server.
  *
  * These method names are used for client-server communication over WebSocket.
  * Each method corresponds to a specific RPC endpoint.
@@ -663,7 +663,7 @@ export const DEFAULT_BINARY_PATHS = {
 /**
  * Base application name without stage label.
  */
-export const APP_BASE_NAME = "T3 Code";
+export const APP_BASE_NAME = "bigCode";
 
 /**
  * Stage label indicating the current release phase.
@@ -957,7 +957,7 @@ export const CANONICAL_REQUEST_TYPES = [
  *
  * @example
  * ```typescript
- * import { CONSTANT_NAME } from '@t3tools/contracts/constants';
+ * import { CONSTANT_NAME } from '@bigcode/contracts/constants';
  *
  * // Usage example
  * ```
@@ -995,11 +995,11 @@ export const CONSTANT_NAME = /* value */ as const;
 
    ```typescript
    // Before
-   import { ProviderKind } from "@t3tools/contracts";
+   import { ProviderKind } from "@bigcode/contracts";
    const provider = "codex";
 
    // After
-   import { ProviderKind, CODEX_PROVIDER } from "@t3tools/contracts";
+   import { ProviderKind, CODEX_PROVIDER } from "@bigcode/contracts";
    const provider = CODEX_PROVIDER;
    ```
 
@@ -1010,7 +1010,7 @@ export const CONSTANT_NAME = /* value */ as const;
    const providers = ["codex", "claudeAgent", "copilot", "opencode"];
 
    // After
-   import { PROVIDER_KINDS } from "@t3tools/contracts";
+   import { PROVIDER_KINDS } from "@bigcode/contracts";
    const providers = [...PROVIDER_KINDS];
    ```
 
@@ -1021,7 +1021,7 @@ export const CONSTANT_NAME = /* value */ as const;
    Schema.Literals(["codex", "claudeAgent", "copilot", "opencode"]);
 
    // After
-   import { PROVIDER_KINDS } from "@t3tools/contracts/constants";
+   import { PROVIDER_KINDS } from "@bigcode/contracts/constants";
    Schema.Literals(PROVIDER_KINDS);
    ```
 
@@ -1067,7 +1067,7 @@ export const CONSTANT_NAME = /* value */ as const;
 
 **Validation**:
 
-- All constants accessible via `@t3tools/contracts`
+- All constants accessible via `@bigcode/contracts`
 - No duplicate exports
 - Tree-shaking works correctly
 
@@ -1140,17 +1140,17 @@ All application constants are centralized in `packages/contracts/src/constants/`
 
 ```typescript
 // Import from the main contracts package
-import { CODEX_PROVIDER, DEFAULT_MODEL } from "@t3tools/contracts";
+import { CODEX_PROVIDER, DEFAULT_MODEL } from "@bigcode/contracts";
 
 // Or import from specific constant files
-import { CODEX_PROVIDER } from "@t3tools/contracts/constants/provider.constant";
+import { CODEX_PROVIDER } from "@bigcode/contracts/constants/provider.constant";
 ```
 ````
 
 ### Guidelines
 
 - Never use inline string literals for provider names, modes, or states
-- Always import constants from `@t3tools/contracts`
+- Always import constants from `@bigcode/contracts`
 - Document new constants with JSDoc
 - Use `as const` for literal type inference
 
@@ -1180,7 +1180,7 @@ export const ProviderKind = Schema.Literals(["codex", "claudeAgent", "copilot", 
 #### After This Refactoring
 
 ```typescript
-import { CODEX_PROVIDER, PROVIDER_KINDS } from "@t3tools/contracts";
+import { CODEX_PROVIDER, PROVIDER_KINDS } from "@bigcode/contracts";
 
 const provider = CODEX_PROVIDER;
 const providers = [...PROVIDER_KINDS];
@@ -1202,7 +1202,7 @@ export const ProviderKind = Schema.Literals(PROVIDER_KINDS);
 const PROVIDER_KEYS = ["codex", "claudeAgent", "copilot", "opencode"] as const;
 
 // After
-import { PROVIDER_KINDS } from "@t3tools/contracts";
+import { PROVIDER_KINDS } from "@bigcode/contracts";
 const PROVIDER_KEYS = PROVIDER_KINDS;
 ```
 
@@ -1213,7 +1213,7 @@ const PROVIDER_KEYS = PROVIDER_KINDS;
 export const ProviderKind = Schema.Literals(["codex", "claudeAgent", "copilot", "opencode"]);
 
 // After
-import { PROVIDER_KINDS } from "@t3tools/contracts/constants";
+import { PROVIDER_KINDS } from "@bigcode/contracts/constants";
 export const ProviderKind = Schema.Literals(PROVIDER_KINDS);
 ```
 
@@ -1226,7 +1226,7 @@ if (provider === "codex") {
 }
 
 // After
-import { CODEX_PROVIDER } from "@t3tools/contracts";
+import { CODEX_PROVIDER } from "@bigcode/contracts";
 if (provider === CODEX_PROVIDER) {
   // ...
 }
@@ -1257,7 +1257,7 @@ import {
   CLAUDE_PROVIDER,
   COPILOT_PROVIDER,
   OPENCODE_PROVIDER,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 const config = {
   [CODEX_PROVIDER]: {
     /* ... */
@@ -1281,7 +1281,7 @@ const config = {
 const DEFAULT_PROVIDER = "codex";
 
 // After
-import { DEFAULT_PROVIDER_KIND } from "@t3tools/contracts";
+import { DEFAULT_PROVIDER_KIND } from "@bigcode/contracts";
 const DEFAULT_PROVIDER = DEFAULT_PROVIDER_KIND;
 ```
 
@@ -1407,7 +1407,7 @@ const DEFAULT_PROVIDER = DEFAULT_PROVIDER_KIND;
 
 ## Conclusion
 
-This constants refactoring initiative addresses a critical technical debt in the T3 Code codebase. By centralizing 1,500+ repeated string literals into a well-organized constants folder, we'll improve maintainability, reduce bugs, and provide a better developer experience.
+This constants refactoring initiative addresses a critical technical debt in the bigCode codebase. By centralizing 1,500+ repeated string literals into a well-organized constants folder, we'll improve maintainability, reduce bugs, and provide a better developer experience.
 
 The refactoring is designed to be incremental, testable, and reversible. Each phase has clear validation criteria, and the entire process is estimated to take 9-12 hours of focused work.
 
@@ -1417,5 +1417,5 @@ Upon completion, adding new providers, modes, or configuration options will be t
 
 **Document Version**: 1.0  
 **Last Updated**: April 6, 2026  
-**Author**: T3 Code Team  
+**Author**: bigCode Team  
 **Status**: Ready for Implementation

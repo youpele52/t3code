@@ -4,7 +4,7 @@
  *
  * @module CodexAdapter.stream.handlers
  */
-import { type ProviderEvent, type ProviderRuntimeEvent, ThreadId } from "@t3tools/contracts";
+import { type ProviderEvent, type ProviderRuntimeEvent, ThreadId } from "@bigcode/contracts";
 
 import { mapItemLifecycle, runtimeEventBase } from "./CodexAdapter.stream.base.ts";
 

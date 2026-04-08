@@ -5,7 +5,7 @@
  */
 import { Effect } from "effect";
 
-import { GitCommandError } from "@t3tools/contracts";
+import { GitCommandError } from "@bigcode/contracts";
 import { gitCommandDuration, gitCommandsTotal, withMetrics } from "../../observability/Metrics.ts";
 import {
   type ExecuteGitInput,

@@ -4,7 +4,7 @@
  *
  * @module OpencodeAdapter.session.helpers
  */
-import type { ProviderApprovalDecision, ProviderSendTurnInput } from "@t3tools/contracts";
+import type { ProviderApprovalDecision, ProviderSendTurnInput } from "@bigcode/contracts";
 
 import type { ActiveOpencodeSession } from "./OpencodeAdapter.types.ts";
 import { withOpencodeDirectory } from "./OpencodeAdapter.stream.ts";

@@ -14,7 +14,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { restrictToFirstScrollableAncestor, restrictToVerticalAxis } from "@dnd-kit/modifiers";
-import { type ProjectId } from "@t3tools/contracts";
+import { type ProjectId } from "@bigcode/contracts";
 import { Spinner } from "../ui/spinner";
 import { SidebarMenu, SidebarMenuItem } from "../ui/sidebar";
 import { SortableProjectItem } from "./SidebarProjectItem";

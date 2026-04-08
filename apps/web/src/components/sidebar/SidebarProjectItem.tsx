@@ -1,10 +1,10 @@
 import { ArrowUpDownIcon } from "lucide-react";
 import { type ReactNode } from "react";
-import { type ProjectId } from "@t3tools/contracts";
+import { type ProjectId } from "@bigcode/contracts";
 import {
   type SidebarProjectSortOrder,
   type SidebarThreadSortOrder,
-} from "@t3tools/contracts/settings";
+} from "@bigcode/contracts/settings";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Menu, MenuGroup, MenuPopup, MenuRadioGroup, MenuRadioItem, MenuTrigger } from "../ui/menu";

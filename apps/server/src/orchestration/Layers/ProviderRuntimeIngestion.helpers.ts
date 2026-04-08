@@ -12,14 +12,15 @@ import {
   type OrchestrationThreadActivity,
   type ProviderRuntimeEvent,
   type ThreadTokenUsageSnapshot,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 
 export const TURN_MESSAGE_IDS_BY_TURN_CACHE_CAPACITY = 10_000;
 export const BUFFERED_MESSAGE_TEXT_BY_MESSAGE_ID_CACHE_CAPACITY = 20_000;
 export const BUFFERED_PROPOSED_PLAN_BY_ID_CACHE_CAPACITY = 10_000;
 export const MAX_BUFFERED_ASSISTANT_CHARS = 24_000;
 export const STRICT_PROVIDER_LIFECYCLE_GUARD =
-  process.env.T3CODE_STRICT_PROVIDER_LIFECYCLE_GUARD !== "0";
+  (process.env.BIGCODE_STRICT_PROVIDER_LIFECYCLE_GUARD ??
+    process.env.T3CODE_STRICT_PROVIDER_LIFECYCLE_GUARD) !== "0";
 
 export type TurnStartRequestedDomainEvent = Extract<
   OrchestrationEvent,

@@ -18,10 +18,10 @@ import {
   GitStatusLocalResult,
   GitStatusRemoteResult,
   GitStatusResult,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { ServiceMap } from "effect";
 import type { Effect } from "effect";
-import type { GitManagerServiceError } from "@t3tools/contracts";
+import type { GitManagerServiceError } from "@bigcode/contracts";
 
 export interface GitActionProgressReporter {
   readonly publish: (event: GitActionProgressEvent) => Effect.Effect<void, never>;

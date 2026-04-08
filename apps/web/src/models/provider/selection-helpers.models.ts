@@ -2,7 +2,7 @@ import {
   type ModelSelection,
   type ProviderKind,
   type ProviderModelOptions,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 
 export function getProviderModelOptions<P extends ProviderKind>(
   provider: P,

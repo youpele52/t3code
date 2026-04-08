@@ -1,5 +1,5 @@
 {
-  "name": "t3",
+  "name": "bigcode",
   "version": "0.0.15",
   "license": "MIT",
   "repository": {
@@ -8,6 +8,7 @@
     "directory": "apps/server"
   },
   "bin": {
+    "bigcode": "./dist/bin.mjs",
     "t3": "./dist/bin.mjs"
   },
   "files": [
@@ -35,11 +36,11 @@
     "open": "^10.1.0"
   },
   "devDependencies": {
+    "@bigcode/contracts": "workspace:*",
+    "@bigcode/shared": "workspace:*",
+    "@bigcode/web": "workspace:*",
     "@effect/language-service": "catalog:",
     "@effect/vitest": "catalog:",
-    "@t3tools/contracts": "workspace:*",
-    "@t3tools/shared": "workspace:*",
-    "@t3tools/web": "workspace:*",
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
     "tsdown": "catalog:",

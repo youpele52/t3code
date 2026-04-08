@@ -4,7 +4,7 @@ import {
   ProjectId,
   ThreadId,
   TurnId,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { describe, expect, it } from "vitest";
 
 import { collectLatestPendingApprovalCandidate } from "./pendingApprovalNavigation.logic";

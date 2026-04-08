@@ -1,4 +1,4 @@
-import type { TerminalEvent } from "@t3tools/contracts";
+import type { TerminalEvent } from "@bigcode/contracts";
 
 export function terminalRunningSubprocessFromEvent(event: TerminalEvent): boolean | null {
   switch (event.type) {

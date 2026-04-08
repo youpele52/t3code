@@ -3,13 +3,13 @@
  *
  * Extracted from CheckpointReactor.ts to keep that file under 500 lines.
  */
-import { ThreadId, type OrchestrationCommand, type ProviderSession } from "@t3tools/contracts";
+import { ThreadId, type OrchestrationCommand, type ProviderSession } from "@bigcode/contracts";
 import { Effect, Option } from "effect";
 
 import { checkpointRefForThreadTurn } from "../../checkpointing/Utils.ts";
 import { isGitRepository } from "../../git/Utils.ts";
 import { serverCommandId } from "./CheckpointReactorCapture.ts";
-import type { OrchestrationEvent, OrchestrationReadModel } from "@t3tools/contracts";
+import type { OrchestrationEvent, OrchestrationReadModel } from "@bigcode/contracts";
 import type { CheckpointStoreError } from "../../checkpointing/Errors.ts";
 import type {
   RestoreCheckpointInput,

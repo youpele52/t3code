@@ -4,7 +4,7 @@
  * `nowIso` and `withEventBase` are pure utilities used by all decider
  * sub-modules. They are kept here to avoid duplication.
  */
-import type { OrchestrationCommand, OrchestrationEvent } from "@t3tools/contracts";
+import type { OrchestrationCommand, OrchestrationEvent } from "@bigcode/contracts";
 
 export const nowIso = () => new Date().toISOString();
 

@@ -5,7 +5,7 @@
  * No Effect services are required here — all functions are pure or use
  * only schema decoding.
  */
-import { ModelSelection, NonNegativeInt, ThreadId } from "@t3tools/contracts";
+import { ModelSelection, NonNegativeInt, ThreadId } from "@bigcode/contracts";
 import { Effect, Schema, SchemaIssue } from "effect";
 
 import { ProviderValidationError } from "../Errors.ts";

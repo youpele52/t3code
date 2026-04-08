@@ -9,7 +9,7 @@
  *
  * @module OpencodeAdapterLive
  */
-import { type ProviderRuntimeEvent, ThreadId } from "@t3tools/contracts";
+import { type ProviderRuntimeEvent, ThreadId } from "@bigcode/contracts";
 import { Effect, Layer, Queue, Stream } from "effect";
 
 import { OpencodeServerManager } from "../Services/OpencodeServerManager.ts";

@@ -3,7 +3,7 @@ import * as Path from "node:path";
 
 import { app, BrowserWindow, dialog, Menu } from "electron";
 import type { MenuItemConstructorOptions } from "electron";
-import type { DesktopUpdateState } from "@t3tools/contracts";
+import type { DesktopUpdateState } from "@bigcode/contracts";
 
 import { getAutoUpdateDisabledReason } from "../updater/updateState";
 
@@ -113,7 +113,7 @@ async function checkForUpdatesFromMenu(deps: MenuManagerDeps): Promise<void> {
     void dialog.showMessageBox({
       type: "info",
       title: "You're up to date!",
-      message: `T3 Code ${state.currentVersion} is currently the newest version available.`,
+      message: `bigCode ${state.currentVersion} is currently the newest version available.`,
       buttons: ["OK"],
     });
   } else if (state.status === "error") {
@@ -133,7 +133,8 @@ function handleCheckForUpdatesMenuClick(deps: MenuManagerDeps): void {
     isPackaged: app.isPackaged,
     platform: process.platform,
     appImage: process.env.APPIMAGE,
-    disabledByEnv: process.env.T3CODE_DISABLE_AUTO_UPDATE === "1",
+    disabledByEnv:
+      (process.env.BIGCODE_DISABLE_AUTO_UPDATE ?? process.env.T3CODE_DISABLE_AUTO_UPDATE) === "1",
   });
   if (disabledReason) {
     console.info("[desktop-updater] Manual update check requested, but updates are disabled.");

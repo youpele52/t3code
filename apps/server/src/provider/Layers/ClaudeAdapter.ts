@@ -17,8 +17,8 @@ import {
   type ProviderSendTurnInput,
   ThreadId,
   TurnId,
-} from "@t3tools/contracts";
-import { resolveApiModelId } from "@t3tools/shared/model";
+} from "@bigcode/contracts";
+import { resolveApiModelId } from "@bigcode/shared/model";
 import { DateTime, Deferred, Effect, FileSystem, Layer, Queue, Random, Stream } from "effect";
 
 import { ServerConfig } from "../../startup/config.ts";

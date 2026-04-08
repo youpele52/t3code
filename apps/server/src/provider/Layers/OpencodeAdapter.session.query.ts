@@ -4,7 +4,7 @@
  *
  * @module OpencodeAdapter.session.query
  */
-import { type ProviderSession } from "@t3tools/contracts";
+import { type ProviderSession } from "@bigcode/contracts";
 import { Effect } from "effect";
 
 import { ProviderAdapterRequestError, ProviderAdapterValidationError } from "../Errors.ts";

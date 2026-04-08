@@ -7,9 +7,9 @@
  *
  * @module ProviderRuntimeIngestion
  */
-import { MessageId, ThreadId } from "@t3tools/contracts";
+import { MessageId, ThreadId } from "@bigcode/contracts";
 import { Cache, Cause, Duration, Effect, Layer, Option, Scope, Stream } from "effect";
-import { type DrainableWorker, makeDrainableWorker } from "@t3tools/shared/DrainableWorker";
+import { type DrainableWorker, makeDrainableWorker } from "@bigcode/shared/DrainableWorker";
 
 import { ProviderService } from "../../provider/Services/ProviderService.ts";
 import { ProjectionTurnRepository } from "../../persistence/Services/ProjectionTurns.ts";

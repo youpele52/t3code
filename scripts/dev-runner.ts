@@ -4,7 +4,7 @@ import { homedir } from "node:os";
 
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import { NetService } from "@t3tools/shared/Net";
+import { NetService } from "@bigcode/shared/Net";
 import { Config, Data, Effect, Hash, Layer, Logger, Option, Path, Schema } from "effect";
 import { Argument, Command, Flag } from "effect/unstable/cli";
 import { ChildProcess } from "effect/unstable/process";
@@ -23,14 +23,14 @@ const MODE_ARGS = {
     "run",
     "dev",
     "--ui=tui",
-    "--filter=@t3tools/contracts",
-    "--filter=@t3tools/web",
-    "--filter=t3",
+    "--filter=@bigcode/contracts",
+    "--filter=@bigcode/web",
+    "--filter=bigcode",
     "--parallel",
   ],
-  "dev:server": ["run", "dev", "--filter=t3"],
-  "dev:web": ["run", "dev", "--filter=@t3tools/web"],
-  "dev:desktop": ["run", "dev", "--filter=@t3tools/desktop", "--filter=@t3tools/web", "--parallel"],
+  "dev:server": ["run", "dev", "--filter=bigcode"],
+  "dev:web": ["run", "dev", "--filter=@bigcode/web"],
+  "dev:desktop": ["run", "dev", "--filter=@bigcode/desktop", "--filter=@bigcode/web", "--parallel"],
 } as const satisfies Record<string, ReadonlyArray<string>>;
 
 type DevMode = keyof typeof MODE_ARGS;
@@ -154,60 +154,81 @@ export function createDevRunnerEnv({
       PORT: String(webPort),
       ELECTRON_RENDERER_PORT: String(webPort),
       VITE_DEV_SERVER_URL: devUrl?.toString() ?? `http://localhost:${webPort}`,
+      BIGCODE_HOME: resolvedBaseDir,
       T3CODE_HOME: resolvedBaseDir,
     };
 
     if (!isDesktopMode) {
+      output.BIGCODE_PORT = String(serverPort);
       output.T3CODE_PORT = String(serverPort);
       output.VITE_WS_URL = `ws://localhost:${serverPort}`;
     } else {
+      delete output.BIGCODE_PORT;
       delete output.T3CODE_PORT;
       delete output.VITE_WS_URL;
+      delete output.BIGCODE_AUTH_TOKEN;
       delete output.T3CODE_AUTH_TOKEN;
+      delete output.BIGCODE_MODE;
       delete output.T3CODE_MODE;
+      delete output.BIGCODE_NO_BROWSER;
       delete output.T3CODE_NO_BROWSER;
+      delete output.BIGCODE_HOST;
       delete output.T3CODE_HOST;
     }
 
     if (!isDesktopMode && host !== undefined) {
+      output.BIGCODE_HOST = host;
       output.T3CODE_HOST = host;
     }
 
     if (!isDesktopMode && authToken !== undefined) {
+      output.BIGCODE_AUTH_TOKEN = authToken;
       output.T3CODE_AUTH_TOKEN = authToken;
     } else if (!isDesktopMode) {
+      delete output.BIGCODE_AUTH_TOKEN;
       delete output.T3CODE_AUTH_TOKEN;
     }
 
     if (!isDesktopMode && noBrowser !== undefined) {
+      output.BIGCODE_NO_BROWSER = noBrowser ? "1" : "0";
       output.T3CODE_NO_BROWSER = noBrowser ? "1" : "0";
     } else if (!isDesktopMode) {
+      delete output.BIGCODE_NO_BROWSER;
       delete output.T3CODE_NO_BROWSER;
     }
 
     if (autoBootstrapProjectFromCwd !== undefined) {
+      output.BIGCODE_AUTO_BOOTSTRAP_PROJECT_FROM_CWD = autoBootstrapProjectFromCwd ? "1" : "0";
       output.T3CODE_AUTO_BOOTSTRAP_PROJECT_FROM_CWD = autoBootstrapProjectFromCwd ? "1" : "0";
     } else {
+      delete output.BIGCODE_AUTO_BOOTSTRAP_PROJECT_FROM_CWD;
       delete output.T3CODE_AUTO_BOOTSTRAP_PROJECT_FROM_CWD;
     }
 
     if (logWebSocketEvents !== undefined) {
+      output.BIGCODE_LOG_WS_EVENTS = logWebSocketEvents ? "1" : "0";
       output.T3CODE_LOG_WS_EVENTS = logWebSocketEvents ? "1" : "0";
     } else {
+      delete output.BIGCODE_LOG_WS_EVENTS;
       delete output.T3CODE_LOG_WS_EVENTS;
     }
 
     if (mode === "dev") {
+      output.BIGCODE_MODE = "web";
       output.T3CODE_MODE = "web";
+      delete output.BIGCODE_DESKTOP_WS_URL;
       delete output.T3CODE_DESKTOP_WS_URL;
     }
 
     if (mode === "dev:server" || mode === "dev:web") {
+      output.BIGCODE_MODE = "web";
       output.T3CODE_MODE = "web";
+      delete output.BIGCODE_DESKTOP_WS_URL;
       delete output.T3CODE_DESKTOP_WS_URL;
     }
 
     if (isDesktopMode) {
+      delete output.BIGCODE_DESKTOP_WS_URL;
       delete output.T3CODE_DESKTOP_WS_URL;
     }
 
@@ -500,7 +521,7 @@ const devRunnerCli = Command.make("dev-runner", {
     Argument.withDescription("Development mode to run."),
   ),
   t3Home: Flag.string("home-dir").pipe(
-    Flag.withDescription("Base directory for all T3 Code data (equivalent to T3CODE_HOME)."),
+    Flag.withDescription("Base directory for all bigCode data (equivalent to T3CODE_HOME)."),
     Flag.withFallbackConfig(optionalStringConfig("T3CODE_HOME")),
   ),
   authToken: Flag.string("auth-token").pipe(

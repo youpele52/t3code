@@ -5,7 +5,7 @@
  */
 import { Effect, Path } from "effect";
 
-import { GitCommandError } from "@t3tools/contracts";
+import { GitCommandError } from "@bigcode/contracts";
 import { type GitCoreShape } from "../Services/GitCore.ts";
 import {
   splitNullSeparatedPaths,

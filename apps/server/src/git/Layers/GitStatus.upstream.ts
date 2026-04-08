@@ -5,7 +5,7 @@
  */
 import { Cache, Duration, Effect, Exit, Path } from "effect";
 
-import { GitCommandError } from "@t3tools/contracts";
+import { GitCommandError } from "@bigcode/contracts";
 import { parseRemoteNames } from "../remoteRefs.ts";
 import {
   parseUpstreamRefWithRemoteNames,

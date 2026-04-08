@@ -11,7 +11,7 @@ import {
   RuntimeMode,
   ThreadId,
   TurnId,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 
 import { type CodexAccountSnapshot } from "../provider/codexAccount";
 
@@ -117,7 +117,7 @@ export interface CodexThreadSnapshot {
 }
 
 export interface CodexAppServerManagerEvents {
-  event: [event: import("@t3tools/contracts").ProviderEvent];
+  event: [event: import("@bigcode/contracts").ProviderEvent];
 }
 
 // Re-export contract types used across modules

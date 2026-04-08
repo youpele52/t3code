@@ -1,6 +1,6 @@
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
-import { type ThreadId } from "@t3tools/contracts";
+import { type ThreadId } from "@bigcode/contracts";
 import { useEffect, useEffectEvent, useRef } from "react";
 import { type TerminalContextSelection } from "~/lib/terminalContext";
 import { openInPreferredEditor } from "../../models/editor";

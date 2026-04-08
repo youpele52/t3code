@@ -8,7 +8,7 @@ import {
   type OrchestrationLatestTurn,
   type OrchestrationThreadActivity,
   type TurnId,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 
 import type {
   ChatMessage,
@@ -70,7 +70,7 @@ export function findSidebarProposedPlan(input: {
   threads: ReadonlyArray<Pick<Thread, "id" | "proposedPlans">>;
   latestTurn: Pick<OrchestrationLatestTurn, "turnId" | "sourceProposedPlan"> | null;
   latestTurnSettled: boolean;
-  threadId: import("@t3tools/contracts").ThreadId | string | null | undefined;
+  threadId: import("@bigcode/contracts").ThreadId | string | null | undefined;
 }): LatestProposedPlanState | null {
   const activeThreadPlans =
     input.threads.find((thread) => thread.id === input.threadId)?.proposedPlans ?? [];

@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
-import { type ApprovalRequestId, type ProviderApprovalDecision } from "@t3tools/contracts";
+import { type ApprovalRequestId, type ProviderApprovalDecision } from "@bigcode/contracts";
 
 import { type PendingApproval } from "../../../logic/session";
 import {

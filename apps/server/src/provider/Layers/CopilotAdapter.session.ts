@@ -17,7 +17,7 @@ import {
   type ProviderTurnStartResult,
   ThreadId,
   TurnId,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import {
   CopilotClient,
   type CopilotClientOptions,

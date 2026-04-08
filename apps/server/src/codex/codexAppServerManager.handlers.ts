@@ -5,7 +5,7 @@ import {
   EventId,
   ProviderRequestKind,
   type ProviderEvent,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 
 import { classifyCodexStderrLine } from "./codexStderrClassifier";
 import {
@@ -39,11 +39,11 @@ export function attachProcessListeners(
     emitNotificationEvent: (context: CodexSessionContext, method: string, message: string) => void;
     updateSession: (
       context: CodexSessionContext,
-      updates: Partial<import("@t3tools/contracts").ProviderSession>,
+      updates: Partial<import("@bigcode/contracts").ProviderSession>,
     ) => void;
     emitErrorEvent: (context: CodexSessionContext, method: string, message: string) => void;
     emitLifecycleEvent: (context: CodexSessionContext, method: string, message: string) => void;
-    sessions: Map<import("@t3tools/contracts").ThreadId, CodexSessionContext>;
+    sessions: Map<import("@bigcode/contracts").ThreadId, CodexSessionContext>;
   },
 ): void {
   context.output.on("line", (line) => {
@@ -159,7 +159,7 @@ export function handleServerNotification(
     emitEvent: (event: ProviderEvent) => void;
     updateSession: (
       context: CodexSessionContext,
-      updates: Partial<import("@t3tools/contracts").ProviderSession>,
+      updates: Partial<import("@bigcode/contracts").ProviderSession>,
     ) => void;
   },
 ): void {

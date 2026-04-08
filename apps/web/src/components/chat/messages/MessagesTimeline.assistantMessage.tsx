@@ -1,4 +1,4 @@
-import type { MessageId, TurnId } from "@t3tools/contracts";
+import type { MessageId, TurnId } from "@bigcode/contracts";
 import { stableVerbFromId } from "../../../utils/copy";
 import { formatElapsed } from "../../../logic/session";
 import { type TurnDiffSummary } from "../../../models/types";
@@ -8,7 +8,7 @@ import { Button } from "../../ui/button";
 import { DiffStatLabel, hasNonZeroStat } from "../diff-display/DiffStatLabel";
 import { ChangedFilesTree } from "../diff-display/ChangedFilesTree";
 import type { MessagesTimelineRow } from "./MessagesTimeline.logic";
-import { type TimestampFormat } from "@t3tools/contracts/settings";
+import { type TimestampFormat } from "@bigcode/contracts/settings";
 import { formatTimestamp } from "../../../utils/timestamp";
 
 export type AssistantMessageRow = Extract<MessagesTimelineRow, { kind: "message" }> & {

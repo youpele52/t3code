@@ -7,7 +7,7 @@ import {
   KeybindingShortcut,
   KeybindingWhenNode,
   MAX_WHEN_EXPRESSION_DEPTH,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 
 type WhenToken =
   | { type: "identifier"; value: string }

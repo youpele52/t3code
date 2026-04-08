@@ -6,7 +6,7 @@ import {
   type RuntimeMode,
   type ServerProvider,
   type ThreadId,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { useCallback, useRef } from "react";
 import type { PendingUserInput } from "../../../logic/session";
 import {
@@ -315,7 +315,7 @@ export function useOnSend(input: UseOnSendInput) {
           titleSeed = "New thread";
         }
       }
-      const { truncate } = await import("@t3tools/shared/String");
+      const { truncate } = await import("@bigcode/shared/String");
       const title = truncate(titleSeed);
       const threadCreateModelSelection: ModelSelection = modelSel;
 

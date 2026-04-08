@@ -1,4 +1,4 @@
-import type { ProjectScript, ResolvedKeybindingsConfig } from "@t3tools/contracts";
+import type { ProjectScript, ResolvedKeybindingsConfig } from "@bigcode/contracts";
 import { ChevronDownIcon, PlusIcon, SettingsIcon } from "lucide-react";
 import React, { type FormEvent, useCallback, useMemo, useState } from "react";
 

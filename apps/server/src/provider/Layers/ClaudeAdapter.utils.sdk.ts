@@ -13,7 +13,7 @@ import {
   RuntimeItemId,
   type ProviderRuntimeEvent,
   type ProviderRuntimeTurnStatus,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 
 import type { ClaudeSessionContext } from "./ClaudeAdapter.types.ts";
 import { resultErrorsText, isInterruptedResult } from "./ClaudeAdapter.utils.ts";

@@ -6,8 +6,8 @@ import {
   type ServerProvider,
   type ThreadId,
   type TurnId,
-} from "@t3tools/contracts";
-import { applyClaudePromptEffortPrefix } from "@t3tools/shared/model";
+} from "@bigcode/contracts";
+import { applyClaudePromptEffortPrefix } from "@bigcode/shared/model";
 import {
   type ChatMessage,
   type SessionPhase,
@@ -25,7 +25,7 @@ import {
   type TerminalContextDraft,
 } from "../../../lib/terminalContext";
 
-export const LAST_INVOKED_SCRIPT_BY_PROJECT_KEY = "t3code:last-invoked-script-by-project";
+export const LAST_INVOKED_SCRIPT_BY_PROJECT_KEY = "bigcode:last-invoked-script-by-project";
 export const MAX_HIDDEN_MOUNTED_TERMINAL_THREADS = 10;
 const WORKTREE_BRANCH_PREFIX = "t3code";
 

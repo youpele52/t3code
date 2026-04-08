@@ -1,5 +1,5 @@
 import { app, BrowserWindow } from "electron";
-import type { DesktopUpdateState } from "@t3tools/contracts";
+import type { DesktopUpdateState } from "@bigcode/contracts";
 import { autoUpdater } from "electron-updater";
 
 import { formatErrorMessage } from "../logging/logging";
@@ -18,7 +18,7 @@ import {
   reduceDesktopUpdateStateOnNoUpdate,
   reduceDesktopUpdateStateOnUpdateAvailable,
 } from "./updateMachine";
-import type { DesktopRuntimeInfo } from "@t3tools/contracts";
+import type { DesktopRuntimeInfo } from "@bigcode/contracts";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -104,7 +104,8 @@ export function shouldEnableAutoUpdates(): boolean {
       isPackaged: app.isPackaged,
       platform: process.platform,
       appImage: process.env.APPIMAGE,
-      disabledByEnv: process.env.T3CODE_DISABLE_AUTO_UPDATE === "1",
+      disabledByEnv:
+        (process.env.BIGCODE_DISABLE_AUTO_UPDATE ?? process.env.T3CODE_DISABLE_AUTO_UPDATE) === "1",
     }) === null
   );
 }
@@ -240,7 +241,10 @@ export function configureAutoUpdater(deps: AutoUpdaterDeps): void {
   updaterConfigured = true;
 
   const githubToken =
-    process.env.T3CODE_DESKTOP_UPDATE_GITHUB_TOKEN?.trim() || process.env.GH_TOKEN?.trim() || "";
+    process.env.BIGCODE_DESKTOP_UPDATE_GITHUB_TOKEN?.trim() ||
+    process.env.T3CODE_DESKTOP_UPDATE_GITHUB_TOKEN?.trim() ||
+    process.env.GH_TOKEN?.trim() ||
+    "";
   if (githubToken) {
     // When a token is provided, re-configure the feed with `private: true` so
     // electron-updater uses the GitHub API (api.github.com) instead of the
@@ -256,10 +260,10 @@ export function configureAutoUpdater(deps: AutoUpdaterDeps): void {
     }
   }
 
-  if (process.env.T3CODE_DESKTOP_MOCK_UPDATES) {
+  if (process.env.BIGCODE_DESKTOP_MOCK_UPDATES || process.env.T3CODE_DESKTOP_MOCK_UPDATES) {
     autoUpdater.setFeedURL({
       provider: "generic",
-      url: `http://localhost:${process.env.T3CODE_DESKTOP_MOCK_UPDATE_SERVER_PORT ?? 3000}`,
+      url: `http://localhost:${process.env.BIGCODE_DESKTOP_MOCK_UPDATE_SERVER_PORT ?? process.env.T3CODE_DESKTOP_MOCK_UPDATE_SERVER_PORT ?? 3000}`,
     });
   }
 

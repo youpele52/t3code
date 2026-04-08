@@ -14,7 +14,7 @@ import {
   ResolvedKeybindingsConfig,
   THREAD_JUMP_KEYBINDING_COMMANDS,
   type ServerConfigIssue,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import {
   Array,
   Cache,
@@ -36,7 +36,7 @@ import {
 } from "effect";
 import * as Semaphore from "effect/Semaphore";
 import { ServerConfig } from "../startup/config";
-import { fromLenientJson } from "@t3tools/shared/schemaJson";
+import { fromLenientJson } from "@bigcode/shared/schemaJson";
 import {
   compileResolvedKeybindingRule,
   compileResolvedKeybindingsConfig,

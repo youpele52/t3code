@@ -11,7 +11,7 @@ import {
   type ProviderRuntimeEvent,
   TurnId,
   type UserInputQuestion,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { type SessionEvent } from "@github/copilot-sdk";
 import { Effect } from "effect";
 

@@ -7,7 +7,7 @@
  *
  * @module ProviderService.operations
  */
-import { type ProviderSession, type ThreadId } from "@t3tools/contracts";
+import { type ProviderSession, type ThreadId } from "@bigcode/contracts";
 import { Effect, Option } from "effect";
 
 import {

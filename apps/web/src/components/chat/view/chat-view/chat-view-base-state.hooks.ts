@@ -1,4 +1,4 @@
-import { DEFAULT_MODEL_BY_PROVIDER, type ThreadId } from "@t3tools/contracts";
+import { DEFAULT_MODEL_BY_PROVIDER, type ThreadId } from "@bigcode/contracts";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useCallback, useMemo, useRef, useState } from "react";
 

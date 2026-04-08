@@ -1,4 +1,4 @@
-import { type OrchestrationEvent } from "@t3tools/contracts";
+import { type OrchestrationEvent } from "@bigcode/contracts";
 import {
   buildSidebarThreadSummary,
   mapMessage,

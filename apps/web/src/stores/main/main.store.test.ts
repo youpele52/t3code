@@ -8,7 +8,7 @@ import {
   TurnId,
   type OrchestrationEvent,
   type OrchestrationReadModel,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { describe, expect, it } from "vitest";
 
 import { applyOrchestrationEvent, applyOrchestrationEvents } from "./events.store";

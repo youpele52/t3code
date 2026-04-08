@@ -8,7 +8,7 @@ import {
   ServerSettingsError,
   type ServerConfig,
   type ServerConfigIssue,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import type { OrchestrationEventStoreError } from "../persistence/Errors";
 
 export function makeOrderedOrchestrationDomainEventStream(input: {

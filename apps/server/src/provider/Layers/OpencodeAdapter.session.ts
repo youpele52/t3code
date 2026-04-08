@@ -16,7 +16,7 @@ import {
   type ProviderSendTurnInput,
   type ProviderSession,
   type EventId,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { Effect, Queue, ServiceMap } from "effect";
 
 import {
@@ -237,7 +237,7 @@ export function makeSessionMethods(deps: SessionMethodDeps) {
         try: () =>
           client.session.create(
             withOpencodeDirectory(input.cwd, {
-              body: input.cwd ? { title: `T3 Code session in ${input.cwd}` } : {},
+              body: input.cwd ? { title: `bigCode session in ${input.cwd}` } : {},
             }),
           ),
         catch: (cause) =>

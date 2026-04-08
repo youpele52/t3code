@@ -7,7 +7,7 @@ import {
   type SetStateAction,
 } from "react";
 
-import { type ThreadId, type GitStatusResult } from "@t3tools/contracts";
+import { type ThreadId, type GitStatusResult } from "@bigcode/contracts";
 import { useIsThreadRunning, useSidebarThreadSummaryById } from "../../stores/main";
 import { useUiStateStore } from "../../stores/ui";
 import { selectThreadTerminalState } from "../../stores/terminal";

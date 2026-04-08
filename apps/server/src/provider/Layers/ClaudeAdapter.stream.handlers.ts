@@ -1,6 +1,6 @@
 /** ClaudeAdapter SDK message dispatchers. Routes raw SDK messages to specialized handlers. @module ClaudeAdapter.stream.handlers */
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
-import { type EventId, type ProviderRuntimeEvent, TurnId } from "@t3tools/contracts";
+import { type EventId, type ProviderRuntimeEvent, TurnId } from "@bigcode/contracts";
 import { Effect, Random } from "effect";
 
 import {

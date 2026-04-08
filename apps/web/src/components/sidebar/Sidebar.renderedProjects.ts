@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { type ProjectId, type ThreadId } from "@t3tools/contracts";
+import { type ProjectId, type ThreadId } from "@bigcode/contracts";
 import { useShallow } from "zustand/react/shallow";
 import { useStore } from "../../stores/main";
 import { useUiStateStore } from "../../stores/ui";

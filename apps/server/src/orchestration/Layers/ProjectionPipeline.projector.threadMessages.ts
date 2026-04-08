@@ -3,7 +3,7 @@
  *
  * @module ProjectionPipeline.projector.threadMessages
  */
-import { type OrchestrationEvent } from "@t3tools/contracts";
+import { type OrchestrationEvent } from "@bigcode/contracts";
 import { Effect, Option } from "effect";
 
 import {

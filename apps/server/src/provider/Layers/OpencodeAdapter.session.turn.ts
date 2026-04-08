@@ -6,7 +6,7 @@
  */
 import { randomUUID } from "node:crypto";
 
-import { TurnId, type ProviderTurnStartResult } from "@t3tools/contracts";
+import { TurnId, type ProviderTurnStartResult } from "@bigcode/contracts";
 import { Effect } from "effect";
 
 import { ProviderAdapterRequestError, ProviderAdapterValidationError } from "../Errors.ts";

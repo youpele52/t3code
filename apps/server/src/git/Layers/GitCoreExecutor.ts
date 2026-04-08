@@ -19,14 +19,14 @@ import {
 } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
-import { GitCommandError } from "@t3tools/contracts";
+import { GitCommandError } from "@bigcode/contracts";
 import { compactTraceAttributes } from "../../observability/Attributes.ts";
 import {
   type ExecuteGitInput,
   type ExecuteGitProgress,
   type ExecuteGitResult,
 } from "../Services/GitCore.ts";
-import { decodeJsonResult } from "@t3tools/shared/schemaJson";
+import { decodeJsonResult } from "@bigcode/shared/schemaJson";
 import { quoteGitCommand, toGitCommandError } from "./GitCoreUtils.ts";
 
 export const DEFAULT_TIMEOUT_MS = 30_000;

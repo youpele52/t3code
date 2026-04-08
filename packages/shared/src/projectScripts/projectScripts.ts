@@ -1,4 +1,4 @@
-import type { ProjectScript } from "@t3tools/contracts";
+import type { ProjectScript } from "@bigcode/contracts";
 
 interface ProjectScriptRuntimeEnvInput {
   project: {

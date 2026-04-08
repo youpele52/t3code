@@ -1,4 +1,4 @@
-import type { ResolvedKeybindingsConfig } from "@t3tools/contracts";
+import type { ResolvedKeybindingsConfig } from "@bigcode/contracts";
 import { useEffect } from "react";
 import { resolveShortcutCommand } from "../../../models/keybindings";
 import { isTerminalFocused } from "../../../lib/terminalFocus";

@@ -1,5 +1,5 @@
 import { Plus, SquareSplitHorizontal, Trash2 } from "lucide-react";
-import { type ThreadId } from "@t3tools/contracts";
+import { type ThreadId } from "@bigcode/contracts";
 import {
   type PointerEvent as ReactPointerEvent,
   useCallback,

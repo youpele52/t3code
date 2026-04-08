@@ -9,7 +9,7 @@ import {
   type ModelSelection,
   type OpencodeModelOptions,
   type ProviderKind,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 
 export interface SelectableModelOption {
   slug: string;

@@ -2,7 +2,7 @@ import {
   OrchestrationEvent,
   type ServerLifecycleWelcomePayload,
   type ThreadId,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { useEffect, useEffectEvent, useRef } from "react";
 import { useNavigate, useLocation } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";

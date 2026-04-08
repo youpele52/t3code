@@ -3,7 +3,7 @@ import {
   RuntimeMode,
   TurnId,
   type ProviderUserInputAnswers,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 
 import { killCodexChildProcess } from "../provider/codexAppServer";
 import { type CodexUserInputAnswer } from "./codexAppServerManager.types";
@@ -92,7 +92,7 @@ function readResumeCursorThreadId(resumeCursor: unknown): string | undefined {
 
 export function readResumeThreadId(input: {
   readonly resumeCursor?: unknown;
-  readonly threadId?: import("@t3tools/contracts").ThreadId;
+  readonly threadId?: import("@bigcode/contracts").ThreadId;
   readonly runtimeMode?: RuntimeMode;
 }): string | undefined {
   return readResumeCursorThreadId(input.resumeCursor);
@@ -100,12 +100,12 @@ export function readResumeThreadId(input: {
 
 export function toTurnId(
   value: string | undefined,
-): import("@t3tools/contracts").TurnId | undefined {
+): import("@bigcode/contracts").TurnId | undefined {
   return brandIfNonEmpty(value, TurnId.makeUnsafe);
 }
 
 export function toProviderItemId(
   value: string | undefined,
-): import("@t3tools/contracts").ProviderItemId | undefined {
+): import("@bigcode/contracts").ProviderItemId | undefined {
   return brandIfNonEmpty(value, ProviderItemId.makeUnsafe);
 }

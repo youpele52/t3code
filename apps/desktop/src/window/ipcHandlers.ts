@@ -7,7 +7,7 @@ import type {
   DesktopUpdateActionResult,
   DesktopUpdateCheckResult,
   DesktopUpdateState,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 
 import { showDesktopConfirmDialog } from "./confirmDialog";
 import { getSafeExternalUrl } from "./menuManager";

@@ -6,7 +6,7 @@
  * and building the collaboration-mode payload sent to the Codex app-server.
  */
 
-import { normalizeModelSlug } from "@t3tools/shared/model";
+import { normalizeModelSlug } from "@bigcode/shared/model";
 
 export const CODEX_PLAN_MODE_DEVELOPER_INSTRUCTIONS = `<collaboration_mode># Plan Mode (Conversational)
 

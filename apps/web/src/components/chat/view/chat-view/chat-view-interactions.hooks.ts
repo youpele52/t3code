@@ -1,4 +1,4 @@
-import type { MessageId, ModelSelection, ProviderKind, TurnId } from "@t3tools/contracts";
+import type { MessageId, ModelSelection, ProviderKind, TurnId } from "@bigcode/contracts";
 import { useCallback, useEffect, useState } from "react";
 
 import type { DraftThreadEnvMode } from "~/stores/composer";

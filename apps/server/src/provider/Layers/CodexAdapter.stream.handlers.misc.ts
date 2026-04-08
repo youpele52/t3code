@@ -2,7 +2,7 @@
  * Miscellaneous event handlers — model rerouting, deprecation, config warnings,
  * account updates, MCP OAuth, runtime errors, process stderr, and Windows warnings.
  */
-import { type ProviderEvent, type ProviderRuntimeEvent, type ThreadId } from "@t3tools/contracts";
+import { type ProviderEvent, type ProviderRuntimeEvent, type ThreadId } from "@bigcode/contracts";
 
 import { asObject, asString } from "./CodexAdapter.types.ts";
 import { runtimeEventBase } from "./CodexAdapter.stream.base.ts";

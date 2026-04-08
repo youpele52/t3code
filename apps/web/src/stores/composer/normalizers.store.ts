@@ -1,9 +1,9 @@
-import type { ThreadId } from "@t3tools/contracts";
+import type { ThreadId } from "@bigcode/contracts";
 import {
   type ModelSelection,
   DEFAULT_PROVIDER_INTERACTION_MODE,
   DEFAULT_RUNTIME_MODE,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { ensureInlineTerminalContextPlaceholders } from "../../lib/terminalContext";
 import {
   type DraftThreadEnvMode,
@@ -142,7 +142,7 @@ export function normalizePersistedDraftThreads(
         continue;
       }
       draftThreadsByThreadId[threadId as ThreadId] = {
-        projectId: projectId as import("@t3tools/contracts").ProjectId,
+        projectId: projectId as import("@bigcode/contracts").ProjectId,
         createdAt:
           typeof createdAt === "string" && createdAt.length > 0
             ? createdAt
@@ -164,7 +164,7 @@ export function normalizePersistedDraftThreads(
     }
   }
 
-  const projectDraftThreadIdByProjectId: Record<import("@t3tools/contracts").ProjectId, ThreadId> =
+  const projectDraftThreadIdByProjectId: Record<import("@bigcode/contracts").ProjectId, ThreadId> =
     {};
   if (
     rawProjectDraftThreadIdByProjectId &&
@@ -179,11 +179,11 @@ export function normalizePersistedDraftThreads(
         typeof threadId === "string" &&
         threadId.length > 0
       ) {
-        projectDraftThreadIdByProjectId[projectId as import("@t3tools/contracts").ProjectId] =
+        projectDraftThreadIdByProjectId[projectId as import("@bigcode/contracts").ProjectId] =
           threadId as ThreadId;
         if (!draftThreadsByThreadId[threadId as ThreadId]) {
           draftThreadsByThreadId[threadId as ThreadId] = {
-            projectId: projectId as import("@t3tools/contracts").ProjectId,
+            projectId: projectId as import("@bigcode/contracts").ProjectId,
             createdAt: new Date().toISOString(),
             runtimeMode: DEFAULT_RUNTIME_MODE,
             interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -194,7 +194,7 @@ export function normalizePersistedDraftThreads(
         } else if (draftThreadsByThreadId[threadId as ThreadId]?.projectId !== projectId) {
           draftThreadsByThreadId[threadId as ThreadId] = {
             ...draftThreadsByThreadId[threadId as ThreadId]!,
-            projectId: projectId as import("@t3tools/contracts").ProjectId,
+            projectId: projectId as import("@bigcode/contracts").ProjectId,
           };
         }
       }
@@ -255,9 +255,9 @@ export function normalizePersistedDraftsByThreadId(
     // If the draft already has the v3 shape, use it directly
     const legacyDraftCandidate = draftValue as LegacyPersistedComposerThreadDraftState;
     let modelSelectionByProvider: Partial<
-      Record<import("@t3tools/contracts").ProviderKind, ModelSelection>
+      Record<import("@bigcode/contracts").ProviderKind, ModelSelection>
     > = {};
-    let activeProvider: import("@t3tools/contracts").ProviderKind | null = null;
+    let activeProvider: import("@bigcode/contracts").ProviderKind | null = null;
 
     if (
       draftCandidate.modelSelectionByProvider &&
@@ -265,7 +265,7 @@ export function normalizePersistedDraftsByThreadId(
     ) {
       // v3 format
       modelSelectionByProvider = draftCandidate.modelSelectionByProvider as Partial<
-        Record<import("@t3tools/contracts").ProviderKind, ModelSelection>
+        Record<import("@bigcode/contracts").ProviderKind, ModelSelection>
       >;
       activeProvider = normalizeProviderKind(draftCandidate.activeProvider);
     } else {

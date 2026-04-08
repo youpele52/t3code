@@ -10,7 +10,7 @@ import { spawn } from "node:child_process";
 import { accessSync, constants, statSync } from "node:fs";
 import { extname, join } from "node:path";
 
-import { EDITORS, OpenError, type EditorId } from "@t3tools/contracts";
+import { EDITORS, OpenError, type EditorId } from "@bigcode/contracts";
 import { ServiceMap, Effect, Layer } from "effect";
 
 // ==============================

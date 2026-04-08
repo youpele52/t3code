@@ -15,7 +15,7 @@ import {
   TurnId,
   type OrchestrationEvent,
   type ProviderRuntimeEvent,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { Effect, Option } from "effect";
 
 import { parseTurnDiffFilesFromUnifiedDiff } from "../../checkpointing/Diffs.ts";
@@ -32,7 +32,7 @@ import type {
   RestoreCheckpointInput,
 } from "../../checkpointing/Services/CheckpointStore.ts";
 import type { OrchestrationDispatchError } from "../Errors.ts";
-import type { OrchestrationReadModel } from "@t3tools/contracts";
+import type { OrchestrationReadModel } from "@bigcode/contracts";
 
 // Re-exported utility so callers don't need to import from Utils
 export { isGitRepository as isGitWorkspace };

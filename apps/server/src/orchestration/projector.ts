@@ -1,9 +1,9 @@
-import type { OrchestrationEvent, OrchestrationReadModel } from "@t3tools/contracts";
+import type { OrchestrationEvent, OrchestrationReadModel } from "@bigcode/contracts";
 import {
   OrchestrationCheckpointSummary,
   OrchestrationMessage,
   OrchestrationSession,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { Effect } from "effect";
 
 import type { OrchestrationProjectorDecodeError } from "./Errors.ts";

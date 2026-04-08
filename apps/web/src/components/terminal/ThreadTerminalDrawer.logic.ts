@@ -1,4 +1,4 @@
-import type { TerminalEvent, TerminalSessionSnapshot } from "@t3tools/contracts";
+import type { TerminalEvent, TerminalSessionSnapshot } from "@bigcode/contracts";
 import type { ITheme, Terminal } from "@xterm/xterm";
 import { DEFAULT_THREAD_TERMINAL_HEIGHT } from "../../models/types";
 

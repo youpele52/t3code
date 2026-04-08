@@ -1,4 +1,4 @@
-import { type TurnId } from "@t3tools/contracts";
+import { type TurnId } from "@bigcode/contracts";
 import { memo, useCallback, useMemo, useState } from "react";
 import { type TurnDiffFileChange } from "../../../models/types";
 import { buildTurnDiffTree, type TurnDiffTreeNode } from "../../../lib/turnDiffTree";

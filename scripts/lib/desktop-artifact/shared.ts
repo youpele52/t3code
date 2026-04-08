@@ -69,6 +69,24 @@ export interface BuildCliInput {
   readonly mockUpdateServerPort: Option.Option<string>;
 }
 
+const aliasedConfig = <A>(primary: Config.Config<A>, legacy: Config.Config<A>) =>
+  Config.all({
+    primary: primary.pipe(Config.option),
+    legacy: legacy.pipe(Config.option),
+  }).pipe(Config.map(({ primary, legacy }) => Option.firstSomeOf([primary, legacy])));
+
+const aliasedOptional = <A>(primary: Config.Config<A>, legacy: Config.Config<A>) =>
+  aliasedConfig(primary, legacy);
+
+const aliasedWithDefault = <A>(
+  primary: Config.Config<A>,
+  legacy: Config.Config<A>,
+  defaultValue: A,
+) =>
+  aliasedConfig(primary, legacy).pipe(
+    Config.map((value) => Option.getOrElse(value, () => defaultValue)),
+  );
+
 function detectHostBuildPlatform(hostPlatform: string): typeof BuildPlatform.Type | undefined {
   if (hostPlatform === "darwin") return "mac";
   if (hostPlatform === "linux") return "linux";
@@ -190,17 +208,55 @@ export const AzureTrustedSigningOptionsConfig = Config.all({
 });
 
 const BuildEnvConfig = Config.all({
-  platform: Config.schema(BuildPlatform, "T3CODE_DESKTOP_PLATFORM").pipe(Config.option),
-  target: Config.string("T3CODE_DESKTOP_TARGET").pipe(Config.option),
-  arch: Config.schema(BuildArch, "T3CODE_DESKTOP_ARCH").pipe(Config.option),
-  version: Config.string("T3CODE_DESKTOP_VERSION").pipe(Config.option),
-  outputDir: Config.string("T3CODE_DESKTOP_OUTPUT_DIR").pipe(Config.option),
-  skipBuild: Config.boolean("T3CODE_DESKTOP_SKIP_BUILD").pipe(Config.withDefault(false)),
-  keepStage: Config.boolean("T3CODE_DESKTOP_KEEP_STAGE").pipe(Config.withDefault(false)),
-  signed: Config.boolean("T3CODE_DESKTOP_SIGNED").pipe(Config.withDefault(false)),
-  verbose: Config.boolean("T3CODE_DESKTOP_VERBOSE").pipe(Config.withDefault(false)),
-  mockUpdates: Config.boolean("T3CODE_DESKTOP_MOCK_UPDATES").pipe(Config.withDefault(false)),
-  mockUpdateServerPort: Config.string("T3CODE_DESKTOP_MOCK_UPDATE_SERVER_PORT").pipe(Config.option),
+  platform: aliasedOptional(
+    Config.schema(BuildPlatform, "BIGCODE_DESKTOP_PLATFORM"),
+    Config.schema(BuildPlatform, "T3CODE_DESKTOP_PLATFORM"),
+  ),
+  target: aliasedOptional(
+    Config.string("BIGCODE_DESKTOP_TARGET"),
+    Config.string("T3CODE_DESKTOP_TARGET"),
+  ),
+  arch: aliasedOptional(
+    Config.schema(BuildArch, "BIGCODE_DESKTOP_ARCH"),
+    Config.schema(BuildArch, "T3CODE_DESKTOP_ARCH"),
+  ),
+  version: aliasedOptional(
+    Config.string("BIGCODE_DESKTOP_VERSION"),
+    Config.string("T3CODE_DESKTOP_VERSION"),
+  ),
+  outputDir: aliasedOptional(
+    Config.string("BIGCODE_DESKTOP_OUTPUT_DIR"),
+    Config.string("T3CODE_DESKTOP_OUTPUT_DIR"),
+  ),
+  skipBuild: aliasedWithDefault(
+    Config.boolean("BIGCODE_DESKTOP_SKIP_BUILD"),
+    Config.boolean("T3CODE_DESKTOP_SKIP_BUILD"),
+    false,
+  ),
+  keepStage: aliasedWithDefault(
+    Config.boolean("BIGCODE_DESKTOP_KEEP_STAGE"),
+    Config.boolean("T3CODE_DESKTOP_KEEP_STAGE"),
+    false,
+  ),
+  signed: aliasedWithDefault(
+    Config.boolean("BIGCODE_DESKTOP_SIGNED"),
+    Config.boolean("T3CODE_DESKTOP_SIGNED"),
+    false,
+  ),
+  verbose: aliasedWithDefault(
+    Config.boolean("BIGCODE_DESKTOP_VERBOSE"),
+    Config.boolean("T3CODE_DESKTOP_VERBOSE"),
+    false,
+  ),
+  mockUpdates: aliasedWithDefault(
+    Config.boolean("BIGCODE_DESKTOP_MOCK_UPDATES"),
+    Config.boolean("T3CODE_DESKTOP_MOCK_UPDATES"),
+    false,
+  ),
+  mockUpdateServerPort: aliasedOptional(
+    Config.string("BIGCODE_DESKTOP_MOCK_UPDATE_SERVER_PORT"),
+    Config.string("T3CODE_DESKTOP_MOCK_UPDATE_SERVER_PORT"),
+  ),
 });
 
 const resolveBooleanFlag = (flag: Option.Option<boolean>, envValue: boolean) =>

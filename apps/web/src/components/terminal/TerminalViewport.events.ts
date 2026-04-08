@@ -1,4 +1,4 @@
-import { type TerminalEvent } from "@t3tools/contracts";
+import { type TerminalEvent } from "@bigcode/contracts";
 import { type Terminal } from "@xterm/xterm";
 
 import { selectPendingTerminalEventEntries } from "./ThreadTerminalDrawer.logic";

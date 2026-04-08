@@ -1,6 +1,6 @@
 import { parsePatchFiles } from "@pierre/diffs";
 import type { FileDiffMetadata } from "@pierre/diffs/react";
-import type { TurnId } from "@t3tools/contracts";
+import type { TurnId } from "@bigcode/contracts";
 import {
   type WheelEvent as ReactWheelEvent,
   useCallback,
@@ -11,7 +11,7 @@ import {
 } from "react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useSearch } from "@tanstack/react-router";
-import { ThreadId } from "@t3tools/contracts";
+import { ThreadId } from "@bigcode/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { gitStatusQueryOptions } from "~/lib/gitReactQuery";
 import { checkpointDiffQueryOptions } from "~/lib/providerReactQuery";

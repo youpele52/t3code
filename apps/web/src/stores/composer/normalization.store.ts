@@ -8,12 +8,12 @@ import {
   type ProviderModelOptions,
   type ServerProvider,
   type ThreadId,
-} from "@t3tools/contracts";
-import { normalizeModelSlug } from "@t3tools/shared/model";
+} from "@bigcode/contracts";
+import { normalizeModelSlug } from "@bigcode/shared/model";
 import { resolveAppModelSelection } from "../../models/provider";
 import { type TerminalContextDraft, normalizeTerminalContextText } from "../../lib/terminalContext";
 import { getDefaultServerModel } from "../../models/provider";
-import { UnifiedSettings } from "@t3tools/contracts/settings";
+import { UnifiedSettings } from "@bigcode/contracts/settings";
 import { cloneModelSelection, createModelSelection } from "../../models/provider";
 import {
   type ComposerImageAttachment,

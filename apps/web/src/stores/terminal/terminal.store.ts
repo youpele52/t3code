@@ -5,7 +5,7 @@
  * This file contains only the store creation and action wiring.
  */
 
-import { ThreadId } from "@t3tools/contracts";
+import { ThreadId } from "@bigcode/contracts";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { resolveStorage } from "../../lib/storage";
@@ -32,10 +32,15 @@ import {
 export type { TerminalEventEntry, ThreadTerminalLaunchContext, ThreadTerminalState };
 export { selectTerminalEventEntries, selectThreadTerminalState } from "./helpers.store";
 
-const TERMINAL_STATE_STORAGE_KEY = "t3code:terminal-state:v1";
+const TERMINAL_STATE_STORAGE_KEY = "bigcode:terminal-state:v1";
+const LEGACY_TERMINAL_STATE_STORAGE_KEYS = ["t3code:terminal-state:v1"] as const;
 
 function createTerminalStateStorage() {
-  return resolveStorage(typeof window !== "undefined" ? window.localStorage : undefined);
+  return resolveStorage(typeof window !== "undefined" ? window.localStorage : undefined, {
+    legacyKeysByName: {
+      [TERMINAL_STATE_STORAGE_KEY]: LEGACY_TERMINAL_STATE_STORAGE_KEYS,
+    },
+  });
 }
 
 interface TerminalStateStoreState {
@@ -61,8 +66,8 @@ interface TerminalStateStoreState {
     terminalId: string,
     hasRunningSubprocess: boolean,
   ) => void;
-  recordTerminalEvent: (event: import("@t3tools/contracts").TerminalEvent) => void;
-  applyTerminalEvent: (event: import("@t3tools/contracts").TerminalEvent) => void;
+  recordTerminalEvent: (event: import("@bigcode/contracts").TerminalEvent) => void;
+  applyTerminalEvent: (event: import("@bigcode/contracts").TerminalEvent) => void;
   clearTerminalState: (threadId: ThreadId) => void;
   removeTerminalState: (threadId: ThreadId) => void;
   removeOrphanedTerminalStates: (activeThreadIds: Set<ThreadId>) => void;

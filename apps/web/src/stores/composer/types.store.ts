@@ -9,7 +9,7 @@ import {
   ProviderModelOptions,
   RuntimeMode,
   ThreadId,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import * as Schema from "effect/Schema";
 import { type TerminalContextDraft } from "../../lib/terminalContext";
 import { type ChatImageAttachment } from "../../models/types";

@@ -11,7 +11,7 @@ import {
   ThreadId,
   TurnId,
   type ProviderRuntimeEvent,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 
 import type { MutableTurnSnapshot } from "./OpencodeAdapter.types.ts";
 import { PROVIDER } from "./OpencodeAdapter.types.ts";

@@ -7,7 +7,7 @@
  * @module CodexProvider.auth
  */
 import * as OS from "node:os";
-import type { ServerProviderAuth, ServerProviderState } from "@t3tools/contracts";
+import type { ServerProviderAuth, ServerProviderState } from "@bigcode/contracts";
 import { Effect, FileSystem, Path } from "effect";
 
 import { detailFromResult, extractAuthBoolean, type CommandResult } from "../providerSnapshot";

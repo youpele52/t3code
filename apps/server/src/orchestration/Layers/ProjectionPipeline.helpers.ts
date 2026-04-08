@@ -6,7 +6,7 @@
  *
  * @module ProjectionPipeline.helpers
  */
-import { type ChatAttachment } from "@t3tools/contracts";
+import { type ChatAttachment } from "@bigcode/contracts";
 import { Effect, FileSystem, Path } from "effect";
 
 import { type ProjectionRepositoryError } from "../../persistence/Errors.ts";
@@ -21,7 +21,7 @@ import {
   parseThreadSegmentFromAttachmentId,
   toSafeThreadAttachmentSegment,
 } from "../../attachments/attachmentStore.ts";
-import { ApprovalRequestId } from "@t3tools/contracts";
+import { ApprovalRequestId } from "@bigcode/contracts";
 
 // Re-export for use in projectors.ts
 export type { ProjectionRepositoryError };

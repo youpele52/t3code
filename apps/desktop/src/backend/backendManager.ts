@@ -7,7 +7,7 @@ import {
   writeBackendSessionBoundary,
 } from "../logging/logging";
 import { resolveBackendCwd, resolveBackendEntry } from "../env/pathResolver";
-import type { RotatingFileSink } from "@t3tools/shared/logging";
+import type { RotatingFileSink } from "@bigcode/shared/logging";
 import { readPersistedBackendObservabilitySettings } from "../logging/logging";
 
 // ---------------------------------------------------------------------------

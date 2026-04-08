@@ -4,8 +4,8 @@ import type {
   RuntimeMode,
   ServerProvider,
   ThreadId,
-} from "@t3tools/contracts";
-import { truncate } from "@t3tools/shared/String";
+} from "@bigcode/contracts";
+import { truncate } from "@bigcode/shared/String";
 import { useCallback } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { newCommandId, newMessageId, newThreadId } from "~/lib/utils";

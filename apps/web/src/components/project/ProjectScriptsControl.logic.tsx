@@ -1,4 +1,4 @@
-import type { ProjectScriptIcon } from "@t3tools/contracts";
+import type { ProjectScriptIcon } from "@bigcode/contracts";
 import { type KeyboardEvent } from "react";
 import {
   BugIcon,

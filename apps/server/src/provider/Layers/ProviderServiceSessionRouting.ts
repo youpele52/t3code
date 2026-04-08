@@ -5,7 +5,7 @@
  * `makeRecoverSessionForThread` and `makeResolveRoutableSession` are curried
  * factory functions that accept the services they depend on.
  */
-import { type ProviderSession, ThreadId } from "@t3tools/contracts";
+import { type ProviderSession, ThreadId } from "@bigcode/contracts";
 import { Effect, Option } from "effect";
 
 import {

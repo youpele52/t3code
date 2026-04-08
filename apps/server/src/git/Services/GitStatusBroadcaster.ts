@@ -8,7 +8,7 @@
  */
 import { ServiceMap } from "effect";
 import type { Effect, Stream } from "effect";
-import type { GitStatusStreamEvent, GitManagerServiceError } from "@t3tools/contracts";
+import type { GitStatusStreamEvent, GitManagerServiceError } from "@bigcode/contracts";
 
 export interface GitStatusBroadcasterShape {
   /**

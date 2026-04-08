@@ -2,7 +2,7 @@ import {
   DEFAULT_TERMINAL_ID,
   type TerminalEvent,
   type TerminalSessionSnapshot,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { Effect, Equal, Option } from "effect";
 
 import { increment, terminalRestartsTotal } from "../../observability/Metrics";

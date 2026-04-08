@@ -1,4 +1,4 @@
-import type { ProjectSearchEntriesResult } from "@t3tools/contracts";
+import type { ProjectSearchEntriesResult } from "@bigcode/contracts";
 import { queryOptions } from "@tanstack/react-query";
 import { ensureNativeApi } from "../rpc/nativeApi";
 

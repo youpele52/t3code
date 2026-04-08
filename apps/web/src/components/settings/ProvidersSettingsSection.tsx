@@ -4,9 +4,9 @@ import {
   type ProviderKind,
   type ServerProvider,
   type ServerProviderModel,
-} from "@t3tools/contracts";
-import { DEFAULT_UNIFIED_SETTINGS } from "@t3tools/contracts/settings";
-import { normalizeModelSlug } from "@t3tools/shared/model";
+} from "@bigcode/contracts";
+import { DEFAULT_UNIFIED_SETTINGS } from "@bigcode/contracts/settings";
+import { normalizeModelSlug } from "@bigcode/shared/model";
 import { Equal } from "effect";
 import { useSettings, useUpdateSettings } from "../../hooks/useSettings";
 import { MAX_CUSTOM_MODEL_LENGTH, resolveAppModelSelectionState } from "../../models/provider";
@@ -76,7 +76,7 @@ function getProviderSummary(provider: ServerProvider | undefined) {
     return {
       headline: "Disabled",
       detail:
-        provider.message ?? "This provider is installed but disabled for new sessions in T3 Code.",
+        provider.message ?? "This provider is installed but disabled for new sessions in bigCode.",
     };
   }
   if (!provider.installed) {

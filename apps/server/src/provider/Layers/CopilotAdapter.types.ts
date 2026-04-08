@@ -19,7 +19,7 @@ import {
   type ProviderRuntimeEvent,
   type ProviderSession,
   type ThreadTokenUsageSnapshot,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import {
   type CopilotClientOptions,
   type CopilotSession,
@@ -274,7 +274,7 @@ export function requestDetailFromPermissionRequest(request: PermissionRequest): 
 }
 
 export function approvalDecisionToPermissionResult(
-  decision: import("@t3tools/contracts").ProviderApprovalDecision,
+  decision: import("@bigcode/contracts").ProviderApprovalDecision,
 ): PermissionRequestResult {
   switch (decision) {
     case "accept":
@@ -290,7 +290,7 @@ export function approvalDecisionToPermissionResult(
 export function isCopilotModelSelection(
   value: unknown,
 ): value is Extract<
-  NonNullable<import("@t3tools/contracts").ProviderSendTurnInput["modelSelection"]>,
+  NonNullable<import("@bigcode/contracts").ProviderSendTurnInput["modelSelection"]>,
   { provider: "copilot" }
 > {
   return (

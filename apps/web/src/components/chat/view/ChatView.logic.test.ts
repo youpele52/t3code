@@ -1,4 +1,4 @@
-import { ProjectId, ThreadId, TurnId } from "@t3tools/contracts";
+import { ProjectId, ThreadId, TurnId } from "@bigcode/contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useStore } from "../../../stores/main";
 

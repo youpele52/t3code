@@ -1,5 +1,5 @@
 /**
- * WebSocket RPC method names for the T3 Code server.
+ * WebSocket RPC method names for the bigCode server.
  *
  * These method names are used for client-server communication over WebSocket.
  * Each method corresponds to a specific RPC endpoint.

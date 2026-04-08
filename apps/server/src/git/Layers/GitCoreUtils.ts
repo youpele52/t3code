@@ -6,8 +6,8 @@
  * @module GitCoreUtils
  */
 import { Schema } from "effect";
-import type { GitBranch } from "@t3tools/contracts";
-import { GitCommandError } from "@t3tools/contracts";
+import type { GitBranch } from "@bigcode/contracts";
+import { GitCommandError } from "@bigcode/contracts";
 import { parseRemoteRefWithRemoteNames } from "../remoteRefs.ts";
 import type { ExecuteGitInput } from "../Services/GitCore.ts";
 

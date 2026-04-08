@@ -4,8 +4,8 @@ import {
   type ProviderInteractionMode,
   type RuntimeMode,
   type ProviderKind,
-} from "@t3tools/contracts";
-import type { ServerProvider } from "@t3tools/contracts";
+} from "@bigcode/contracts";
+import type { ServerProvider } from "@bigcode/contracts";
 import { Button } from "../../ui/button";
 import { Separator } from "../../ui/separator";
 import { cn } from "~/lib/utils";

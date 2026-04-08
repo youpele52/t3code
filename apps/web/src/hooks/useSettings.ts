@@ -15,7 +15,7 @@ import {
   ServerSettingsPatch,
   ModelSelection,
   ThreadEnvMode,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import {
   type ClientSettings,
   ClientSettingsSchema,
@@ -25,16 +25,17 @@ import {
   SidebarThreadSortOrder,
   TimestampFormat,
   UnifiedSettings,
-} from "@t3tools/contracts/settings";
+} from "@bigcode/contracts/settings";
 import { ensureNativeApi } from "../rpc/nativeApi";
 import { useLocalStorage } from "./useLocalStorage";
 import { normalizeCustomModelSlugs } from "../models/provider";
 import { Predicate, Schema, Struct } from "effect";
 import { DeepMutable } from "effect/Types";
-import { deepMerge } from "@t3tools/shared/Struct";
+import { deepMerge } from "@bigcode/shared/Struct";
 import { applySettingsUpdated, getServerConfig, useServerSettings } from "~/rpc/serverState";
 
-const CLIENT_SETTINGS_STORAGE_KEY = "t3code:client-settings:v1";
+const CLIENT_SETTINGS_STORAGE_KEY = "bigcode:client-settings:v1";
+const CLIENT_SETTINGS_LEGACY_KEYS = ["t3code:client-settings:v1"] as const;
 const OLD_SETTINGS_KEY = "t3code:app-settings:v1";
 
 // ── Key sets for routing patches ─────────────────────────────────────
@@ -75,6 +76,7 @@ export function useSettings<T extends UnifiedSettings = UnifiedSettings>(
     CLIENT_SETTINGS_STORAGE_KEY,
     DEFAULT_CLIENT_SETTINGS,
     ClientSettingsSchema,
+    { legacyKeys: CLIENT_SETTINGS_LEGACY_KEYS },
   );
 
   const merged = useMemo<UnifiedSettings>(
@@ -99,6 +101,7 @@ export function useUpdateSettings() {
     CLIENT_SETTINGS_STORAGE_KEY,
     DEFAULT_CLIENT_SETTINGS,
     ClientSettingsSchema,
+    { legacyKeys: CLIENT_SETTINGS_LEGACY_KEYS },
   );
 
   const updateSettings = useCallback(
@@ -246,12 +249,15 @@ export function migrateLocalSettingsToServer(): void {
     // Migrate client-only keys to the new localStorage key
     const clientPatch = buildLegacyClientSettingsMigrationPatch(old);
     if (Object.keys(clientPatch).length > 0) {
-      const existing = localStorage.getItem(CLIENT_SETTINGS_STORAGE_KEY);
+      const existing =
+        localStorage.getItem(CLIENT_SETTINGS_STORAGE_KEY) ??
+        localStorage.getItem(CLIENT_SETTINGS_LEGACY_KEYS[0]);
       const current = existing ? (JSON.parse(existing) as Record<string, unknown>) : {};
       localStorage.setItem(
         CLIENT_SETTINGS_STORAGE_KEY,
         JSON.stringify({ ...current, ...clientPatch }),
       );
+      localStorage.removeItem(CLIENT_SETTINGS_LEGACY_KEYS[0]);
     }
   } catch (error) {
     console.error("[MIGRATION] Error migrating local settings:", error);

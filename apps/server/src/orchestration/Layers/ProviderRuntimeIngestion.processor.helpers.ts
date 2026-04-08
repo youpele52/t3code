@@ -14,7 +14,7 @@ import {
   TurnId,
   type OrchestrationProposedPlanId,
   type ProviderRuntimeEvent,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { Cause, Effect, Option } from "effect";
 
 import { resolveThreadWorkspaceCwd } from "../../checkpointing/Utils.ts";

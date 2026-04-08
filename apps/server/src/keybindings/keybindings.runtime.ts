@@ -11,7 +11,7 @@ import {
   KeybindingsConfigError,
   MAX_KEYBINDINGS_COUNT,
   type ServerConfigIssue,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 import { Duration, Effect, FileSystem, Path, Scope, Stream } from "effect";
 
 import { hasSameShortcutContext, isSameKeybindingRule } from "./keybindings.compiler";

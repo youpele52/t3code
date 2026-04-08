@@ -5,8 +5,8 @@
  *
  * @module GitManager.prUtils
  */
-import { GitManagerError } from "@t3tools/contracts";
-import { sanitizeBranchFragment } from "@t3tools/shared/git";
+import { GitManagerError } from "@bigcode/contracts";
+import { sanitizeBranchFragment } from "@bigcode/shared/git";
 import type { GitHubPullRequestSummary } from "../Services/GitHubCli.ts";
 import type {
   BranchHeadContext,

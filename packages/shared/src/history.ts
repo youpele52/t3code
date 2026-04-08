@@ -2,7 +2,7 @@ import type {
   ChatAttachment,
   OrchestrationMessage,
   OrchestrationMessageRole,
-} from "@t3tools/contracts";
+} from "@bigcode/contracts";
 
 export interface BootstrapInputResult {
   text: string;
