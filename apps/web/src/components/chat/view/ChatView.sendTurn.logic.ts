@@ -1,13 +1,14 @@
 import {
+  type ApprovalRequestId,
   type ModelSelection,
   type ProviderInteractionMode,
   type ProviderKind,
   type RuntimeMode,
   type ServerProvider,
   type ThreadId,
-  type ApprovalRequestId,
 } from "@t3tools/contracts";
 import { useCallback, useRef } from "react";
+import type { PendingUserInput } from "../../../logic/session";
 import {
   type ComposerTrigger,
   collapseExpandedComposerCursor,
@@ -15,7 +16,6 @@ import {
   parseStandaloneComposerSlashCommand,
 } from "../../../logic/composer";
 import { resolvePlanFollowUpSubmission } from "../../../logic/proposed-plan";
-import { derivePendingUserInputProgress } from "../../../logic/user-input";
 import {
   deriveComposerSendState,
   buildExpiredTerminalContextToastCopy,
@@ -61,7 +61,7 @@ export interface UseOnSendInput {
   activeProposedPlan: ProposedPlan | null;
   isOpencodePendingUserInputMode: boolean;
   activePendingUserInputRequestId: ApprovalRequestId | null;
-  activePendingProgress: ReturnType<typeof derivePendingUserInputProgress> | null;
+  activePendingUserInput: PendingUserInput | null;
   shouldAutoScrollRef: React.MutableRefObject<boolean>;
   setOptimisticUserMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   setPrompt: (prompt: string) => void;
@@ -90,7 +90,6 @@ export interface UseOnSendInput {
     interactionMode: ProviderInteractionMode;
   }) => Promise<void>;
   handleInteractionModeChange: (mode: ProviderInteractionMode) => void;
-  onAdvanceActivePendingUserInput: () => void;
   onRespondToUserInput: (
     requestId: ApprovalRequestId,
     answers: Record<string, unknown>,
@@ -131,7 +130,7 @@ export function useOnSend(input: UseOnSendInput) {
       activeProposedPlan: proposedPlan,
       isOpencodePendingUserInputMode,
       activePendingUserInputRequestId,
-      activePendingProgress: pendingProgress,
+      activePendingUserInput,
       bootstrapSourceThreadId,
       shouldAutoScrollRef: autoScrollRef,
     } = inputRef.current;
@@ -142,18 +141,22 @@ export function useOnSend(input: UseOnSendInput) {
       if (!trimmed) {
         return;
       }
-      await inputRef.current.onRespondToUserInput(activePendingUserInputRequestId, {
-        [activePendingUserInputRequestId]: trimmed,
-      });
+      // Build answers keyed by question ID — works for all providers:
+      // - Codex iterates Object.entries(answers) by questionId
+      // - ClaudeCode passes answers directly to the SDK keyed by questionId
+      // - Copilot reads answers["answer"] (its question ID) then falls back to first value
+      // - OpenCode reads answers[requestId] then falls back to first value
+      const questions = activePendingUserInput?.questions ?? [];
+      const answers: Record<string, string> =
+        questions.length > 0
+          ? Object.fromEntries(questions.map((q) => [q.id, trimmed]))
+          : { [activePendingUserInputRequestId]: trimmed };
+      await inputRef.current.onRespondToUserInput(activePendingUserInputRequestId, answers);
       pRef.current = "";
       inputRef.current.clearComposerDraftContent(thread.id);
       inputRef.current.setComposerHighlightedItemId(null);
       inputRef.current.setComposerCursor(0);
       inputRef.current.setComposerTrigger(null);
-      return;
-    }
-    if (pendingProgress) {
-      inputRef.current.onAdvanceActivePendingUserInput();
       return;
     }
     if (sendBusy || connecting || inFlightRef.current) return;

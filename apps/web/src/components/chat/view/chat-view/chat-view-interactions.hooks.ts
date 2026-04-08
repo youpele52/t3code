@@ -392,7 +392,7 @@ export function useChatViewInteractions({
     activeProposedPlan: thread.activeProposedPlan,
     isOpencodePendingUserInputMode: thread.isOpencodePendingUserInputMode,
     activePendingUserInputRequestId: thread.activePendingUserInput?.requestId ?? null,
-    activePendingProgress: thread.activePendingProgress,
+    activePendingUserInput: thread.activePendingUserInput,
     shouldAutoScrollRef: runtime.scrollBehavior.shouldAutoScrollRef,
     setOptimisticUserMessages: base.setOptimisticUserMessages,
     setPrompt: base.setPrompt,
@@ -412,7 +412,6 @@ export function useChatViewInteractions({
     persistThreadSettingsForNextTurn: runtime.persistThreadSettingsForNextTurn,
     onSubmitPlanFollowUp: planHandlers.onSubmitPlanFollowUp,
     handleInteractionModeChange: runtime.handleInteractionModeChange,
-    onAdvanceActivePendingUserInput: pendingUserInputHandlers.onAdvanceActivePendingUserInput,
     onRespondToUserInput: runtime.turnActions.onRespondToUserInput,
   });
 

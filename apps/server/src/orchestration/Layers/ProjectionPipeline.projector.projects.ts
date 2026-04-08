@@ -3,14 +3,13 @@
  *
  * @module ProjectionPipeline.projector.projects
  */
-import { type OrchestrationEvent } from "@t3tools/contracts";
 import { Effect, Option } from "effect";
-
+import type { OrchestrationEvent } from "@t3tools/contracts";
 import {
   ORCHESTRATION_PROJECTOR_NAMES,
   type AttachmentSideEffects,
 } from "./ProjectionPipeline.helpers.ts";
-import { type ProjectorDefinition, type ProjectorDeps } from "./ProjectionPipeline.projectors.ts";
+import type { ProjectorDefinition, ProjectorDeps } from "./ProjectionPipeline.projectors.ts";
 
 export function makeProjectsProjector(
   deps: Pick<ProjectorDeps, "projectionProjectRepository">,
