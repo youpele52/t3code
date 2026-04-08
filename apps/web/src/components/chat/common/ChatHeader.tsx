@@ -15,11 +15,7 @@ import { Toggle } from "../../ui/toggle";
 import { useSidebar } from "../../ui/sidebar";
 import { OpenInPicker } from "./OpenInPicker";
 import { useIsThreadRunning } from "../../../stores/main";
-
-const truncateThreadName = (name: string, maxLength: number = 20): string => {
-  if (name.length <= maxLength) return name;
-  return `${name.slice(0, maxLength)}...`;
-};
+import { truncateThreadName } from "../../sidebar/Sidebar.logic";
 
 interface ChatHeaderProps {
   activeThreadId: ThreadId;

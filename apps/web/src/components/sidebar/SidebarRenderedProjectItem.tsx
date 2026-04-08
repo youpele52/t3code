@@ -7,7 +7,7 @@ import {
   type PointerEvent,
   type SetStateAction,
 } from "react";
-import { type ProjectId, type ThreadId } from "@t3tools/contracts";
+import type { ProjectId, ThreadId } from "@t3tools/contracts";
 import { ProjectFavicon } from "../project/ProjectFavicon";
 import {
   resolveSidebarNewThreadEnvMode,
@@ -15,7 +15,7 @@ import {
   resolveThreadStatusPill,
   type SidebarNewThreadEnvMode,
 } from "./Sidebar.logic";
-import { type SortableProjectHandleProps } from "./SidebarProjectItem";
+import type { SortableProjectHandleProps } from "./SidebarProjectItem";
 import { SidebarThreadRow, type ThreadPr } from "./SidebarThreadRow";
 import { SidebarThreadStatusLabel } from "./SidebarThreadStatusLabel";
 import {
@@ -68,7 +68,11 @@ export interface SidebarRenderedProjectItemProps extends RenderedProjectData {
   confirmingArchiveThreadId: ThreadId | null;
   setConfirmingArchiveThreadId: Dispatch<SetStateAction<ThreadId | null>>;
   confirmArchiveButtonRefs: MutableRefObject<Map<ThreadId, HTMLButtonElement>>;
-  activeThread: { projectId: ProjectId; branch: string | null; worktreePath: string | null } | null;
+  activeThread: {
+    projectId: ProjectId;
+    branch: string | null;
+    worktreePath: string | null;
+  } | null;
   activeDraftThread: {
     projectId: ProjectId;
     branch: string | null;
@@ -324,7 +328,7 @@ export function SidebarRenderedProjectItem({
 
       <SidebarMenuSub
         ref={attachThreadListAutoAnimateRef}
-        className="mx-1 my-0 w-full translate-x-0 gap-0.5 overflow-hidden px-1.5 py-0"
+        className="my-0 ml-3 mr-1 translate-x-px gap-0.5 overflow-hidden border-l border-sidebar-border pl-6 pr-1 py-0"
       >
         {shouldShowThreadPanel && showEmptyThreadState ? (
           <SidebarMenuSubItem className="w-full" data-thread-selection-safe>

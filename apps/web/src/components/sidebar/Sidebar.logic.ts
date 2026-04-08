@@ -461,6 +461,11 @@ export function getProjectSortTimestamp(
   return toSortableTimestamp(project.updatedAt ?? project.createdAt) ?? Number.NEGATIVE_INFINITY;
 }
 
+export function truncateThreadName(name: string, maxLength: number = 20): string {
+  if (name.length <= maxLength) return name;
+  return `${name.slice(0, maxLength)}...`;
+}
+
 export function sortProjectsForSidebar<
   TProject extends SidebarProject,
   TThread extends Pick<Thread, "projectId" | "createdAt" | "updatedAt"> & SidebarThreadSortInput,
