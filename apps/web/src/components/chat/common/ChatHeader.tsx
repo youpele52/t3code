@@ -106,7 +106,7 @@ export const ChatHeader = memo(function ChatHeader({
           </span>
         </h2>
         {activeProjectName && !isGitRepo && (
-          <span className="shrink-0 text-[10px] text-amber-700">No Git</span>
+          <span className="shrink-0 text-[10px] text-warning-foreground">No Git</span>
         )}
       </div>
       <div className="flex shrink-0 items-center justify-end gap-2 @3xl/header-actions:gap-3">

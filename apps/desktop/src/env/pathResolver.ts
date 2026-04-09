@@ -108,8 +108,11 @@ export function resolveEmbeddedCommitHash(rootDir: string): string | null {
 
   try {
     const raw = FS.readFileSync(packageJsonPath, "utf8");
-    const parsed = JSON.parse(raw) as { t3codeCommitHash?: unknown };
-    return normalizeCommitHash(parsed.t3codeCommitHash);
+    const parsed = JSON.parse(raw) as {
+      bigcodeCommitHash?: unknown;
+      t3codeCommitHash?: unknown;
+    };
+    return normalizeCommitHash(parsed.bigcodeCommitHash ?? parsed.t3codeCommitHash);
   } catch {
     return null;
   }

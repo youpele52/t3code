@@ -83,7 +83,7 @@ reasonable candidates for a dedicated migration phase after Phase 1-3 land.
 - `T3CODE_*` env vars
 - `.t3code-keybindings.json`
 - localStorage keys like `t3code:client-settings:v1`
-- Repo URL and clone commands using `pingdotgg/t3code`
+- Repo URL and clone commands using `youpele52/bigCode`
 - Branch/worktree prefixes like `t3code/...`
 - Test temp directories and fixture paths containing `t3code`
 
@@ -128,7 +128,7 @@ leaving repo/package/env/path references alone.
 Examples:
 
 - Change: `T3 Code has one server-side observability model`
-- Keep: `git clone https://github.com/pingdotgg/t3code.git`
+- Keep: `git clone https://github.com/youpele52/bigCode.git`
 - Keep: `T3CODE_OTLP_TRACES_URL`
 
 ### Phase 3: Tests

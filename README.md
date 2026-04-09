@@ -1,6 +1,6 @@
 # bigCode
 
-bigCode is a minimal web GUI for coding agents.
+bigCode is a coding workspace for running coding agents through a fast web UI or desktop shell.
 
 ## Supported Providers
 
@@ -23,10 +23,18 @@ Install and authenticate at least one provider:
 ### From Source
 
 ```bash
-git clone https://github.com/pingdotgg/t3code.git
-cd t3code
+git clone https://github.com/youpele52/bigCode.git
+cd bigCode
 bun install
 bun dev
+```
+
+Open the web app at `http://localhost:5733`.
+
+To run the desktop shell in development:
+
+```bash
+bun dev:desktop
 ```
 
 ### Package Managers (Coming Soon)
@@ -35,7 +43,7 @@ Homebrew, winget, and AUR packages are planned but not yet available.
 
 ## Development
 
-This is a monorepo with a Node.js/Bun server and a React/Vite web app.
+This is a Bun monorepo with a server app, React/Vite web app, desktop shell, shared contracts, and runtime utilities.
 
 ```bash
 # Install dependencies
@@ -44,12 +52,31 @@ bun install
 # Start full dev stack (server + web)
 bun dev
 
+# Start desktop development
+bun dev:desktop
+
+# Start individual apps
+bun dev:server
+bun dev:web
+
 # Run checks
 bun fmt
 bun lint
 bun typecheck
 bun run test
 ```
+
+Desktop packaging commands:
+
+```bash
+bun dist:desktop:dmg
+bun dist:desktop:dmg:arm64
+bun dist:desktop:dmg:x64
+bun dist:desktop:linux
+bun dist:desktop:win
+```
+
+Important test note: use `bun run test`, not `bun test`.
 
 See [AGENTS.md](./AGENTS.md) for detailed development guidance, toolchain quirks, and architecture notes.
 
@@ -66,3 +93,4 @@ Need support? Join the [Discord](https://discord.gg/jn4EGJjrvv).
 - [AGENTS.md](./AGENTS.md) — Development guide for contributors
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — Contribution guidelines
 - [docs/observability.md](./docs/observability.md) — Observability guide
+- [packages/contracts/README.md](./packages/contracts/README.md) — Contracts package import guidance

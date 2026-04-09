@@ -60,7 +60,7 @@ function stageMacIcons(stageResourcesDir: string, verbose: boolean) {
       });
     }
 
-    const tmpRoot = yield* fs.makeTempDirectoryScoped({ prefix: "t3code-icon-build-" });
+    const tmpRoot = yield* fs.makeTempDirectoryScoped({ prefix: "bigcode-icon-build-" });
     const iconPngPath = path.join(stageResourcesDir, "icon.png");
     const iconIcnsPath = path.join(stageResourcesDir, "icon.icns");
 
@@ -187,9 +187,9 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
   mockUpdateServerPort: string | undefined,
 ) {
   const buildConfig: Record<string, unknown> = {
-    appId: "com.t3tools.t3code",
+    appId: "ai.bigcode.desktop",
     productName,
-    artifactName: "T3-Code-${version}-${arch}.${ext}",
+    artifactName: "bigCode-${version}-${arch}.${ext}",
     directories: {
       buildResources: "apps/desktop/resources",
     },
@@ -218,12 +218,12 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
   if (platform === "linux") {
     buildConfig.linux = {
       target: [target],
-      executableName: "t3code",
+      executableName: "bigcode",
       icon: "icon.png",
       category: "Development",
       desktop: {
         entry: {
-          StartupWMClass: "t3code",
+          StartupWMClass: "bigcode",
         },
       },
     };

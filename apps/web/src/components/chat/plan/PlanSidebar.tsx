@@ -31,14 +31,14 @@ import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";
 function stepStatusIcon(status: string): React.ReactNode {
   if (status === "completed") {
     return (
-      <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-500">
+      <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-success/15 text-success-foreground">
         <CheckIcon className="size-3" />
       </span>
     );
   }
   if (status === "inProgress") {
     return (
-      <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-blue-500/15 text-blue-400">
+      <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-info/15 text-info-foreground">
         <LoaderIcon className="size-3 animate-spin" />
       </span>
     );

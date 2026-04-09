@@ -75,7 +75,7 @@ export const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* 
   const appVersion = options.version ?? serverPackageJson.version;
   const commitHash = resolveGitCommitHash(repoRoot);
   const mkdir = options.keepStage ? fs.makeTempDirectory : fs.makeTempDirectoryScoped;
-  const stageRoot = yield* mkdir({ prefix: `t3code-desktop-${options.platform}-stage-` });
+  const stageRoot = yield* mkdir({ prefix: `bigcode-desktop-${options.platform}-stage-` });
 
   const stageAppDir = path.join(stageRoot, "app");
   const stageResourcesDir = path.join(stageAppDir, "apps/desktop/resources");
@@ -123,10 +123,10 @@ export const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* 
   yield* fs.copy(stageResourcesDir, path.join(stageAppDir, "apps/desktop/prod-resources"));
 
   const stagePackageJson: StagePackageJson = {
-    name: "t3code",
+    name: "bigcode-desktop",
     version: appVersion,
     buildVersion: appVersion,
-    t3codeCommitHash: commitHash,
+    bigcodeCommitHash: commitHash,
     private: true,
     description: "bigCode desktop build",
     author: "T3 Tools",
