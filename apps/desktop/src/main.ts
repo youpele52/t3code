@@ -81,10 +81,10 @@ const DESKTOP_SCHEME = "t3";
 const ROOT_DIR = Path.resolve(__dirname, "../../..");
 const isDevelopment = Boolean(process.env.VITE_DEV_SERVER_URL);
 const APP_DISPLAY_NAME = isDevelopment ? "bigCode (Dev)" : "bigCode (Alpha)";
-const APP_USER_MODEL_ID = "com.t3tools.t3code";
-const LINUX_DESKTOP_ENTRY_NAME = isDevelopment ? "t3code-dev.desktop" : "t3code.desktop";
-const LINUX_WM_CLASS = isDevelopment ? "t3code-dev" : "t3code";
-const USER_DATA_DIR_NAME = isDevelopment ? "t3code-dev" : "t3code";
+const APP_USER_MODEL_ID = "ai.bigcode.desktop";
+const LINUX_DESKTOP_ENTRY_NAME = isDevelopment ? "bigcode-dev.desktop" : "bigcode.desktop";
+const LINUX_WM_CLASS = isDevelopment ? "bigcode-dev" : "bigcode";
+const USER_DATA_DIR_NAME = isDevelopment ? "bigcode-dev" : "bigcode";
 const LEGACY_USER_DATA_DIR_NAME = isDevelopment ? "T3 Code (Dev)" : "T3 Code (Alpha)";
 const LOG_DIR = Path.join(STATE_DIR, "logs");
 const LOG_FILE_MAX_BYTES = 10 * 1024 * 1024;
@@ -211,7 +211,7 @@ function registerDesktopProtocol(): void {
  * (e.g. `~/.config/bigCode (Alpha)` on Linux). This is
  * unfriendly for shell usage and violates Linux naming conventions.
  *
- * We override it to a clean lowercase name (`t3code`). If the legacy
+ * We override it to a clean lowercase name (`bigcode`). If the legacy
  * `T3 Code (...)` directory already exists we keep using it so existing users don't
  * lose their Chromium profile data (localStorage, cookies, sessions).
  */

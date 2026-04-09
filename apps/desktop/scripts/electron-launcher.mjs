@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 
 const isDevelopment = Boolean(process.env.VITE_DEV_SERVER_URL);
 const APP_DISPLAY_NAME = isDevelopment ? "bigCode (Dev)" : "bigCode (Alpha)";
-const APP_BUNDLE_ID = "com.t3tools.t3code";
+const APP_BUNDLE_ID = "ai.bigcode.desktop";
 const LAUNCHER_VERSION = 1;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -106,6 +106,9 @@ function buildMacLauncher(electronBinaryPath) {
   const metadataPath = join(runtimeDir, "metadata.json");
 
   mkdirSync(runtimeDir, { recursive: true });
+  for (const legacyAppName of ["T3 Code (Dev).app", "T3 Code (Alpha).app"]) {
+    rmSync(join(runtimeDir, legacyAppName), { recursive: true, force: true });
+  }
 
   const expectedMetadata = {
     launcherVersion: LAUNCHER_VERSION,

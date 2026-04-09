@@ -181,7 +181,7 @@ export interface StagePackageJson {
   readonly name: string;
   readonly version: string;
   readonly buildVersion: string;
-  readonly t3codeCommitHash: string;
+  readonly bigcodeCommitHash: string;
   readonly private: true;
   readonly description: string;
   readonly author: string;

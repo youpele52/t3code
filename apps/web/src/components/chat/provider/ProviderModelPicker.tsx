@@ -47,7 +47,7 @@ function providerIconClassName(
   provider: ProviderKind | ProviderPickerKind,
   fallbackClassName: string,
 ): string {
-  return provider === "claudeAgent" ? "text-[#d97757]" : fallbackClassName;
+  return provider === "claudeAgent" ? "text-warning-foreground" : fallbackClassName;
 }
 
 // exactOptionalPropertyTypes: group/subProviderID must be `string | undefined` so callers can

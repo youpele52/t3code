@@ -157,7 +157,7 @@ export const ComposerFooterLeading = forwardRef<HTMLDivElement, ComposerFooterLe
                   className={cn(
                     "shrink-0 whitespace-nowrap px-2 sm:px-3",
                     planSidebarOpen
-                      ? "text-blue-400 hover:text-blue-300"
+                      ? "text-info-foreground hover:text-foreground"
                       : "text-muted-foreground/70 hover:text-foreground/80",
                   )}
                   size="sm"
