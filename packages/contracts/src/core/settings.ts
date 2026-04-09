@@ -42,6 +42,17 @@ export type SidebarProjectSortOrder = typeof SidebarProjectSortOrder.Type;
 export const SidebarThreadSortOrder = Schema.Literals(SIDEBAR_THREAD_SORT_ORDERS);
 export type SidebarThreadSortOrder = typeof SidebarThreadSortOrder.Type;
 
+export const TERMINAL_FONT_FAMILIES = ["meslo-nerd-font-mono", "system-monospace"] as const;
+export const TERMINAL_FONT_SIZES = [11, 12, 13, 14, 15, 16, 17, 18] as const;
+export const TERMINAL_FONT_SIZE_MIN = TERMINAL_FONT_SIZES[0];
+export const TERMINAL_FONT_SIZE_MAX = 18;
+
+export const TerminalFontFamily = Schema.Literals(TERMINAL_FONT_FAMILIES);
+export type TerminalFontFamily = typeof TerminalFontFamily.Type;
+const TerminalFontSize = Schema.Int.check(
+  Schema.isGreaterThanOrEqualTo(TERMINAL_FONT_SIZE_MIN),
+).check(Schema.isLessThanOrEqualTo(TERMINAL_FONT_SIZE_MAX));
+
 export const ClientSettingsSchema = Schema.Struct({
   confirmThreadArchive: Schema.Boolean.pipe(Schema.withDecodingDefault(() => false)),
   confirmThreadDelete: Schema.Boolean.pipe(Schema.withDecodingDefault(() => true)),
@@ -53,6 +64,10 @@ export const ClientSettingsSchema = Schema.Struct({
     Schema.withDecodingDefault(() => DEFAULT_SIDEBAR_THREAD_SORT_ORDER),
   ),
   timestampFormat: TimestampFormat.pipe(Schema.withDecodingDefault(() => DEFAULT_TIMESTAMP_FORMAT)),
+  terminalFontFamily: TerminalFontFamily.pipe(
+    Schema.withDecodingDefault(() => "meslo-nerd-font-mono" as const satisfies TerminalFontFamily),
+  ),
+  terminalFontSize: TerminalFontSize.pipe(Schema.withDecodingDefault(() => 12)),
   enableTaskCompletionToasts: Schema.Boolean.pipe(Schema.withDecodingDefault(() => true)),
   enableSystemTaskCompletionNotifications: Schema.Boolean.pipe(
     Schema.withDecodingDefault(() => true),

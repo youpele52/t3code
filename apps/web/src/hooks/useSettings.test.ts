@@ -13,4 +13,25 @@ describe("buildLegacyClientSettingsMigrationPatch", () => {
       confirmThreadDelete: false,
     });
   });
+
+  it("migrates terminal appearance settings from legacy local settings", () => {
+    expect(
+      buildLegacyClientSettingsMigrationPatch({
+        terminalFontFamily: "system-monospace",
+        terminalFontSize: 14,
+      }),
+    ).toEqual({
+      terminalFontFamily: "system-monospace",
+      terminalFontSize: 14,
+    });
+  });
+
+  it("drops invalid legacy terminal appearance settings", () => {
+    expect(
+      buildLegacyClientSettingsMigrationPatch({
+        terminalFontFamily: "broken",
+        terminalFontSize: 24,
+      }),
+    ).toEqual({});
+  });
 });

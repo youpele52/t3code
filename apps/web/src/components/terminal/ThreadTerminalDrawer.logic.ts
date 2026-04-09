@@ -1,4 +1,5 @@
 import type { TerminalEvent, TerminalSessionSnapshot } from "@bigcode/contracts";
+import { type TerminalFontFamily } from "@bigcode/contracts/settings";
 import type { ITheme, Terminal } from "@xterm/xterm";
 import { DEFAULT_THREAD_TERMINAL_HEIGHT } from "../../models/types";
 
@@ -102,6 +103,14 @@ export function terminalThemeFromApp(): ITheme {
     brightCyan: "rgb(70, 149, 164)",
     brightWhite: "rgb(236, 240, 246)",
   };
+}
+
+export function terminalFontFamilyFromSettings(fontFamily: TerminalFontFamily): string {
+  if (fontFamily === "system-monospace") {
+    return '"SF Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace';
+  }
+
+  return '"MesloLGL Nerd Font Mono", "Symbols Nerd Font Mono", "SF Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace';
 }
 
 export function getTerminalSelectionRect(mountElement: HTMLElement): DOMRect | null {

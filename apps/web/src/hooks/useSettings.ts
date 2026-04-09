@@ -23,6 +23,8 @@ import {
   DEFAULT_UNIFIED_SETTINGS,
   SidebarProjectSortOrder,
   SidebarThreadSortOrder,
+  TERMINAL_FONT_FAMILIES,
+  TERMINAL_FONT_SIZES,
   TimestampFormat,
   UnifiedSettings,
 } from "@bigcode/contracts/settings";
@@ -37,6 +39,12 @@ import { applySettingsUpdated, getServerConfig, useServerSettings } from "~/rpc/
 const CLIENT_SETTINGS_STORAGE_KEY = "bigcode:client-settings:v1";
 const CLIENT_SETTINGS_LEGACY_KEYS = ["t3code:client-settings:v1"] as const;
 const OLD_SETTINGS_KEY = "t3code:app-settings:v1";
+const TERMINAL_FONT_FAMILY_SET = new Set<string>(TERMINAL_FONT_FAMILIES);
+const TERMINAL_FONT_SIZE_SET = new Set<number>(TERMINAL_FONT_SIZES);
+
+function isTerminalFontFamily(value: unknown): value is ClientSettings["terminalFontFamily"] {
+  return typeof value === "string" && TERMINAL_FONT_FAMILY_SET.has(value);
+}
 
 // ── Key sets for routing patches ─────────────────────────────────────
 
@@ -219,6 +227,18 @@ export function buildLegacyClientSettingsMigrationPatch(
 
   if (Schema.is(TimestampFormat)(legacySettings.timestampFormat)) {
     patch.timestampFormat = legacySettings.timestampFormat;
+  }
+
+  if (isTerminalFontFamily(legacySettings.terminalFontFamily)) {
+    patch.terminalFontFamily = legacySettings.terminalFontFamily;
+  }
+
+  if (
+    typeof legacySettings.terminalFontSize === "number" &&
+    Number.isInteger(legacySettings.terminalFontSize) &&
+    TERMINAL_FONT_SIZE_SET.has(legacySettings.terminalFontSize)
+  ) {
+    patch.terminalFontSize = legacySettings.terminalFontSize;
   }
 
   return patch;

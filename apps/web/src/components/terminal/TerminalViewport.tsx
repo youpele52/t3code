@@ -13,8 +13,10 @@ import { isTerminalClearShortcut, terminalNavigationShortcutData } from "../../m
 import { readNativeApi } from "../../rpc/nativeApi";
 import { selectTerminalEventEntries } from "../../stores/terminal";
 import { useTerminalStateStore } from "../../stores/terminal";
+import { useSettings } from "../../hooks/useSettings";
 import {
   getTerminalSelectionRect,
+  terminalFontFamilyFromSettings,
   resolveTerminalSelectionActionPosition,
   selectTerminalEventEntriesAfterSnapshot,
   shouldHandleTerminalSelectionMouseUp,
@@ -72,6 +74,10 @@ export function TerminalViewport({
     onAddTerminalContext(selection);
   });
   const readTerminalLabel = useEffectEvent(() => terminalLabel);
+  const settings = useSettings();
+  const terminalFontFamily = terminalFontFamilyFromSettings(settings.terminalFontFamily);
+  const terminalFontSize = settings.terminalFontSize;
+  const usesBundledTerminalFont = settings.terminalFontFamily === "meslo-nerd-font-mono";
 
   // autoFocus and worktreePath are read at mount / specific moments only.
   // They are stored in refs so their current values are accessible without
@@ -92,14 +98,13 @@ export function TerminalViewport({
     const terminal = new Terminal({
       cursorBlink: true,
       lineHeight: 1.2,
-      fontSize: 12,
+      fontSize: terminalFontSize,
       scrollback: 5_000,
-      fontFamily: '"SF Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace',
+      fontFamily: terminalFontFamily,
       theme: terminalThemeFromApp(),
     });
     terminal.loadAddon(fitAddon);
     terminal.open(mount);
-    fitAddon.fit();
 
     terminalRef.current = terminal;
     fitAddonRef.current = fitAddon;
@@ -354,12 +359,71 @@ export function TerminalViewport({
       });
     });
 
+    let initialFitResizeTimer: number | null = null;
+
+    const waitForBundledTerminalFont = async () => {
+      if (!usesBundledTerminalFont || typeof document.fonts === "undefined") {
+        return;
+      }
+
+      const fontLoadTarget = `${terminalFontSize}px "MesloLGL Nerd Font Mono"`;
+      if (document.fonts.check(fontLoadTarget)) {
+        return;
+      }
+
+      const timeout = new Promise<void>((resolve) => {
+        window.setTimeout(resolve, 1_000);
+      });
+
+      await Promise.race([
+        document.fonts.load(fontLoadTarget).then(() => undefined),
+        timeout,
+      ]).catch(() => undefined);
+    };
+
+    const fitTerminal = () => {
+      const activeTerminal = terminalRef.current;
+      const activeFitAddon = fitAddonRef.current;
+      if (!activeTerminal || !activeFitAddon) return;
+      const wasAtBottom =
+        activeTerminal.buffer.active.viewportY >= activeTerminal.buffer.active.baseY;
+      activeFitAddon.fit();
+      if (wasAtBottom) {
+        activeTerminal.scrollToBottom();
+      }
+    };
+
+    const resizeServerTerminal = () => {
+      const activeTerminal = terminalRef.current;
+      if (!activeTerminal) return;
+      void api.terminal
+        .resize({
+          threadId,
+          terminalId,
+          cols: activeTerminal.cols,
+          rows: activeTerminal.rows,
+        })
+        .catch(() => undefined);
+    };
+
+    const fitAndResizeServerTerminal = () => {
+      const activeTerminal = terminalRef.current;
+      if (!activeTerminal) return;
+      fitTerminal();
+      resizeServerTerminal();
+    };
+
     const runOpenTerminal = async () => {
       try {
         const activeTerminal = terminalRef.current;
-        const activeFitAddon = fitAddonRef.current;
-        if (!activeTerminal || !activeFitAddon) return;
-        activeFitAddon.fit();
+        if (!activeTerminal || !fitAddonRef.current) return;
+        await waitForBundledTerminalFont();
+        if (disposed) return;
+        await new Promise<void>((resolve) => {
+          window.requestAnimationFrame(() => resolve());
+        });
+        if (disposed) return;
+        fitAndResizeServerTerminal();
         const snapshot = await api.terminal.open({
           threadId,
           terminalId,
@@ -401,24 +465,14 @@ export function TerminalViewport({
       }
     };
 
-    const fitTimer = window.setTimeout(() => {
-      const activeTerminal = terminalRef.current;
-      const activeFitAddon = fitAddonRef.current;
-      if (!activeTerminal || !activeFitAddon) return;
-      const wasAtBottom =
-        activeTerminal.buffer.active.viewportY >= activeTerminal.buffer.active.baseY;
-      activeFitAddon.fit();
-      if (wasAtBottom) {
-        activeTerminal.scrollToBottom();
-      }
-      void api.terminal
-        .resize({
-          threadId,
-          terminalId,
-          cols: activeTerminal.cols,
-          rows: activeTerminal.rows,
-        })
-        .catch(() => undefined);
+    initialFitResizeTimer = window.setTimeout(() => {
+      void waitForBundledTerminalFont().then(() => {
+        if (disposed) return;
+        window.requestAnimationFrame(() => {
+          if (disposed) return;
+          fitAndResizeServerTerminal();
+        });
+      });
     }, 30);
     void runOpenTerminal();
 
@@ -427,7 +481,9 @@ export function TerminalViewport({
       terminalHydratedRef.current = false;
       lastAppliedTerminalEventIdRef.current = 0;
       unsubscribeTerminalEvents();
-      window.clearTimeout(fitTimer);
+      if (initialFitResizeTimer !== null) {
+        window.clearTimeout(initialFitResizeTimer);
+      }
       inputDisposable.dispose();
       selectionDisposable.dispose();
       terminalLinksDisposable.dispose();
@@ -444,10 +500,19 @@ export function TerminalViewport({
     // autoFocus is intentionally omitted — it is only read at mount time via autoFocusRef
     // and must not trigger terminal teardown/recreation.
     // worktreePath is intentionally omitted — same reason, accessed via worktreePathRef.
-  }, [cwd, runtimeEnv, terminalId, threadId]);
+  }, [
+    cwd,
+    runtimeEnv,
+    terminalFontFamily,
+    terminalFontSize,
+    terminalId,
+    threadId,
+    usesBundledTerminalFont,
+  ]);
 
   useEffect(() => {
     if (!autoFocus) return;
+    void focusRequestId;
     const terminal = terminalRef.current;
     if (!terminal) return;
     const frame = window.requestAnimationFrame(() => {
@@ -459,6 +524,8 @@ export function TerminalViewport({
   }, [autoFocus, focusRequestId]);
 
   useEffect(() => {
+    void drawerHeight;
+    void resizeEpoch;
     const api = readNativeApi();
     const terminal = terminalRef.current;
     const fitAddon = fitAddonRef.current;

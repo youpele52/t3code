@@ -52,6 +52,14 @@
   }
 }
 
+@font-face {
+  font-family: "MesloLGL Nerd Font Mono";
+  src: url("/fonts/MesloLGLNerdFontMono-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Suppress all transitions during theme changes */
 .no-transitions,
 .no-transitions *,
