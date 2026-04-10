@@ -5,6 +5,7 @@
  * Each method corresponds to a specific RPC endpoint.
  *
  * @see packages/contracts/src/rpc.ts for RPC schema definitions
+ * @see APP_SERVER_NAME
  */
 export const WS_METHODS = {
   // Project registry methods

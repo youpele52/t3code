@@ -1,4 +1,5 @@
 export * from "./core/baseSchemas";
+export * from "./constants/branding.constant";
 export * from "./constants/git.constant";
 export * from "./constants/model.constant";
 export * from "./constants/provider.constant";

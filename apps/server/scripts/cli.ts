@@ -10,6 +10,7 @@ import {
   DEVELOPMENT_ICON_OVERRIDES,
   PUBLISH_ICON_OVERRIDES,
 } from "../../../scripts/lib/brand-assets.ts";
+import { APP_SERVER_NAME } from "@bigcode/contracts";
 import { resolveCatalogDependencies } from "../../../scripts/lib/resolve-catalog.ts";
 import rootPackageJson from "../../../package.json" with { type: "json" };
 import serverPackageJson from "../package.json" with { type: "json" };
@@ -255,7 +256,7 @@ const publishCmd = Command.make(
 // ---------------------------------------------------------------------------
 
 const cli = Command.make("cli").pipe(
-  Command.withDescription("T3 server build & publish CLI."),
+  Command.withDescription(`${APP_SERVER_NAME} build & publish CLI.`),
   Command.withSubcommands([buildCmd, publishCmd]),
 );
 

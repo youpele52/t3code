@@ -3,6 +3,7 @@ import { Duration, Effect, Layer, Schedule } from "effect";
 import { RpcClient, RpcSerialization } from "effect/unstable/rpc";
 import * as Socket from "effect/unstable/socket/Socket";
 
+import { APP_SERVER_NAME } from "../config/branding";
 import { resolveServerUrl } from "../lib/utils";
 import {
   acknowledgeRpcRequest,
@@ -47,7 +48,7 @@ export function createWsRpcProtocolLayer(url?: string) {
         "error",
         () => {
           clearAllTrackedRpcRequests();
-          recordWsConnectionErrored("Unable to connect to the T3 server WebSocket.");
+          recordWsConnectionErrored(`Unable to connect to the ${APP_SERVER_NAME} WebSocket.`);
         },
         { once: true },
       );

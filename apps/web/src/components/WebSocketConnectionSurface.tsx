@@ -1,7 +1,7 @@
 import { AlertTriangle, CloudOff, LoaderCircle, RotateCw } from "lucide-react";
 import { type ReactNode, useEffect, useEffectEvent, useRef, useState } from "react";
 
-import { APP_DISPLAY_NAME } from "../config/branding";
+import { APP_DISPLAY_NAME, APP_SERVER_NAME } from "../config/branding";
 import { type SlowRpcAckRequest, useSlowRpcAckRequests } from "../rpc/requestLatencyState";
 import { useServerConfig } from "../rpc/serverState";
 import {
@@ -59,7 +59,7 @@ function describeExhaustedToast(): string {
 }
 
 function buildReconnectTitle(_status: WsConnectionStatus): string {
-  return "Disconnected from T3 Server";
+  return `Disconnected from ${APP_SERVER_NAME}`;
 }
 
 function describeRecoveredToast(
@@ -127,8 +127,7 @@ function buildBlockingCopy(
 
   if (uiState === "offline") {
     return {
-      description:
-        "Your browser is offline, so the web client cannot reach the T3 server. Reconnect to the network and the app will retry automatically.",
+      description: `Your browser is offline, so the web client cannot reach the ${APP_SERVER_NAME}. Reconnect to the network and the app will retry automatically.`,
       eyebrow: "Offline",
       title: "WebSocket connection unavailable",
     };
@@ -136,17 +135,16 @@ function buildBlockingCopy(
 
   if (status.lastError?.trim()) {
     return {
-      description: `${status.lastError} Verify that the T3 server is running and reachable, then reload the app if needed.`,
+      description: `${status.lastError} Verify that the ${APP_SERVER_NAME} is running and reachable, then reload the app if needed.`,
       eyebrow: "Connection Error",
-      title: "Cannot reach the T3 server",
+      title: `Cannot reach the ${APP_SERVER_NAME}`,
     };
   }
 
   return {
-    description:
-      "The web client could not complete its initial WebSocket connection to the T3 server. It will keep retrying in the background.",
+    description: `The web client could not complete its initial WebSocket connection to the ${APP_SERVER_NAME}. It will keep retrying in the background.`,
     eyebrow: "Connection Error",
-    title: "Cannot reach the T3 server",
+    title: `Cannot reach the ${APP_SERVER_NAME}`,
   };
 }
 
@@ -404,7 +402,7 @@ export function WebSocketConnectionCoordinator() {
               },
               description: describeExhaustedToast(),
               timeout: 0,
-              title: "Disconnected from T3 Server",
+              title: `Disconnected from ${APP_SERVER_NAME}`,
               type: "error" as const,
               data: {
                 hideCopyButton: true,
@@ -444,7 +442,7 @@ export function WebSocketConnectionCoordinator() {
     ) {
       const successToast = {
         description: describeRecoveredToast(previousDisconnectedAt, status.connectedAt),
-        title: "Reconnected to T3 Server",
+        title: `Reconnected to ${APP_SERVER_NAME}`,
         type: "success" as const,
         timeout: 0,
         data: {

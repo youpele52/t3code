@@ -1,5 +1,6 @@
 import { NetService } from "@bigcode/shared/Net";
 import { parsePersistedServerObservabilitySettings } from "@bigcode/shared/serverSettings";
+import { APP_SERVER_NAME, APP_SERVER_SLUG } from "@bigcode/contracts";
 import { Config, Effect, FileSystem, LogLevel, Option, Path, Schema } from "effect";
 import { Argument, Command, Flag, GlobalFlag } from "effect/unstable/cli";
 
@@ -151,7 +152,7 @@ const EnvServerConfig = Config.all({
   otlpServiceName: aliasedWithDefault(
     Config.string("BIGCODE_OTLP_SERVICE_NAME"),
     Config.string("T3CODE_OTLP_SERVICE_NAME"),
-    "bigcode-server",
+    APP_SERVER_SLUG,
   ),
   mode: aliasedOptional(
     Config.schema(RuntimeMode, "BIGCODE_MODE"),
@@ -403,7 +404,7 @@ const commandFlags = {
 } as const;
 
 const rootCommand = Command.make("bigcode", commandFlags).pipe(
-  Command.withDescription("Run the bigCode server."),
+  Command.withDescription(`Run the ${APP_SERVER_NAME}.`),
   Command.withHandler((flags) =>
     Effect.gen(function* () {
       const logLevel = yield* GlobalFlag.LogLevel;
