@@ -97,7 +97,7 @@ const DEFAULT_BINDINGS = compile([
     whenAst: whenIdentifier("terminalFocus"),
   },
   {
-    shortcut: modShortcut("d"),
+    shortcut: modShortcut("g", { shiftKey: true }),
     command: "diff.toggle",
     whenAst: whenNot(whenIdentifier("terminalFocus")),
   },
@@ -248,7 +248,10 @@ describe("shortcutLabelForCommand", () => {
 
   it("returns effective labels for non-terminal commands", () => {
     assert.strictEqual(shortcutLabelForCommand(DEFAULT_BINDINGS, "chat.new", "MacIntel"), "⇧⌘O");
-    assert.strictEqual(shortcutLabelForCommand(DEFAULT_BINDINGS, "diff.toggle", "Linux"), "Ctrl+D");
+    assert.strictEqual(
+      shortcutLabelForCommand(DEFAULT_BINDINGS, "diff.toggle", "Linux"),
+      "Ctrl+Shift+G",
+    );
     assert.strictEqual(
       shortcutLabelForCommand(DEFAULT_BINDINGS, "editor.openFavorite", "Linux"),
       "Ctrl+O",
@@ -275,7 +278,7 @@ describe("shortcutLabelForCommand", () => {
 
   it("respects when-context while resolving labels", () => {
     const bindings = compile([
-      { shortcut: modShortcut("d"), command: "diff.toggle" },
+      { shortcut: modShortcut("g", { shiftKey: true }), command: "diff.toggle" },
       {
         shortcut: modShortcut("d"),
         command: "terminal.split",
@@ -288,7 +291,7 @@ describe("shortcutLabelForCommand", () => {
         platform: "Linux",
         context: { terminalFocus: false },
       }),
-      "Ctrl+D",
+      "Ctrl+Shift+G",
     );
     assert.isNull(
       shortcutLabelForCommand(bindings, "diff.toggle", {
@@ -384,13 +387,13 @@ describe("chat/editor shortcuts", () => {
 
   it("matches diff.toggle shortcut outside terminal focus", () => {
     assert.isTrue(
-      isDiffToggleShortcut(event({ key: "d", metaKey: true }), DEFAULT_BINDINGS, {
+      isDiffToggleShortcut(event({ key: "g", metaKey: true, shiftKey: true }), DEFAULT_BINDINGS, {
         platform: "MacIntel",
         context: { terminalFocus: false },
       }),
     );
     assert.isFalse(
-      isDiffToggleShortcut(event({ key: "d", metaKey: true }), DEFAULT_BINDINGS, {
+      isDiffToggleShortcut(event({ key: "g", metaKey: true, shiftKey: true }), DEFAULT_BINDINGS, {
         platform: "MacIntel",
         context: { terminalFocus: true },
       }),

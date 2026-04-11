@@ -98,13 +98,13 @@ export function useSidebarKeyboardNav({
       updateThreadJumpHintsVisibility(false);
     };
 
-    window.addEventListener("keydown", onWindowKeyDown);
-    window.addEventListener("keyup", onWindowKeyUp);
+    window.addEventListener("keydown", onWindowKeyDown, { capture: true });
+    window.addEventListener("keyup", onWindowKeyUp, { capture: true });
     window.addEventListener("blur", onWindowBlur);
 
     return () => {
-      window.removeEventListener("keydown", onWindowKeyDown);
-      window.removeEventListener("keyup", onWindowKeyUp);
+      window.removeEventListener("keydown", onWindowKeyDown, { capture: true });
+      window.removeEventListener("keyup", onWindowKeyUp, { capture: true });
       window.removeEventListener("blur", onWindowBlur);
     };
   }, [

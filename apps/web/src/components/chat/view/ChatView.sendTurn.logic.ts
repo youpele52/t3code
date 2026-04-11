@@ -299,36 +299,7 @@ export function useOnSend(input: UseOnSendInput) {
 
     let turnStartSucceeded = false;
     await (async () => {
-      let firstComposerImageName: string | null = null;
-      if (composerImagesSnapshot.length > 0) {
-        const firstComposerImage = composerImagesSnapshot[0];
-        if (firstComposerImage) {
-          firstComposerImageName = firstComposerImage.name;
-        }
-      }
-      let titleSeed = trimmedPrompt;
-      if (!titleSeed) {
-        if (firstComposerImageName) {
-          titleSeed = `Image: ${firstComposerImageName}`;
-        } else if (composerTerminalContextsSnapshot.length > 0) {
-          const { formatTerminalContextLabel } = await import("../../../lib/terminalContext");
-          titleSeed = formatTerminalContextLabel(composerTerminalContextsSnapshot[0]!);
-        } else {
-          titleSeed = "New thread";
-        }
-      }
-      const { truncate } = await import("@bigcode/shared/String");
-      const title = truncate(titleSeed);
       const threadCreateModelSelection: ModelSelection = modelSel;
-
-      if (isFirstMessage && isServer) {
-        await api.orchestration.dispatchCommand({
-          type: "thread.meta.update",
-          commandId: newCommandId(),
-          threadId: threadIdForSend,
-          title,
-        });
-      }
 
       if (isServer) {
         await inputRef.current.persistThreadSettingsForNextTurn({
@@ -348,7 +319,7 @@ export function useOnSend(input: UseOnSendInput) {
                 ? {
                     createThread: {
                       projectId: project.id,
-                      title,
+                      title: thread.title,
                       modelSelection: threadCreateModelSelection,
                       runtimeMode: runMode,
                       interactionMode: interactMode,
@@ -382,7 +353,6 @@ export function useOnSend(input: UseOnSendInput) {
           attachments: turnAttachments,
         },
         modelSelection: modelSel,
-        titleSeed: title,
         runtimeMode: runMode,
         interactionMode: interactMode,
         ...(bootstrap ? { bootstrap } : {}),

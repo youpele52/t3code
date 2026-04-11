@@ -77,9 +77,9 @@ function ChatRouteGlobalShortcuts() {
       }
     };
 
-    window.addEventListener("keydown", onWindowKeyDown);
+    window.addEventListener("keydown", onWindowKeyDown, { capture: true });
     return () => {
-      window.removeEventListener("keydown", onWindowKeyDown);
+      window.removeEventListener("keydown", onWindowKeyDown, { capture: true });
     };
   }, [
     activeDraftThread,

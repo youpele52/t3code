@@ -510,15 +510,6 @@ describe("ProviderCommandReactor", () => {
 
     await Effect.runPromise(
       harness.engine.dispatch({
-        type: "thread.meta.update",
-        commandId: CommandId.makeUnsafe("cmd-thread-title-seed"),
-        threadId: ThreadId.makeUnsafe("thread-1"),
-        title: seededTitle,
-      }),
-    );
-
-    await Effect.runPromise(
-      harness.engine.dispatch({
         type: "thread.turn.start",
         commandId: CommandId.makeUnsafe("cmd-turn-start-title"),
         threadId: ThreadId.makeUnsafe("thread-1"),
@@ -532,12 +523,20 @@ describe("ProviderCommandReactor", () => {
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
         runtimeMode: "approval-required",
         createdAt: now,
+        modelSelection: {
+          provider: "copilot",
+          model: "gpt-5",
+        },
       }),
     );
 
     await waitFor(() => harness.generateThreadTitle.mock.calls.length === 1);
     expect(harness.generateThreadTitle.mock.calls[0]?.[0]).toMatchObject({
       message: "Please investigate reconnect failures after restarting the session.",
+      modelSelection: {
+        provider: "copilot",
+        model: "gpt-5",
+      },
     });
 
     await waitFor(async () => {
@@ -592,22 +591,12 @@ describe("ProviderCommandReactor", () => {
     expect(thread?.title).toBe("Keep this custom title");
   });
 
-  it("matches the client-seeded title even when the outgoing prompt is reformatted", async () => {
+  it("generates a thread title even when the outgoing prompt is reformatted", async () => {
     const harness = await createHarness();
     const now = new Date().toISOString();
-    const seededTitle = "Fix reconnect spinner on resume";
     harness.generateThreadTitle.mockReturnValue(
       Effect.succeed({
         title: "Reconnect spinner resume bug",
-      }),
-    );
-
-    await Effect.runPromise(
-      harness.engine.dispatch({
-        type: "thread.meta.update",
-        commandId: CommandId.makeUnsafe("cmd-thread-title-formatted-seed"),
-        threadId: ThreadId.makeUnsafe("thread-1"),
-        title: seededTitle,
       }),
     );
 
@@ -622,7 +611,6 @@ describe("ProviderCommandReactor", () => {
           text: "[effort:high]\\n\\nFix reconnect spinner on resume",
           attachments: [],
         },
-        titleSeed: seededTitle,
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
         runtimeMode: "approval-required",
         createdAt: now,

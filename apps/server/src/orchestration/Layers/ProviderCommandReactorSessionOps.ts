@@ -400,19 +400,17 @@ export const maybeGenerateThreadTitleForFirstTurn = (services: SessionOpServices
     readonly cwd: string;
     readonly messageText: string;
     readonly attachments?: ReadonlyArray<ChatAttachment>;
+    readonly modelSelection: ModelSelection;
     readonly titleSeed?: string;
   }) {
-    const { textGeneration, serverSettingsService, orchestrationEngine, resolveThread } = services;
+    const { textGeneration, orchestrationEngine, resolveThread } = services;
     const attachments = input.attachments ?? [];
     yield* Effect.gen(function* () {
-      const { textGenerationModelSelection: modelSelection } =
-        yield* serverSettingsService.getSettings;
-
       const generated = yield* textGeneration.generateThreadTitle({
         cwd: input.cwd,
         message: input.messageText,
         ...(attachments.length > 0 ? { attachments } : {}),
-        modelSelection,
+        modelSelection: input.modelSelection,
       });
       if (!generated) return;
 

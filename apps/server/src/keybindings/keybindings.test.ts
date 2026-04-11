@@ -171,6 +171,7 @@ it.layer(NodeServices.layer)("keybindings", (it) => {
         DEFAULT_KEYBINDINGS.map((binding) => [binding.command, binding.key] as const),
       );
 
+      assert.equal(defaultsByCommand.get("diff.toggle"), "mod+shift+g");
       assert.equal(defaultsByCommand.get("thread.previous"), "mod+shift+[");
       assert.equal(defaultsByCommand.get("thread.next"), "mod+shift+]");
       assert.equal(defaultsByCommand.get("thread.jump.1"), "mod+1");

@@ -214,10 +214,14 @@ export const makeProviderCommandHandlers = Effect.gen(function* () {
         ...generationInput,
       }).pipe(Effect.forkScoped);
 
-      if (canReplaceThreadTitle(thread.title, event.payload.titleSeed)) {
+      if (
+        event.payload.modelSelection &&
+        canReplaceThreadTitle(thread.title, event.payload.titleSeed)
+      ) {
         yield* maybeGenerateThreadTitleForFirstTurn(sessionOpServices)({
           threadId: event.payload.threadId,
           cwd: generationCwd,
+          modelSelection: event.payload.modelSelection,
           ...generationInput,
         }).pipe(Effect.forkScoped);
       }
