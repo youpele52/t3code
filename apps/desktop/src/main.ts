@@ -75,7 +75,7 @@ const NOTIFICATIONS_SHOW_CHANNEL = "desktop:notifications-show";
 const BASE_DIR =
   process.env.BIGCODE_HOME?.trim() ||
   process.env.T3CODE_HOME?.trim() ||
-  Path.join(OS.homedir(), ".t3");
+  Path.join(OS.homedir(), ".bigCode");
 const STATE_DIR = Path.join(BASE_DIR, "userdata");
 const DESKTOP_SCHEME = "t3";
 const ROOT_DIR = Path.resolve(__dirname, "../../..");
