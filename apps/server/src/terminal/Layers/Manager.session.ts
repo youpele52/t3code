@@ -7,6 +7,7 @@ import { Effect, Equal, Option } from "effect";
 
 import { increment, terminalRestartsTotal } from "../../observability/Metrics";
 import {
+  TerminalCwdError,
   TerminalNotRunningError,
   TerminalSessionLookupError,
   type TerminalManagerShape,
@@ -54,7 +55,7 @@ export interface SessionApiContext {
   deleteHistory: (threadId: string, terminalId: string) => Effect.Effect<void>;
   deleteAllHistoryForThread: (threadId: string) => Effect.Effect<void>;
   evictInactiveSessionsIfNeeded: () => Effect.Effect<void>;
-  assertValidCwd: (cwd: string) => Effect.Effect<void>;
+  assertValidCwd: (cwd: string) => Effect.Effect<void, TerminalCwdError>;
   snapshot: (session: TerminalSessionState) => TerminalSessionSnapshot;
   terminalEventListeners: Set<(event: TerminalEvent) => Effect.Effect<void>>;
 }

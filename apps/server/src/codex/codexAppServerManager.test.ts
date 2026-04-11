@@ -17,6 +17,10 @@ import {
   resolveCodexModelForAccount,
 } from "./codexAppServerManager";
 
+vi.mock("./codexVersionCheck", () => ({
+  assertSupportedCodexCliVersion: vi.fn(),
+}));
+
 const asThreadId = (value: string): ThreadId => ThreadId.makeUnsafe(value);
 
 function createSendTurnHarness() {
@@ -418,6 +422,9 @@ describe("startSession", () => {
   });
 
   it("fails fast with an upgrade message when codex is below the minimum supported version", async () => {
+    const { assertSupportedCodexCliVersion } = await import("./codexVersionCheck");
+    const versionCheck = vi.mocked(assertSupportedCodexCliVersion);
+
     const manager = new CodexAppServerManager();
     const events: Array<{ method: string; kind: string; message?: string }> = [];
     manager.on("event", (event) => {
@@ -428,22 +435,11 @@ describe("startSession", () => {
       });
     });
 
-    const versionCheck = vi
-      .spyOn(
-        manager as unknown as {
-          assertSupportedCodexCliVersion: (input: {
-            binaryPath: string;
-            cwd: string;
-            homePath?: string;
-          }) => void;
-        },
-        "assertSupportedCodexCliVersion",
-      )
-      .mockImplementation(() => {
-        throw new Error(
-          "Codex CLI v0.36.0 is too old for bigCode. Upgrade to v0.37.0 or newer and restart bigCode.",
-        );
-      });
+    versionCheck.mockImplementationOnce(() => {
+      throw new Error(
+        "Codex CLI v0.36.0 is too old for bigCode. Upgrade to v0.37.0 or newer and restart bigCode.",
+      );
+    });
 
     try {
       await expect(
@@ -466,7 +462,7 @@ describe("startSession", () => {
         },
       ]);
     } finally {
-      versionCheck.mockRestore();
+      versionCheck.mockReset();
       manager.stopAll();
     }
   });
@@ -497,23 +493,28 @@ describe("sendTurn", () => {
       resumeCursor: { threadId: "thread_1" },
     });
     expect(requireSession).toHaveBeenCalledWith("thread_1");
-    expect(sendRequest).toHaveBeenCalledWith(context, "turn/start", {
-      threadId: "thread_1",
-      input: [
-        {
-          type: "text",
-          text: "Inspect this image",
-          text_elements: [],
-        },
-        {
-          type: "image",
-          url: "data:image/png;base64,AAAA",
-        },
-      ],
-      model: "gpt-5.3-codex",
-      serviceTier: "fast",
-      effort: "high",
-    });
+    expect(sendRequest).toHaveBeenCalledWith(
+      context,
+      "turn/start",
+      {
+        threadId: "thread_1",
+        input: [
+          {
+            type: "text",
+            text: "Inspect this image",
+            text_elements: [],
+          },
+          {
+            type: "image",
+            url: "data:image/png;base64,AAAA",
+          },
+        ],
+        model: "gpt-5.3-codex",
+        serviceTier: "fast",
+        effort: "high",
+      },
+      undefined,
+    );
     expect(updateSession).toHaveBeenCalledWith(context, {
       status: "running",
       activeTurnId: "turn_1",
@@ -534,16 +535,21 @@ describe("sendTurn", () => {
       ],
     });
 
-    expect(sendRequest).toHaveBeenCalledWith(context, "turn/start", {
-      threadId: "thread_1",
-      input: [
-        {
-          type: "image",
-          url: "data:image/png;base64,BBBB",
-        },
-      ],
-      model: "gpt-5.3-codex",
-    });
+    expect(sendRequest).toHaveBeenCalledWith(
+      context,
+      "turn/start",
+      {
+        threadId: "thread_1",
+        input: [
+          {
+            type: "image",
+            url: "data:image/png;base64,BBBB",
+          },
+        ],
+        model: "gpt-5.3-codex",
+      },
+      undefined,
+    );
   });
 
   it("passes Codex plan mode as a collaboration preset on turn/start", async () => {
@@ -555,25 +561,30 @@ describe("sendTurn", () => {
       interactionMode: "plan",
     });
 
-    expect(sendRequest).toHaveBeenCalledWith(context, "turn/start", {
-      threadId: "thread_1",
-      input: [
-        {
-          type: "text",
-          text: "Plan the work",
-          text_elements: [],
-        },
-      ],
-      model: "gpt-5.3-codex",
-      collaborationMode: {
-        mode: "plan",
-        settings: {
-          model: "gpt-5.3-codex",
-          reasoning_effort: "medium",
-          developer_instructions: CODEX_PLAN_MODE_DEVELOPER_INSTRUCTIONS,
+    expect(sendRequest).toHaveBeenCalledWith(
+      context,
+      "turn/start",
+      {
+        threadId: "thread_1",
+        input: [
+          {
+            type: "text",
+            text: "Plan the work",
+            text_elements: [],
+          },
+        ],
+        model: "gpt-5.3-codex",
+        collaborationMode: {
+          mode: "plan",
+          settings: {
+            model: "gpt-5.3-codex",
+            reasoning_effort: "medium",
+            developer_instructions: CODEX_PLAN_MODE_DEVELOPER_INSTRUCTIONS,
+          },
         },
       },
-    });
+      undefined,
+    );
   });
 
   it("passes Codex default mode as a collaboration preset on turn/start", async () => {
@@ -585,25 +596,30 @@ describe("sendTurn", () => {
       interactionMode: "default",
     });
 
-    expect(sendRequest).toHaveBeenCalledWith(context, "turn/start", {
-      threadId: "thread_1",
-      input: [
-        {
-          type: "text",
-          text: "PLEASE IMPLEMENT THIS PLAN:\n- step 1",
-          text_elements: [],
-        },
-      ],
-      model: "gpt-5.3-codex",
-      collaborationMode: {
-        mode: "default",
-        settings: {
-          model: "gpt-5.3-codex",
-          reasoning_effort: "medium",
-          developer_instructions: CODEX_DEFAULT_MODE_DEVELOPER_INSTRUCTIONS,
+    expect(sendRequest).toHaveBeenCalledWith(
+      context,
+      "turn/start",
+      {
+        threadId: "thread_1",
+        input: [
+          {
+            type: "text",
+            text: "PLEASE IMPLEMENT THIS PLAN:\n- step 1",
+            text_elements: [],
+          },
+        ],
+        model: "gpt-5.3-codex",
+        collaborationMode: {
+          mode: "default",
+          settings: {
+            model: "gpt-5.3-codex",
+            reasoning_effort: "medium",
+            developer_instructions: CODEX_DEFAULT_MODE_DEVELOPER_INSTRUCTIONS,
+          },
         },
       },
-    });
+      undefined,
+    );
   });
 
   it("keeps the session model when interaction mode is set without an explicit model", async () => {
@@ -616,25 +632,30 @@ describe("sendTurn", () => {
       interactionMode: "plan",
     });
 
-    expect(sendRequest).toHaveBeenCalledWith(context, "turn/start", {
-      threadId: "thread_1",
-      input: [
-        {
-          type: "text",
-          text: "Plan this with my current session model",
-          text_elements: [],
-        },
-      ],
-      model: "gpt-5.2-codex",
-      collaborationMode: {
-        mode: "plan",
-        settings: {
-          model: "gpt-5.2-codex",
-          reasoning_effort: "medium",
-          developer_instructions: CODEX_PLAN_MODE_DEVELOPER_INSTRUCTIONS,
+    expect(sendRequest).toHaveBeenCalledWith(
+      context,
+      "turn/start",
+      {
+        threadId: "thread_1",
+        input: [
+          {
+            type: "text",
+            text: "Plan this with my current session model",
+            text_elements: [],
+          },
+        ],
+        model: "gpt-5.2-codex",
+        collaborationMode: {
+          mode: "plan",
+          settings: {
+            model: "gpt-5.2-codex",
+            reasoning_effort: "medium",
+            developer_instructions: CODEX_PLAN_MODE_DEVELOPER_INSTRUCTIONS,
+          },
         },
       },
-    });
+      undefined,
+    );
   });
 
   it("rejects empty turn input", async () => {
@@ -666,10 +687,15 @@ describe("thread checkpoint control", () => {
     const result = await manager.readThread(asThreadId("thread_1"));
 
     expect(requireSession).toHaveBeenCalledWith("thread_1");
-    expect(sendRequest).toHaveBeenCalledWith(context, "thread/read", {
-      threadId: "thread_1",
-      includeTurns: true,
-    });
+    expect(sendRequest).toHaveBeenCalledWith(
+      context,
+      "thread/read",
+      {
+        threadId: "thread_1",
+        includeTurns: true,
+      },
+      undefined,
+    );
     expect(result).toEqual({
       threadId: "thread_1",
       turns: [
@@ -695,10 +721,15 @@ describe("thread checkpoint control", () => {
 
     const result = await manager.readThread(asThreadId("thread_1"));
 
-    expect(sendRequest).toHaveBeenCalledWith(context, "thread/read", {
-      threadId: "thread_1",
-      includeTurns: true,
-    });
+    expect(sendRequest).toHaveBeenCalledWith(
+      context,
+      "thread/read",
+      {
+        threadId: "thread_1",
+        includeTurns: true,
+      },
+      undefined,
+    );
     expect(result).toEqual({
       threadId: "thread_1",
       turns: [
@@ -721,10 +752,15 @@ describe("thread checkpoint control", () => {
 
     const result = await manager.rollbackThread(asThreadId("thread_1"), 2);
 
-    expect(sendRequest).toHaveBeenCalledWith(context, "thread/rollback", {
-      threadId: "thread_1",
-      numTurns: 2,
-    });
+    expect(sendRequest).toHaveBeenCalledWith(
+      context,
+      "thread/rollback",
+      {
+        threadId: "thread_1",
+        numTurns: 2,
+      },
+      undefined,
+    );
     expect(updateSession).toHaveBeenCalledWith(context, {
       status: "ready",
       activeTurnId: undefined,

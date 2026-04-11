@@ -95,7 +95,7 @@ describe("formatWorktreePathForDisplay", () => {
     expect(result).toBe("t3code-4e609bb8");
   });
 
-  it("uses the final segment even when outside ~/.t3/worktrees", () => {
+  it("uses the final segment even when outside ~/.bigCode/worktrees", () => {
     const result = formatWorktreePathForDisplay("/tmp/custom-worktrees/my-worktree");
     expect(result).toBe("my-worktree");
   });

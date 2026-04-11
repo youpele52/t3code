@@ -219,7 +219,7 @@ export const makeTerminalManagerWithOptions = Effect.fn("makeTerminalManagerWith
         Effect.provideService(FileSystem.FileSystem, fileSystem),
       );
 
-    const assertValidCwd = (cwd: string): Effect.Effect<void, never> =>
+    const assertValidCwd = (cwd: string): Effect.Effect<void, TerminalCwdError> =>
       Effect.gen(function* () {
         const stats = yield* fileSystem.stat(cwd).pipe(
           Effect.mapError(
@@ -237,7 +237,7 @@ export const makeTerminalManagerWithOptions = Effect.fn("makeTerminalManagerWith
             reason: "notDirectory",
           });
         }
-      }).pipe(Effect.orDie, Effect.withSpan("terminal.assertValidCwd"));
+      }).pipe(Effect.withSpan("terminal.assertValidCwd"));
 
     const getSession = Effect.fn("terminal.getSession")(function* (
       threadId: string,
