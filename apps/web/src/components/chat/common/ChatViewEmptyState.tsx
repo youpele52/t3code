@@ -1,4 +1,5 @@
 import { isElectron } from "../../../config/env";
+import { BigCodeLogo } from "../../sidebar/SidebarProjectItem";
 import { SidebarTrigger } from "../../ui/sidebar";
 
 export function ChatViewEmptyState() {
@@ -18,8 +19,8 @@ export function ChatViewEmptyState() {
         </div>
       )}
       <div className="flex flex-1 items-center justify-center">
-        <div className="text-center">
-          <p className="text-sm">Select a thread or create a new one to get started.</p>
+        <div className="flex flex-col items-center justify-center gap-4 opacity-40">
+          <BigCodeLogo className="h-8" />
         </div>
       </div>
     </div>

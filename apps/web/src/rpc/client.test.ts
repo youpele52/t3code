@@ -134,6 +134,8 @@ describe("WsRpcAtomClient", () => {
           ...DEFAULT_SERVER_SETTINGS.providers.claudeAgent,
           enabled: false,
         },
+        copilot: DEFAULT_SERVER_SETTINGS.providers.copilot,
+        opencode: DEFAULT_SERVER_SETTINGS.providers.opencode,
       },
     };
     const requestPromise = runRpc((client) => client(WS_METHODS.serverGetSettings, {}));
@@ -184,6 +186,8 @@ describe("WsRpcAtomClient", () => {
           ...DEFAULT_SERVER_SETTINGS.providers.claudeAgent,
           enabled: false,
         },
+        copilot: DEFAULT_SERVER_SETTINGS.providers.copilot,
+        opencode: DEFAULT_SERVER_SETTINGS.providers.opencode,
       },
     };
     const registry = AtomRegistry.make();

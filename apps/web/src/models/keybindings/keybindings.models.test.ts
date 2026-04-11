@@ -293,11 +293,12 @@ describe("shortcutLabelForCommand", () => {
       }),
       "Ctrl+Shift+G",
     );
-    assert.isNull(
+    assert.strictEqual(
       shortcutLabelForCommand(bindings, "diff.toggle", {
         platform: "Linux",
         context: { terminalFocus: true },
       }),
+      "Ctrl+Shift+G",
     );
     assert.strictEqual(
       shortcutLabelForCommand(bindings, "terminal.split", {

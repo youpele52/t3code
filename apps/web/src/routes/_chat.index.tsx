@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
+import { BigCodeLogo } from "../components/sidebar/SidebarProjectItem";
 import { isElectron } from "../config/env";
 import { SidebarTrigger } from "../components/ui/sidebar";
 import { useStore } from "../stores/main";
@@ -38,8 +39,8 @@ function ChatIndexRouteView() {
             </span>
           </div>
         ) : (
-          <div className="text-center">
-            <p className="text-sm">Select a thread or create a new one to get started.</p>
+          <div className="flex flex-col items-center justify-center gap-4 opacity-40">
+            <BigCodeLogo className="h-8" />
           </div>
         )}
       </div>

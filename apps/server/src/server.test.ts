@@ -236,6 +236,7 @@ const buildAppUnderTest = (options?: {
       ),
       Layer.provide(
         Layer.mock(GitManager)({
+          invalidateStatus: () => Effect.void,
           ...options?.layers?.gitManager,
         }),
       ),

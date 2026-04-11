@@ -26,11 +26,11 @@ export type SortableProjectHandleProps = Pick<
   "attributes" | "listeners" | "setActivatorNodeRef"
 >;
 
-export function T3Wordmark() {
+export function BigCodeLogo({ className = "h-4" }: { className?: string }) {
   return (
     <svg
       aria-labelledby="bigcode-logo-title"
-      className="h-4 w-auto shrink-0"
+      className={`w-auto shrink-0 ${className}`}
       role="img"
       viewBox="-167.83 0 1609.12 1609.12"
       xmlns="http://www.w3.org/2000/svg"

@@ -722,11 +722,10 @@ it.layer(GitManagerTestLayer)("GitManager", (it) => {
 
   it.effect("status returns an explicit non-repo result for missing directories", () =>
     Effect.gen(function* () {
-      const cwd = yield* makeTempDir("t3code-git-manager-missing-dir-");
-      const fs = yield* FileSystem.FileSystem;
+      const parentDir = yield* makeTempDir("t3code-git-manager-missing-dir-");
       const { manager } = yield* makeManager();
 
-      yield* fs.remove(cwd, { recursive: true });
+      const cwd = path.join(parentDir, "missing");
 
       const status = yield* manager.status({ cwd });
 
@@ -2427,7 +2426,7 @@ it.layer(GitManagerTestLayer)("GitManager", (it) => {
             headRepositoryOwnerLogin: "binbandit",
           },
           repositoryCloneUrls: {
-            "binbandit/t3code": {
+            "binbandit/bigCode": {
               url: forkDir,
               sshUrl: forkDir,
             },

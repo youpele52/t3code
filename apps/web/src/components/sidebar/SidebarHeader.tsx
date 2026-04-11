@@ -3,7 +3,7 @@ import { isElectron } from "../../config/env";
 import { APP_STAGE_LABEL, APP_VERSION } from "../../config/branding";
 import { SidebarHeader as UiSidebarHeader, SidebarTrigger } from "../ui/sidebar";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { T3Wordmark } from "./SidebarProjectItem";
+import { BigCodeLogo } from "./SidebarProjectItem";
 
 function SidebarWordmark() {
   return (
@@ -17,7 +17,7 @@ function SidebarWordmark() {
               className="ml-1 flex min-w-0 flex-1 cursor-pointer items-center gap-1 rounded-md outline-hidden ring-ring transition-colors hover:text-foreground focus-visible:ring-2"
               to="/"
             >
-              <T3Wordmark />
+              <BigCodeLogo />
               <span className="rounded-full bg-muted/50 px-1.5 py-0.5 text-[8px] font-medium tracking-[0.18em] text-muted-foreground/60">
                 {APP_STAGE_LABEL.toLowerCase()}
               </span>

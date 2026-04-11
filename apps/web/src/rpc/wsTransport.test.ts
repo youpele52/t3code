@@ -420,24 +420,32 @@ describe("WsTransport", () => {
         callOrder.push("runtime:dispose");
       }),
     };
+    const closeSession = vi.fn(function (this: { session: unknown; runtime: typeof runtime }) {
+      return WsTransport.prototype["closeSession"].call(this, this.session as never);
+    });
     const transport = {
       disposed: false,
-      clientScope: {} as never,
-      runtime,
+      session: {
+        clientScope: {} as never,
+        runtime,
+      },
+      closeSession,
     } as unknown as WsTransport;
 
-    WsTransport.prototype.dispose.call(transport);
+    const disposePromise = WsTransport.prototype.dispose.call(transport);
 
     expect(runtime.runPromise).toHaveBeenCalledTimes(1);
     expect(runtime.dispose).not.toHaveBeenCalled();
     expect((transport as unknown as { disposed: boolean }).disposed).toBe(true);
 
     resolveClose();
+    await disposePromise;
 
     await waitFor(() => {
       expect(runtime.dispose).toHaveBeenCalledTimes(1);
     });
 
     expect(callOrder).toEqual(["close:start", "close:done", "runtime:dispose"]);
+    expect(closeSession).toHaveBeenCalledTimes(1);
   });
 });

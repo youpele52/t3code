@@ -1245,16 +1245,16 @@ describe("isLatestTurnSettled", () => {
     completedAt: "2026-02-27T21:10:06.000Z",
   } as const;
 
-  it("returns false while the same turn is still active in a running session", () => {
+  it("returns true once the latest turn has completion timestamps", () => {
     expect(
       isLatestTurnSettled(latestTurn, {
         orchestrationStatus: "running",
         activeTurnId: TurnId.makeUnsafe("turn-1"),
       }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
-  it("returns false while any turn is running to avoid stale latest-turn banners", () => {
+  it("returns false while a different turn is still active in the session", () => {
     expect(
       isLatestTurnSettled(latestTurn, {
         orchestrationStatus: "running",
@@ -1293,7 +1293,7 @@ describe("deriveActiveWorkStartedAt", () => {
     completedAt: "2026-02-27T21:10:06.000Z",
   } as const;
 
-  it("prefers the in-flight turn start when the latest turn is not settled", () => {
+  it("falls back to the local send timestamp when the latest turn is already settled", () => {
     expect(
       deriveActiveWorkStartedAt(
         latestTurn,
@@ -1303,7 +1303,7 @@ describe("deriveActiveWorkStartedAt", () => {
         },
         "2026-02-27T21:11:00.000Z",
       ),
-    ).toBe("2026-02-27T21:10:00.000Z");
+    ).toBe("2026-02-27T21:11:00.000Z");
   });
 
   it("falls back to sendStartedAt once the latest turn is settled", () => {
@@ -1335,17 +1335,31 @@ describe("deriveActiveWorkStartedAt", () => {
 });
 
 describe("PROVIDER_OPTIONS", () => {
-  it("advertises Claude as available while keeping Cursor as a placeholder", () => {
+  it("advertises the currently supported providers while keeping Cursor as a placeholder", () => {
     const claude = PROVIDER_OPTIONS.find((option) => option.value === "claudeAgent");
+    const copilot = PROVIDER_OPTIONS.find((option) => option.value === "copilot");
+    const opencode = PROVIDER_OPTIONS.find((option) => option.value === "opencode");
     const cursor = PROVIDER_OPTIONS.find((option) => option.value === "cursor");
     expect(PROVIDER_OPTIONS).toEqual([
       { value: "codex", label: "Codex", available: true },
       { value: "claudeAgent", label: "Claude", available: true },
+      { value: "copilot", label: "Copilot", available: true },
+      { value: "opencode", label: "OpenCode", available: true },
       { value: "cursor", label: "Cursor", available: false },
     ]);
     expect(claude).toEqual({
       value: "claudeAgent",
       label: "Claude",
+      available: true,
+    });
+    expect(copilot).toEqual({
+      value: "copilot",
+      label: "Copilot",
+      available: true,
+    });
+    expect(opencode).toEqual({
+      value: "opencode",
+      label: "OpenCode",
       available: true,
     });
     expect(cursor).toEqual({

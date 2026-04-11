@@ -93,7 +93,7 @@ vi.mock("./wsRpcClient", () => {
   };
 });
 
-vi.mock("./contextMenuFallback", () => ({
+vi.mock("../utils/context-menu", () => ({
   showContextMenuFallback: showContextMenuFallbackMock,
 }));
 
