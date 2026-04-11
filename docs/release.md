@@ -69,6 +69,7 @@ This document covers how to run desktop releases from one tag, first without sig
   - macOS `x64`
   - Linux `x64`
   - Windows `x64`
+- `release_asset_assembly` then merges the macOS updater manifests, stages `install.sh` and `install.ps1`, verifies the assembled payload, and uploads the final release-style bundle as a GitHub Actions artifact.
 - Those `main`-push artifacts are uploaded as GitHub Actions workflow artifacts for validation, not published as a public GitHub Release.
 - Public curl-installable assets are only published by `.github/workflows/release.yml` on version tags like `v1.2.3`.
 

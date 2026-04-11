@@ -168,9 +168,6 @@ jobs:
             done
           done
 
-          cp apps/marketing/public/install.sh release-publish/install.sh
-          cp apps/marketing/public/install.ps1 release-publish/install.ps1
-
           if [[ "${{ matrix.platform }}" == "mac" && "${{ matrix.arch }}" != "arm64" ]]; then
             if [[ -f release-publish/latest-mac.yml ]]; then
               mv release-publish/latest-mac.yml "release-publish/latest-mac-${{ matrix.arch }}.yml"
@@ -182,4 +179,62 @@ jobs:
         with:
           name: desktop-release-assets-${{ matrix.platform }}-${{ matrix.arch }}
           path: release-publish/*
+          if-no-files-found: error
+
+  release_asset_assembly:
+    name: Release Asset Assembly
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [desktop_release_build, release_smoke]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+
+      - name: Download all desktop artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: desktop-release-assets-*
+          merge-multiple: true
+          path: release-assets
+
+      - name: Stage bootstrap installers
+        run: |
+          cp apps/marketing/public/install.sh release-assets/install.sh
+          cp apps/marketing/public/install.ps1 release-assets/install.ps1
+
+      - name: Merge macOS updater manifests
+        run: |
+          node scripts/merge-mac-update-manifests.ts \
+            release-assets/latest-mac.yml \
+            release-assets/latest-mac-x64.yml
+          rm -f release-assets/latest-mac-x64.yml
+
+      - name: Verify assembled release payload
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -f release-assets/install.sh
+          test -f release-assets/install.ps1
+          test -f release-assets/latest-mac.yml
+
+          shopt -s nullglob
+          dmg_files=(release-assets/*.dmg)
+          appimage_files=(release-assets/*.AppImage)
+          exe_files=(release-assets/*.exe)
+
+          (( ${#dmg_files[@]} > 0 ))
+          (( ${#appimage_files[@]} > 0 ))
+          (( ${#exe_files[@]} > 0 ))
+
+      - name: Upload assembled release payload
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-release-assembled
+          path: release-assets/*
           if-no-files-found: error
