@@ -21,6 +21,8 @@ Long term maintainability is a core priority. Before adding new functionality, c
 
 - `apps/server`: Named `"t3"` in package.json (not `@bigcode/server`). Node.js/Bun WebSocket server. Starts provider sub-processes, serves the React web app, manages provider sessions. Use `--filter=t3` in turbo commands.
 - `apps/web`: `@bigcode/web`. React/Vite UI. Owns session UX, conversation/event rendering, and client-side state. Connects to the server via WebSocket at `/ws?token=<value>`.
+- `apps/desktop`: `@bigcode/desktop`. Electron desktop shell. Embeds the web app and provides native capabilities.
+- `apps/marketing`: `@bigcode/marketing`. Astro-based marketing website.
 - `packages/contracts`: `@bigcode/contracts`. Schema-only — no runtime logic. Has both a barrel `src/index.ts` (legacy) and subpath exports. Prefer direct subpath imports for new code: `import { ... } from "@bigcode/contracts/orchestration/..."`. TypeScript resolves directly to source (`"types": "./src/index.ts"`), no build needed for ESM consumers.
 - `packages/shared`: `@bigcode/shared`. Runtime utilities. **No barrel index** — always use subpath exports: `@bigcode/shared/git`, `@bigcode/shared/String`, `@bigcode/shared/Net`, etc.
 

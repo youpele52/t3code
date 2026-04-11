@@ -40,6 +40,38 @@ This document covers how to run desktop releases from one tag, first without sig
   - `electron-updater` reads `latest-mac.yml` for both Intel and Apple Silicon.
   - The workflow merges the per-arch mac manifests into one `latest-mac.yml` before publishing the GitHub Release.
 
+## Desktop bootstrap installers
+
+- Keep GitHub Releases as the source of truth for desktop binaries.
+- Publish the bootstrap scripts as GitHub Release assets:
+  - `install.sh`
+  - `install.ps1`
+- User-facing install commands:
+  - macOS/Linux: `curl -fsSL https://github.com/youpele52/bigCode/releases/latest/download/install.sh | sh`
+  - Windows: `powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://github.com/youpele52/bigCode/releases/latest/download/install.ps1 | iex"`
+- Installer behavior:
+  - prefer GitHub `releases/latest` when a stable release exists
+  - fall back to the general `releases` feed when only prereleases exist
+  - select the right asset by OS/arch:
+    - macOS `arm64` or `x64` DMG
+    - Linux `x64` AppImage
+    - Windows `x64` NSIS installer
+- The bootstrap script sources live in `apps/marketing/public/` and the release workflow copies them into `release-assets/` before publishing the GitHub Release.
+- For the current public repo setup, no GitHub auth token is required for the bootstrap installers.
+- GitHub `releases/latest/download/...` only resolves for the latest non-prerelease release. If you only have prereleases, use a tag-specific release URL until the first stable release exists.
+
+## CI vs release builds
+
+- Pushes to `main` run `.github/workflows/ci.yml`.
+- The `quality` job runs format check, lint, typecheck, tests, browser tests, and the desktop pipeline build.
+- After `quality` passes, `desktop_release_build` builds unsigned desktop release-style artifacts on:
+  - macOS `arm64`
+  - macOS `x64`
+  - Linux `x64`
+  - Windows `x64`
+- Those `main`-push artifacts are uploaded as GitHub Actions workflow artifacts for validation, not published as a public GitHub Release.
+- Public curl-installable assets are only published by `.github/workflows/release.yml` on version tags like `v1.2.3`.
+
 ## 0) npm OIDC trusted publishing setup (CLI)
 
 The workflow publishes the CLI with `bun publish` from `apps/server` after bumping

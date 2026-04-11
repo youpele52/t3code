@@ -20,6 +20,20 @@ Install and authenticate at least one provider:
 - **Copilot**: authenticate via GitHub CLI or VS Code
 - **OpenCode**: see [OpenCode docs](https://opencode.ai)
 
+### Desktop App
+
+Install the desktop app directly from GitHub Releases:
+
+```bash
+curl -fsSL https://github.com/youpele52/bigCode/releases/latest/download/install.sh | sh
+```
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://github.com/youpele52/bigCode/releases/latest/download/install.ps1 | iex"
+```
+
+`releases/latest/download/...` resolves only for the latest non-prerelease release. If only prereleases exist, use a tag-specific release URL instead.
+
 ### From Source
 
 ```bash
