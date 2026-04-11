@@ -53,6 +53,16 @@ function isNotGitRepositoryError(error: import("@bigcode/contracts").GitCommandE
 }
 
 function isMissingDirectoryError(error: unknown): error is PlatformError.PlatformError {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "_tag" in error &&
+    error._tag === "GitCommandError" &&
+    "cause" in error
+  ) {
+    return isMissingDirectoryError(error.cause);
+  }
+
   return (
     typeof error === "object" &&
     error !== null &&
