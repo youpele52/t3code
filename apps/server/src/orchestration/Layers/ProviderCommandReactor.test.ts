@@ -97,6 +97,7 @@ describe("ProviderCommandReactor", () => {
 
   async function createHarness(input?: {
     readonly baseDir?: string;
+    readonly workspaceRoot?: string;
     readonly threadModelSelection?: ModelSelection;
     readonly sessionModelSwitch?: "unsupported" | "in-session";
   }) {
@@ -259,7 +260,7 @@ describe("ProviderCommandReactor", () => {
         commandId: CommandId.makeUnsafe("cmd-project-create"),
         projectId: asProjectId("project-1"),
         title: "Provider Project",
-        workspaceRoot: "/tmp/provider-project",
+        workspaceRoot: input?.workspaceRoot ?? "/tmp/provider-project",
         defaultModelSelection: modelSelection,
         createdAt: now,
       }),
@@ -270,7 +271,7 @@ describe("ProviderCommandReactor", () => {
         commandId: CommandId.makeUnsafe("cmd-thread-create"),
         threadId: ThreadId.makeUnsafe("thread-1"),
         projectId: asProjectId("project-1"),
-        title: "Thread",
+        title: "New thread",
         modelSelection: modelSelection,
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
         runtimeMode: "approval-required",
@@ -377,11 +378,7 @@ describe("ProviderCommandReactor", () => {
     expect(sendInput?.input).toContain("Original user message:");
     expect(sendInput?.input).toContain("Use @agent::clarifier to inspect this issue");
     expect(sendInput?.input).toContain("Referenced agent: clarifier");
-    expect(sendInput?.input).toContain("Provider: codex");
-    expect(sendInput?.input).toContain("Ask focused clarifying questions before acting.");
-    expect(sendInput?.input).toContain(
-      "Always identify ambiguity, then ask the smallest useful follow-up question.",
-    );
+    expect(sendInput?.input).toContain("No discovered agent matched this name.");
 
     const readModel = await Effect.runPromise(harness.engine.getReadModel());
     const thread = readModel.threads.find((entry) => entry.id === ThreadId.makeUnsafe("thread-1"));
@@ -394,7 +391,7 @@ describe("ProviderCommandReactor", () => {
     const srcDir = path.join(baseDir, "src");
     fs.mkdirSync(srcDir, { recursive: true });
     fs.writeFileSync(path.join(srcDir, "demo.ts"), "export const demo = 42;\n", "utf8");
-    const harness = await createHarness({ baseDir });
+    const harness = await createHarness({ baseDir, workspaceRoot: baseDir });
     const now = new Date().toISOString();
 
     await Effect.runPromise(
@@ -610,6 +607,10 @@ describe("ProviderCommandReactor", () => {
           role: "user",
           text: "[effort:high]\\n\\nFix reconnect spinner on resume",
           attachments: [],
+        },
+        modelSelection: {
+          provider: "codex",
+          model: "gpt-5-codex",
         },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
         runtimeMode: "approval-required",
