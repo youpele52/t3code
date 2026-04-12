@@ -193,6 +193,14 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
     directories: {
       buildResources: "apps/desktop/resources",
     },
+    // Native .node addons cannot be loaded from inside an asar archive.
+    // These packages must be unpacked to app.asar.unpacked/ at build time.
+    asarUnpack: [
+      "**/node_modules/node-pty/**",
+      "**/node_modules/@github/copilot/prebuilds/**",
+      "**/node_modules/@github/copilot/clipboard/**",
+      "**/node_modules/@msgpackr-extract/**",
+    ],
   };
 
   const publishConfig = resolveGitHubPublishConfig();
