@@ -54,6 +54,8 @@ function createBaseServerConfig(): ServerConfig {
         auth: { status: "authenticated" },
         checkedAt: NOW_ISO,
         models: [],
+        slashCommands: [],
+        skills: [],
       },
     ],
     discovery: {

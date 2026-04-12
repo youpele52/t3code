@@ -1,12 +1,13 @@
 import { Outlet, createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
 
-import { useHandleNewThread } from "../hooks/useHandleNewThread";
+import { resolveContextualNewThreadOptions, useHandleNewThread } from "../hooks/useHandleNewThread";
 import { isTerminalFocused } from "../lib/terminalFocus";
 import { resolveShortcutCommand } from "../models/keybindings";
 import { selectThreadTerminalState } from "../stores/terminal";
 import { useTerminalStateStore } from "../stores/terminal";
 import { useThreadSelectionStore } from "../stores/thread";
+import { useCommandPaletteStore } from "../stores/ui";
 import { resolveSidebarNewThreadEnvMode } from "~/components/sidebar/Sidebar.logic";
 import { useSidebar } from "~/components/ui/sidebar";
 import { useSettings } from "~/hooks/useSettings";
@@ -25,10 +26,13 @@ function ChatRouteGlobalShortcuts() {
   );
   const appSettings = useSettings();
   const { toggleSidebar } = useSidebar();
+  const commandPaletteOpen = useCommandPaletteStore((state) => state.open);
 
   useEffect(() => {
     const onWindowKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return;
+
+      if (commandPaletteOpen) return;
 
       if (event.key === "Escape" && selectedThreadIdsSize > 0) {
         event.preventDefault();
@@ -67,12 +71,10 @@ function ChatRouteGlobalShortcuts() {
       if (command === "chat.new") {
         event.preventDefault();
         event.stopPropagation();
-        void handleNewThread(projectId, {
-          branch: activeThread?.branch ?? activeDraftThread?.branch ?? null,
-          worktreePath: activeThread?.worktreePath ?? activeDraftThread?.worktreePath ?? null,
-          envMode:
-            activeDraftThread?.envMode ?? (activeThread?.worktreePath ? "worktree" : "local"),
-        });
+        void handleNewThread(
+          projectId,
+          resolveContextualNewThreadOptions({ activeDraftThread, activeThread }),
+        );
         return;
       }
     };
@@ -91,6 +93,7 @@ function ChatRouteGlobalShortcuts() {
     selectedThreadIdsSize,
     terminalOpen,
     appSettings.defaultThreadEnvMode,
+    commandPaletteOpen,
     toggleSidebar,
   ]);
 
