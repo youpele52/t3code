@@ -22,15 +22,7 @@ Install and authenticate at least one provider:
 
 ### Desktop App
 
-Install the desktop app directly from GitHub Releases once a release has been published.
-
-Important:
-
-1. A successful `main` CI run does not publish install scripts or public release assets.
-2. Public install assets are only published by `.github/workflows/release.yml`.
-3. The bootstrap scripts below are fetched directly from the repository and then resolve the correct release asset automatically.
-4. You still need at least one published GitHub Release for the installer to download a desktop binary.
-5. To publish installable desktop assets, run the release workflow by pushing a version tag like `v1.2.3` or by using the workflow's `workflow_dispatch` input.
+Install the desktop app directly from GitHub Releases.
 
 #### macOS / Linux
 
@@ -44,9 +36,28 @@ curl -fsSL https://raw.githubusercontent.com/youpele52/bigCode/main/apps/marketi
 powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/youpele52/bigCode/main/apps/marketing/public/install.ps1 | iex"
 ```
 
-If no release has been published yet, the installer script will fail with a GitHub Releases error because there is no desktop binary available to download.
+#### Publishing a Release
 
-See [`docs/release.md`](./docs/release.md) for the release workflow and publishing steps.
+Releases are published automatically via GitHub Actions when you push a version tag:
+
+```bash
+# Create and push a version tag to trigger a release
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+The release workflow (`.github/workflows/release.yml`) will:
+
+1. Run quality checks (format, lint, typecheck, tests)
+2. Build desktop artifacts for all platforms (macOS arm64/x64, Linux x64, Windows x64)
+3. Publish the CLI package to npm
+4. Create a GitHub Release with all binaries attached
+
+You can also trigger a release manually via the GitHub Actions UI using `workflow_dispatch`.
+
+**Note:** The installer scripts above require at least one published GitHub Release. If no release exists, the installer will fail with a GitHub Releases error.
+
+See [`docs/release.md`](./docs/release.md) for detailed release workflow documentation, signing setup, and troubleshooting.
 
 ### From Source
 

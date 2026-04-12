@@ -230,6 +230,7 @@ jobs:
     name: Publish CLI to npm
     needs: [preflight, build]
     runs-on: ubuntu-24.04
+    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -264,7 +265,7 @@ jobs:
 
   release:
     name: Publish GitHub Release
-    needs: [preflight, build, publish_cli]
+    needs: [preflight, build]
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
