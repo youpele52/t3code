@@ -122,7 +122,7 @@ export const generateCopilotThreadTitleNative = (
   Effect.gen(function* () {
     const copilotSettings = yield* deps.serverSettingsService.getSettings.pipe(
       Effect.map((settings) => settings.providers.copilot),
-      Effect.catch(() => Effect.succeed(undefined)),
+      Effect.catch(() => Effect.void),
     );
     const binaryPath = copilotSettings?.binaryPath;
     const useCustomBinary = binaryPath !== undefined && binaryPath !== "copilot";
