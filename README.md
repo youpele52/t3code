@@ -50,8 +50,7 @@ The release workflow (`.github/workflows/release.yml`) will:
 
 1. Run quality checks (format, lint, typecheck, tests)
 2. Build desktop artifacts for all platforms (macOS arm64/x64, Linux x64, Windows x64)
-3. Publish the CLI package to npm
-4. Create a GitHub Release with all binaries attached
+3. Create a GitHub Release with all binaries attached
 
 You can also trigger a release manually via the GitHub Actions UI using `workflow_dispatch`.
 
