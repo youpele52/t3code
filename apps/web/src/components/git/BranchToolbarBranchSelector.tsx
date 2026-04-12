@@ -1,6 +1,6 @@
 import type { GitBranch } from "@bigcode/contracts";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDownIcon } from "lucide-react";
+import { ChevronDownIcon, GitBranchIcon } from "lucide-react";
 import {
   type CSSProperties,
   useCallback,
@@ -410,6 +410,7 @@ export function BranchToolbarBranchSelector({
         className="text-muted-foreground/70 hover:text-foreground/80"
         disabled={(isBranchesSearchPending && branches.length === 0) || isBranchActionPending}
       >
+        <GitBranchIcon className="size-3" />
         <span className="max-w-[240px] truncate">{triggerLabel}</span>
         <ChevronDownIcon />
       </ComboboxTrigger>

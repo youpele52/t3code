@@ -32,6 +32,7 @@ import {
 } from "~/lib/gitReactQuery";
 import { resolvePathLinkTarget } from "../../utils/terminal";
 import { readNativeApi } from "../../rpc/nativeApi";
+import { useComposerDraftStore } from "../../stores/composer";
 import { useStore } from "../../stores/main";
 import { useEffect } from "react";
 
@@ -78,6 +79,9 @@ export default function GitActionsControl({ gitCwd, activeThreadId }: GitActions
   const activeServerThread = useStore((store) =>
     activeThreadId ? store.threads.find((thread) => thread.id === activeThreadId) : undefined,
   );
+  const activeDraftThread = useComposerDraftStore((store) =>
+    activeThreadId ? store.getDraftThread(activeThreadId) : null,
+  );
   const queryClient = useQueryClient();
   const [isCommitDialogOpen, setIsCommitDialogOpen] = useState(false);
   const [dialogCommitMessage, setDialogCommitMessage] = useState("");
@@ -91,6 +95,10 @@ export default function GitActionsControl({ gitCwd, activeThreadId }: GitActions
   const isRepo = gitStatus?.isRepo ?? true;
   const hasOriginRemote = gitStatus?.hasOriginRemote ?? false;
   const gitStatusForActions = gitStatus;
+  const isSelectingDraftWorktreeBase =
+    !activeServerThread &&
+    activeDraftThread?.envMode === "worktree" &&
+    activeDraftThread.worktreePath === null;
 
   const allFiles = gitStatusForActions?.workingTree.files ?? [];
   const selectedFiles = allFiles.filter((f) => !excludedFiles.has(f.path));
@@ -122,18 +130,20 @@ export default function GitActionsControl({ gitCwd, activeThreadId }: GitActions
   });
 
   useEffect(() => {
-    if (isGitActionRunning) return;
+    if (isGitActionRunning || isSelectingDraftWorktreeBase) return;
 
     const branchUpdate = resolveLiveThreadBranchUpdate({
-      threadBranch: activeServerThread?.branch ?? null,
+      threadBranch: activeServerThread?.branch ?? activeDraftThread?.branch ?? null,
       gitStatus: gitStatusForActions,
     });
     if (!branchUpdate) return;
 
     persistThreadBranchSync(branchUpdate.branch);
   }, [
+    activeDraftThread?.branch,
     activeServerThread?.branch,
     gitStatusForActions,
+    isSelectingDraftWorktreeBase,
     isGitActionRunning,
     persistThreadBranchSync,
   ]);

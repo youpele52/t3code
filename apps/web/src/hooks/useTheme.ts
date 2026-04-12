@@ -13,21 +13,36 @@ const MEDIA_QUERY = "(prefers-color-scheme: dark)";
 let listeners: Array<() => void> = [];
 let lastSnapshot: ThemeSnapshot | null = null;
 let lastDesktopTheme: Theme | null = null;
+
+const serverSnapshot: ThemeSnapshot = {
+  theme: "system",
+  systemDark: false,
+};
+
 function emitChange() {
   for (const listener of listeners) listener();
 }
 
 function getSystemDark(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
   return window.matchMedia(MEDIA_QUERY).matches;
 }
 
 function getStored(): Theme {
+  if (typeof window === "undefined") {
+    return "system";
+  }
   const raw = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEYS[0]);
   if (raw === "light" || raw === "dark" || raw === "system") return raw;
   return "system";
 }
 
 function applyTheme(theme: Theme, suppressTransitions = false) {
+  if (typeof document === "undefined") {
+    return;
+  }
   if (suppressTransitions) {
     document.documentElement.classList.add("no-transitions");
   }
@@ -45,6 +60,9 @@ function applyTheme(theme: Theme, suppressTransitions = false) {
 }
 
 function syncDesktopTheme(theme: Theme) {
+  if (typeof window === "undefined") {
+    return;
+  }
   const bridge = window.desktopBridge;
   if (!bridge || lastDesktopTheme === theme) {
     return;
@@ -59,7 +77,9 @@ function syncDesktopTheme(theme: Theme) {
 }
 
 // Apply immediately on module load to prevent flash
-applyTheme(getStored());
+if (typeof window !== "undefined" && typeof document !== "undefined") {
+  applyTheme(getStored());
+}
 
 function getSnapshot(): ThemeSnapshot {
   const theme = getStored();
@@ -74,6 +94,10 @@ function getSnapshot(): ThemeSnapshot {
 }
 
 function subscribe(listener: () => void): () => void {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
   listeners.push(listener);
 
   // Listen for system preference changes
@@ -101,13 +125,16 @@ function subscribe(listener: () => void): () => void {
 }
 
 export function useTheme() {
-  const snapshot = useSyncExternalStore(subscribe, getSnapshot);
+  const snapshot = useSyncExternalStore(subscribe, getSnapshot, () => serverSnapshot);
   const theme = snapshot.theme;
 
   const resolvedTheme: "light" | "dark" =
     theme === "system" ? (snapshot.systemDark ? "dark" : "light") : theme;
 
   const setTheme = useCallback((next: Theme) => {
+    if (typeof window === "undefined") {
+      return;
+    }
     localStorage.setItem(STORAGE_KEY, next);
     for (const legacyKey of LEGACY_STORAGE_KEYS) {
       localStorage.removeItem(legacyKey);
