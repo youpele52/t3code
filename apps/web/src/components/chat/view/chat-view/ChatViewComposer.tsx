@@ -111,6 +111,7 @@ export function ChatViewComposer({
                   ? base.composerTerminalContexts
                   : []
               }
+              discoveredSkills={composer.discoveredSkills}
               onRemoveTerminalContext={base.removeComposerTerminalContextFromDraft}
               onChange={interactions.composerCommandHandlers.onPromptChange}
               onCommandKeyDown={interactions.composerCommandHandlers.onComposerCommandKey}
@@ -143,18 +144,16 @@ export function ChatViewComposer({
             </div>
           ) : (
             <div
-              ref={base.composerFooterRef}
               data-chat-composer-footer="true"
               data-chat-composer-footer-compact={
                 runtime.scrollBehavior.isComposerFooterCompact ? "true" : "false"
               }
               className={cn(
-                "flex min-w-0 flex-nowrap items-center justify-between gap-2 overflow-hidden px-2.5 pb-2.5 sm:px-3 sm:pb-3",
+                "flex min-w-0 flex-nowrap items-center justify-between gap-2 overflow-visible px-2.5 pb-2.5 sm:px-3 sm:pb-3",
                 runtime.scrollBehavior.isComposerFooterCompact ? "gap-1.5" : "gap-2 sm:gap-0",
               )}
             >
               <ComposerFooterLeading
-                ref={base.composerFooterLeadingRef}
                 isComposerFooterCompact={runtime.scrollBehavior.isComposerFooterCompact}
                 selectedProvider={composer.selectedProvider}
                 selectedModelForPickerWithCustomFallback={
@@ -176,11 +175,10 @@ export function ChatViewComposer({
                 onProviderUnlock={() => base.setProviderUnlocked(true)}
                 onToggleInteractionMode={runtime.toggleInteractionMode}
                 onTogglePlanSidebar={runtime.togglePlanSidebar}
-                onToggleRuntimeMode={runtime.toggleRuntimeMode}
+                onRuntimeModeChange={runtime.handleRuntimeModeChange}
               />
 
               <div
-                ref={base.composerFooterActionsRef}
                 data-chat-composer-actions="right"
                 data-chat-composer-primary-actions-compact={
                   runtime.scrollBehavior.isComposerPrimaryActionsCompact ? "true" : "false"

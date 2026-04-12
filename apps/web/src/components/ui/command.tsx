@@ -1,7 +1,6 @@
 "use client";
 
 import { Dialog as CommandDialogPrimitive } from "@base-ui/react/dialog";
-import { SearchIcon } from "lucide-react";
 import type * as React from "react";
 import { cn } from "~/lib/utils";
 import {
@@ -15,6 +14,7 @@ import {
   AutocompleteList,
   AutocompleteSeparator,
 } from "~/components/ui/autocomplete";
+import { Searchbar } from "~/components/ui/Searchbar";
 
 const CommandDialog = CommandDialogPrimitive.Root;
 
@@ -94,7 +94,7 @@ function CommandInput({
   ...props
 }: React.ComponentProps<typeof AutocompleteInput>) {
   return (
-    <div className="px-2.5 py-1.5">
+    <Searchbar>
       <AutocompleteInput
         autoFocus
         className={cn(
@@ -103,10 +103,10 @@ function CommandInput({
         )}
         placeholder={placeholder}
         size="lg"
-        startAddon={<SearchIcon />}
+        showTrigger={false}
         {...props}
       />
-    </div>
+    </Searchbar>
   );
 }
 

@@ -5,6 +5,7 @@ import { type TurnDiffSummary } from "../../../models/types";
 import { summarizeTurnDiffStats } from "../../../lib/turnDiffTree";
 import ChatMarkdown from "../common/ChatMarkdown";
 import { Button } from "../../ui/button";
+import { MessageCopyButton } from "../common/MessageCopyButton";
 import { DiffStatLabel, hasNonZeroStat } from "../diff-display/DiffStatLabel";
 import { ChangedFilesTree } from "../diff-display/ChangedFilesTree";
 import type { MessagesTimelineRow } from "./MessagesTimeline.logic";
@@ -19,8 +20,8 @@ interface AssistantMessageBodyProps {
   row: AssistantMessageRow;
   completionSummary: string | null;
   turnDiffSummaryByAssistantMessageId: Map<MessageId, TurnDiffSummary>;
-  allDirectoriesExpandedByTurnId: Record<string, boolean>;
-  onToggleAllDirectories: (turnId: TurnId) => void;
+  changedFilesExpandedByTurnId: Record<string, boolean>;
+  onSetChangedFilesExpanded: (turnId: TurnId, expanded: boolean) => void;
   onOpenTurnDiff: (turnId: TurnId, filePath?: string) => void;
   markdownCwd: string | undefined;
   resolvedTheme: "light" | "dark";
@@ -32,8 +33,8 @@ export function AssistantMessageBody({
   row,
   completionSummary,
   turnDiffSummaryByAssistantMessageId,
-  allDirectoriesExpandedByTurnId,
-  onToggleAllDirectories,
+  changedFilesExpandedByTurnId,
+  onSetChangedFilesExpanded,
   onOpenTurnDiff,
   markdownCwd,
   resolvedTheme,
@@ -63,20 +64,27 @@ export function AssistantMessageBody({
         <AssistantTurnDiffCard
           messageId={row.message.id}
           turnDiffSummaryByAssistantMessageId={turnDiffSummaryByAssistantMessageId}
-          allDirectoriesExpandedByTurnId={allDirectoriesExpandedByTurnId}
-          onToggleAllDirectories={onToggleAllDirectories}
+          changedFilesExpandedByTurnId={changedFilesExpandedByTurnId}
+          onSetChangedFilesExpanded={onSetChangedFilesExpanded}
           onOpenTurnDiff={onOpenTurnDiff}
           resolvedTheme={resolvedTheme}
         />
-        <p className="mt-1.5 text-[10px] text-muted-foreground/30">
-          {formatMessageMeta(
-            row.message.createdAt,
-            row.message.streaming
-              ? formatElapsed(row.durationStart, nowIso)
-              : formatElapsed(row.durationStart, row.message.completedAt),
-            timestampFormat,
-          )}
-        </p>
+        <div className="mt-1.5 flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            {row.showAssistantCopyButton && messageText.length > 0 ? (
+              <MessageCopyButton text={messageText} />
+            ) : null}
+          </div>
+          <p className="shrink-0 text-[10px] text-muted-foreground/30">
+            {formatMessageMeta(
+              row.message.createdAt,
+              row.message.streaming
+                ? formatElapsed(row.durationStart, nowIso)
+                : formatElapsed(row.durationStart, row.message.completedAt),
+              timestampFormat,
+            )}
+          </p>
+        </div>
       </div>
     </>
   );
@@ -85,8 +93,8 @@ export function AssistantMessageBody({
 interface AssistantTurnDiffCardProps {
   messageId: MessageId;
   turnDiffSummaryByAssistantMessageId: Map<MessageId, TurnDiffSummary>;
-  allDirectoriesExpandedByTurnId: Record<string, boolean>;
-  onToggleAllDirectories: (turnId: TurnId) => void;
+  changedFilesExpandedByTurnId: Record<string, boolean>;
+  onSetChangedFilesExpanded: (turnId: TurnId, expanded: boolean) => void;
   onOpenTurnDiff: (turnId: TurnId, filePath?: string) => void;
   resolvedTheme: "light" | "dark";
 }
@@ -94,8 +102,8 @@ interface AssistantTurnDiffCardProps {
 function AssistantTurnDiffCard({
   messageId,
   turnDiffSummaryByAssistantMessageId,
-  allDirectoriesExpandedByTurnId,
-  onToggleAllDirectories,
+  changedFilesExpandedByTurnId,
+  onSetChangedFilesExpanded,
   onOpenTurnDiff,
   resolvedTheme,
 }: AssistantTurnDiffCardProps) {
@@ -106,7 +114,7 @@ function AssistantTurnDiffCard({
 
   const summaryStat = summarizeTurnDiffStats(checkpointFiles);
   const changedFileCountLabel = String(checkpointFiles.length);
-  const allDirectoriesExpanded = allDirectoriesExpandedByTurnId[turnSummary.turnId] ?? true;
+  const allDirectoriesExpanded = changedFilesExpandedByTurnId[turnSummary.turnId] ?? true;
 
   return (
     <div className="mt-2 rounded-lg border border-border/80 bg-card/45 p-2.5">
@@ -126,7 +134,7 @@ function AssistantTurnDiffCard({
             size="xs"
             variant="outline"
             data-scroll-anchor-ignore
-            onClick={() => onToggleAllDirectories(turnSummary.turnId)}
+            onClick={() => onSetChangedFilesExpanded(turnSummary.turnId, !allDirectoriesExpanded)}
           >
             {allDirectoriesExpanded ? "Collapse all" : "Expand all"}
           </Button>

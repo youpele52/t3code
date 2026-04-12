@@ -287,6 +287,9 @@ export const defaultSubprocessChecker = Effect.fn("terminal.defaultSubprocessChe
 
 export function shouldExcludeTerminalEnvKey(key: string): boolean {
   const normalizedKey = key.toUpperCase();
+  if (normalizedKey.startsWith("BIGCODE_")) {
+    return true;
+  }
   if (normalizedKey.startsWith("T3CODE_")) {
     return true;
   }

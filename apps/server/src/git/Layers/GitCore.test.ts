@@ -219,7 +219,10 @@ it.layer(TestLayer)("git integration", (it) => {
 
         const seenChunks: string[][] = [];
         const core = yield* makeIsolatedGitCore((input) => {
-          if (input.args.join(" ") !== "check-ignore --no-index -z --stdin") {
+          if (
+            input.args.join(" ") !==
+            "-c core.fsmonitor=false -c core.untrackedCache=false check-ignore --no-index -z --stdin"
+          ) {
             return Effect.fail(
               new GitCommandError({
                 operation: input.operation,

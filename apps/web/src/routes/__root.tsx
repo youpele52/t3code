@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-router";
 
 import { APP_DISPLAY_NAME } from "../config/branding";
+import { CommandPalette } from "../components/layout/CommandPalette";
 import { AppSidebarLayout } from "../components/layout/AppSidebarLayout";
 import { Button } from "../components/ui/button";
 import { AnchoredToastProvider, ToastProvider } from "../components/ui/toast";
@@ -52,9 +53,11 @@ function RootRouteView() {
         <PendingApprovalNavigation />
         <TaskCompletionNotifications />
         <WebSocketConnectionSurface>
-          <AppSidebarLayout>
-            <Outlet />
-          </AppSidebarLayout>
+          <CommandPalette>
+            <AppSidebarLayout>
+              <Outlet />
+            </AppSidebarLayout>
+          </CommandPalette>
         </WebSocketConnectionSurface>
       </AnchoredToastProvider>
     </ToastProvider>

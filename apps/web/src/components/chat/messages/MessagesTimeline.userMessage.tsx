@@ -122,7 +122,7 @@ export const UserMessageBody = memo(function UserMessageBody(props: {
         }
 
         return (
-          <div className="wrap-break-word whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+          <div className="whitespace-pre-wrap wrap-break-word text-sm leading-relaxed text-foreground">
             {inlineNodes}
           </div>
         );
@@ -154,7 +154,7 @@ export const UserMessageBody = memo(function UserMessageBody(props: {
     }
 
     return (
-      <div className="wrap-break-word whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+      <div className="whitespace-pre-wrap wrap-break-word text-sm leading-relaxed text-foreground">
         {inlineNodes}
       </div>
     );
@@ -165,8 +165,8 @@ export const UserMessageBody = memo(function UserMessageBody(props: {
   }
 
   return (
-    <p className="whitespace-pre-wrap wrap-break-word text-sm leading-relaxed text-foreground">
+    <div className="whitespace-pre-wrap wrap-break-word text-sm leading-relaxed text-foreground">
       {renderUserMessageTextWithMentionChips(props.text)}
-    </p>
+    </div>
   );
 });

@@ -50,6 +50,8 @@ const TEST_PROVIDERS: ReadonlyArray<ServerProvider> = [
         },
       },
     ],
+    slashCommands: [],
+    skills: [],
   },
   {
     provider: "claudeAgent",
@@ -108,6 +110,8 @@ const TEST_PROVIDERS: ReadonlyArray<ServerProvider> = [
         },
       },
     ],
+    slashCommands: [],
+    skills: [],
   },
 ];
 

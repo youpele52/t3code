@@ -13,20 +13,35 @@ The file must be a JSON array of rules:
 ]
 ```
 
-See the full schema for more details: [`packages/contracts/src/keybindings.ts`](packages/contracts/src/keybindings.ts)
+See the full schema for more details: [`packages/contracts/src/server/keybindings.ts`](packages/contracts/src/server/keybindings.ts)
 
 ## Defaults
 
 ```json
 [
   { "key": "mod+j", "command": "terminal.toggle" },
+  { "key": "mod+b", "command": "sidebar.toggle" },
   { "key": "mod+d", "command": "terminal.split", "when": "terminalFocus" },
   { "key": "mod+n", "command": "terminal.new", "when": "terminalFocus" },
   { "key": "mod+w", "command": "terminal.close", "when": "terminalFocus" },
+  { "key": "mod+shift+g", "command": "diff.toggle", "when": "!terminalFocus" },
+  { "key": "mod+k", "command": "commandPalette.toggle", "when": "!terminalFocus" },
+  { "key": "mod+n", "command": "chat.new", "when": "!terminalFocus" },
   { "key": "mod+n", "command": "chat.new", "when": "!terminalFocus" },
   { "key": "mod+shift+o", "command": "chat.new", "when": "!terminalFocus" },
   { "key": "mod+shift+n", "command": "chat.newLocal", "when": "!terminalFocus" },
-  { "key": "mod+o", "command": "editor.openFavorite" }
+  { "key": "mod+o", "command": "editor.openFavorite" },
+  { "key": "mod+shift+[", "command": "thread.previous" },
+  { "key": "mod+shift+]", "command": "thread.next" },
+  { "key": "mod+1", "command": "thread.jump.1" },
+  { "key": "mod+2", "command": "thread.jump.2" },
+  { "key": "mod+3", "command": "thread.jump.3" },
+  { "key": "mod+4", "command": "thread.jump.4" },
+  { "key": "mod+5", "command": "thread.jump.5" },
+  { "key": "mod+6", "command": "thread.jump.6" },
+  { "key": "mod+7", "command": "thread.jump.7" },
+  { "key": "mod+8", "command": "thread.jump.8" },
+  { "key": "mod+9", "command": "thread.jump.9" }
 ]
 ```
 
@@ -50,6 +65,9 @@ Invalid rules are ignored. Invalid config files are ignored. Warnings are logged
 - `terminal.split`: split terminal (in focused terminal context by default)
 - `terminal.new`: create new terminal (in focused terminal context by default)
 - `terminal.close`: close/kill the focused terminal (in focused terminal context by default)
+- `diff.toggle`: open/close the diff panel
+- `commandPalette.toggle`: open or close the global command palette
+- `sidebar.toggle`: open/close the sidebar
 - `chat.new`: create a new chat thread preserving the active thread's branch/worktree state
 - `chat.newLocal`: create a new chat thread for the active project in a new environment (local/worktree determined by app settings (default `local`))
 - `editor.openFavorite`: open current project/worktree in the last-used editor

@@ -5,7 +5,6 @@ import { APP_DISPLAY_NAME, APP_SERVER_NAME } from "../config/branding";
 import { type SlowRpcAckRequest, useSlowRpcAckRequests } from "../rpc/requestLatencyState";
 import { useServerConfig } from "../rpc/serverState";
 import {
-  exhaustWsReconnectIfStillWaiting,
   getWsConnectionStatus,
   getWsConnectionUiState,
   setBrowserOnlineStatus,
@@ -15,11 +14,15 @@ import {
   WS_RECONNECT_MAX_ATTEMPTS,
 } from "../rpc/wsConnectionState";
 import { getWsRpcClient } from "../rpc/wsRpcClient";
+import {
+  shouldAutoReconnect,
+  shouldRestartStalledReconnect,
+  type WsAutoReconnectTrigger,
+} from "./WebSocketConnectionSurface.logic";
 import { Button } from "./ui/button";
 import { toastManager } from "./ui/toast";
 
 const FORCED_WS_RECONNECT_DEBOUNCE_MS = 5_000;
-type WsAutoReconnectTrigger = "focus" | "online";
 
 const connectionTimeFormatter = new Intl.DateTimeFormat(undefined, {
   day: "numeric",
@@ -85,28 +88,6 @@ function describeSlowRpcAckToast(requests: ReadonlyArray<SlowRpcAckRequest>): Re
   const thresholdSeconds = Math.round((requests[0]?.thresholdMs ?? 0) / 1000);
 
   return `${count} request${count === 1 ? "" : "s"} waiting longer than ${thresholdSeconds}s.`;
-}
-
-export function shouldAutoReconnect(
-  status: WsConnectionStatus,
-  trigger: WsAutoReconnectTrigger,
-): boolean {
-  const uiState = getWsConnectionUiState(status);
-
-  if (trigger === "online") {
-    return (
-      uiState === "offline" ||
-      uiState === "reconnecting" ||
-      uiState === "error" ||
-      status.reconnectPhase === "exhausted"
-    );
-  }
-
-  return (
-    status.online &&
-    status.hasConnected &&
-    (uiState === "reconnecting" || status.reconnectPhase === "exhausted")
-  );
 }
 
 function buildBlockingCopy(
@@ -359,7 +340,12 @@ export function WebSocketConnectionCoordinator() {
     const nextRetryAt = status.nextRetryAt;
     const timeoutMs = Math.max(0, new Date(nextRetryAt).getTime() - Date.now()) + 1_500;
     const timeoutId = window.setTimeout(() => {
-      exhaustWsReconnectIfStillWaiting(nextRetryAt);
+      const currentStatus = getWsConnectionStatus();
+      if (!shouldRestartStalledReconnect(currentStatus, nextRetryAt)) {
+        return;
+      }
+
+      runReconnect(false);
     }, timeoutMs);
 
     return () => {

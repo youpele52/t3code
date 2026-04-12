@@ -20,6 +20,7 @@ import {
   sanitizeRemoteName,
   normalizeRemoteUrl,
   parseRemoteFetchUrls,
+  isMissingGitCwdError,
 } from "./GitCoreUtils.ts";
 import { type GitHelpers } from "./GitCoreExecutor.ts";
 import type { GitStatusOpsResult } from "./GitStatus.ts";
@@ -116,6 +117,16 @@ export function makeGitBranchOps(
         timeoutMs: 10_000,
         allowNonZeroExit: true,
       },
+    ).pipe(
+      Effect.catchIf(isMissingGitCwdError, () =>
+        Effect.succeed({
+          code: 128,
+          stdout: "",
+          stderr: "fatal: not a git repository",
+          stdoutTruncated: false,
+          stderrTruncated: false,
+        }),
+      ),
     );
 
     if (localBranchResult.code !== 0) {

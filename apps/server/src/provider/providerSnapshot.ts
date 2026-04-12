@@ -3,6 +3,8 @@ import type {
   ServerProvider,
   ServerProviderAuth,
   ServerProviderModel,
+  ServerProviderSkill,
+  ServerProviderSlashCommand,
   ServerProviderState,
 } from "@bigcode/contracts";
 import { Effect, Stream } from "effect";
@@ -131,6 +133,8 @@ export function buildServerProvider(input: {
   enabled: boolean;
   checkedAt: string;
   models: ReadonlyArray<ServerProviderModel>;
+  slashCommands?: ReadonlyArray<ServerProviderSlashCommand>;
+  skills?: ReadonlyArray<ServerProviderSkill>;
   probe: ProviderProbeResult;
 }): ServerProvider {
   return {
@@ -143,6 +147,8 @@ export function buildServerProvider(input: {
     checkedAt: input.checkedAt,
     ...(input.probe.message ? { message: input.probe.message } : {}),
     models: input.models,
+    slashCommands: [...(input.slashCommands ?? [])],
+    skills: [...(input.skills ?? [])],
   };
 }
 

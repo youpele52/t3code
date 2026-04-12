@@ -5,7 +5,7 @@ import {
   type ServerDiscoveredSkill,
 } from "@bigcode/contracts";
 import { memo, useLayoutEffect, useRef } from "react";
-import { type ComposerSlashCommand, type ComposerTriggerKind } from "../../../logic/composer";
+import { type ComposerTriggerKind } from "../../../logic/composer";
 import { BotIcon } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { Badge } from "../../ui/badge";
@@ -24,7 +24,7 @@ export type ComposerCommandItem =
   | {
       id: string;
       type: "slash-command";
-      command: ComposerSlashCommand;
+      command: string;
       label: string;
       description: string;
     }
@@ -103,7 +103,9 @@ export const ComposerCommandMenu = memo(function ComposerCommandMenu(props: {
               ? "Searching workspace files..."
               : props.triggerKind === "path"
                 ? "No matching agents, files, or folders."
-                : "No matching command."}
+                : props.triggerKind === "skill"
+                  ? "No matching skills."
+                  : "No matching command."}
           </p>
         )}
       </div>

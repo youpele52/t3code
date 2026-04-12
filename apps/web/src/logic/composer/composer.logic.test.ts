@@ -24,6 +24,30 @@ describe("detectComposerTrigger", () => {
     });
   });
 
+  it("detects a $skill trigger at cursor", () => {
+    const text = "Use $review";
+    const trigger = detectComposerTrigger(text, text.length);
+
+    expect(trigger).toEqual({
+      kind: "skill",
+      query: "review",
+      rangeStart: "Use ".length,
+      rangeEnd: text.length,
+    });
+  });
+
+  it("detects an empty $skill trigger immediately after the sigil", () => {
+    const text = "Use $";
+    const trigger = detectComposerTrigger(text, text.length);
+
+    expect(trigger).toEqual({
+      kind: "skill",
+      query: "",
+      rangeStart: "Use ".length,
+      rangeEnd: text.length,
+    });
+  });
+
   it("detects slash command token while typing command name", () => {
     const text = "/mo";
     const trigger = detectComposerTrigger(text, text.length);

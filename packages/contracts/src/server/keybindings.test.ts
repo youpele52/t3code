@@ -41,6 +41,12 @@ it.effect("parses keybinding rules", () =>
     });
     assert.strictEqual(parsedDiffToggle.command, "diff.toggle");
 
+    const parsedCommandPalette = yield* decode(KeybindingRule, {
+      key: "mod+k",
+      command: "commandPalette.toggle",
+    });
+    assert.strictEqual(parsedCommandPalette.command, "commandPalette.toggle");
+
     const parsedLocal = yield* decode(KeybindingRule, {
       key: "mod+shift+n",
       command: "chat.newLocal",
@@ -159,6 +165,7 @@ it.effect("drops unknown fields in resolved keybinding rules", () =>
       const view = parsed as Record<string, unknown>;
       assert.strictEqual("key" in view, false);
       assert.strictEqual(view.command, "terminal.toggle");
+      return undefined;
     }),
   ),
 );

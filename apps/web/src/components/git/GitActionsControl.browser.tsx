@@ -9,18 +9,30 @@ const GIT_CWD = "/repo/project";
 const BRANCH_NAME = "feature/toast-scope";
 
 const {
+  activeDraftThreadRef,
+  hasServerThreadRef,
   invalidateGitQueriesSpy,
   invalidateGitStatusQuerySpy,
   runStackedActionMutateAsyncSpy,
+  setDraftThreadContextSpy,
   setThreadBranchSpy,
   toastAddSpy,
   toastCloseSpy,
   toastPromiseSpy,
   toastUpdateSpy,
 } = vi.hoisted(() => ({
+  activeDraftThreadRef: {
+    current: null as null | {
+      branch: string | null;
+      worktreePath: string | null;
+      envMode?: "local" | "worktree";
+    },
+  },
+  hasServerThreadRef: { current: true },
   invalidateGitQueriesSpy: vi.fn(() => Promise.resolve()),
   invalidateGitStatusQuerySpy: vi.fn(() => Promise.resolve()),
   runStackedActionMutateAsyncSpy: vi.fn(() => new Promise<never>(() => undefined)),
+  setDraftThreadContextSpy: vi.fn(),
   setThreadBranchSpy: vi.fn(),
   toastAddSpy: vi.fn(() => "toast-1"),
   toastCloseSpy: vi.fn(),
@@ -105,8 +117,16 @@ vi.mock("~/components/ui/toast", () => ({
   },
 }));
 
-vi.mock("~/editorPreferences", () => ({
+vi.mock("../../models/editor", () => ({
   openInPreferredEditor: vi.fn(),
+}));
+
+vi.mock("../../stores/composer", () => ({
+  useComposerDraftStore: (selector: (state: unknown) => unknown) =>
+    selector({
+      getDraftThread: () => activeDraftThreadRef.current,
+      setDraftThreadContext: setDraftThreadContextSpy,
+    }),
 }));
 
 vi.mock("~/lib/gitReactQuery", () => ({
@@ -133,22 +153,24 @@ vi.mock("~/lib/utils", async () => {
   };
 });
 
-vi.mock("~/nativeApi", () => ({
+vi.mock("../../rpc/nativeApi", () => ({
   readNativeApi: vi.fn(() => null),
 }));
 
-vi.mock("~/store", () => ({
+vi.mock("../../stores/main", () => ({
   useStore: (selector: (state: unknown) => unknown) =>
     selector({
       setThreadBranch: setThreadBranchSpy,
-      threads: [
-        { id: THREAD_A, branch: BRANCH_NAME, worktreePath: null },
-        { id: THREAD_B, branch: BRANCH_NAME, worktreePath: null },
-      ],
+      threads: hasServerThreadRef.current
+        ? [
+            { id: THREAD_A, branch: BRANCH_NAME, worktreePath: null },
+            { id: THREAD_B, branch: BRANCH_NAME, worktreePath: null },
+          ]
+        : [],
     }),
 }));
 
-vi.mock("~/terminal-links", () => ({
+vi.mock("../../utils/terminal", () => ({
   resolvePathLinkTarget: vi.fn(),
 }));
 
@@ -177,6 +199,8 @@ describe("GitActionsControl thread-scoped progress toast", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.clearAllMocks();
+    activeDraftThreadRef.current = null;
+    hasServerThreadRef.current = true;
     document.body.innerHTML = "";
   });
 
@@ -230,6 +254,58 @@ describe("GitActionsControl thread-scoped progress toast", () => {
           type: "loading",
         }),
       );
+    } finally {
+      await screen.unmount();
+      host.remove();
+    }
+  });
+
+  it("syncs the live branch into the active draft thread when no server thread exists", async () => {
+    hasServerThreadRef.current = false;
+    activeDraftThreadRef.current = {
+      branch: null,
+      worktreePath: null,
+    };
+
+    const host = document.createElement("div");
+    document.body.append(host);
+    const screen = await render(<GitActionsControl gitCwd={GIT_CWD} activeThreadId={THREAD_A} />, {
+      container: host,
+    });
+
+    try {
+      await Promise.resolve();
+
+      expect(setDraftThreadContextSpy).toHaveBeenCalledWith(THREAD_A, {
+        branch: BRANCH_NAME,
+        worktreePath: null,
+      });
+      expect(setThreadBranchSpy).not.toHaveBeenCalled();
+    } finally {
+      await screen.unmount();
+      host.remove();
+    }
+  });
+
+  it("keeps an explicit new-worktree base branch on draft threads", async () => {
+    hasServerThreadRef.current = false;
+    activeDraftThreadRef.current = {
+      branch: "feature/base-branch",
+      worktreePath: null,
+      envMode: "worktree",
+    };
+
+    const host = document.createElement("div");
+    document.body.append(host);
+    const screen = await render(<GitActionsControl gitCwd={GIT_CWD} activeThreadId={THREAD_A} />, {
+      container: host,
+    });
+
+    try {
+      await Promise.resolve();
+
+      expect(setDraftThreadContextSpy).not.toHaveBeenCalled();
+      expect(setThreadBranchSpy).not.toHaveBeenCalled();
     } finally {
       await screen.unmount();
       host.remove();

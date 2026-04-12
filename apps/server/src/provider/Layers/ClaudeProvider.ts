@@ -3,10 +3,14 @@ import type {
   ModelCapabilities,
   ServerProvider,
   ServerProviderModel,
+  ServerProviderSlashCommand,
 } from "@bigcode/contracts";
 import { Cache, Duration, Effect, Equal, Layer, Option, Result, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
-import { query as claudeQuery } from "@anthropic-ai/claude-agent-sdk";
+import {
+  query as claudeQuery,
+  type SlashCommand as ClaudeSlashCommand,
+} from "@anthropic-ai/claude-agent-sdk";
 
 import {
   buildServerProvider,
@@ -22,7 +26,6 @@ import { ClaudeProvider } from "../Services/ClaudeProvider";
 import { ServerSettingsService } from "../../ws/serverSettings";
 import { ServerSettingsError } from "@bigcode/contracts";
 import {
-  adjustModelsForSubscription,
   claudeAuthMetadata,
   extractClaudeAuthMethodFromOutput,
   extractSubscriptionTypeFromOutput,
@@ -103,51 +106,101 @@ export function getClaudeModelCapabilities(model: string | null | undefined): Mo
 }
 
 // Re-export for external consumers that imported these from this module.
-export { parseClaudeAuthStatusFromOutput, adjustModelsForSubscription } from "./ClaudeProviderAuth";
-
-// ── SDK capability probe ────────────────────────────────────────────
+export { parseClaudeAuthStatusFromOutput } from "./ClaudeProviderAuth";
 
 const CAPABILITIES_PROBE_TIMEOUT_MS = 8_000;
 
-/**
- * Probe account information by spawning a lightweight Claude Agent SDK
- * session and reading the initialization result.
- *
- * The prompt is never sent to the Anthropic API — we abort immediately
- * after the local initialization phase completes. This gives us the
- * user's subscription type without incurring any token cost.
- */
-const probeClaudeCapabilities = (binaryPath: string) => {
-  const abort = new AbortController();
-  return Effect.tryPromise(async () => {
-    const q = claudeQuery({
-      prompt: ".",
+function nonEmptyProbeString(value: string | undefined | null): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+function dedupeSlashCommands(
+  commands: ReadonlyArray<ServerProviderSlashCommand>,
+): ReadonlyArray<ServerProviderSlashCommand> {
+  const commandsByName = new Map<string, ServerProviderSlashCommand>();
+
+  for (const command of commands) {
+    const name = nonEmptyProbeString(command.name);
+    if (!name) {
+      continue;
+    }
+
+    const key = name.toLowerCase();
+    const existing = commandsByName.get(key);
+    if (!existing) {
+      commandsByName.set(key, { ...command, name });
+      continue;
+    }
+
+    commandsByName.set(key, {
+      ...existing,
+      ...(existing.description
+        ? {}
+        : command.description
+          ? { description: command.description }
+          : {}),
+      ...(existing.input?.hint
+        ? {}
+        : command.input?.hint
+          ? { input: { hint: command.input.hint } }
+          : {}),
+    });
+  }
+
+  return [...commandsByName.values()];
+}
+
+function parseClaudeInitializationCommands(
+  commands: ReadonlyArray<ClaudeSlashCommand> | undefined,
+): ReadonlyArray<ServerProviderSlashCommand> {
+  return dedupeSlashCommands(
+    (commands ?? []).flatMap((command) => {
+      const name = nonEmptyProbeString(command.name);
+      if (!name) {
+        return [];
+      }
+
+      const description = nonEmptyProbeString(command.description);
+      const argumentHint = nonEmptyProbeString(command.argumentHint);
+
+      return [
+        {
+          name,
+          ...(description ? { description } : {}),
+          ...(argumentHint ? { input: { hint: argumentHint } } : {}),
+        } satisfies ServerProviderSlashCommand,
+      ];
+    }),
+  );
+}
+
+const probeClaudeCapabilities = (binaryPath: string) =>
+  Effect.tryPromise(async () => {
+    const abortController = new AbortController();
+    const queryRuntime = claudeQuery({
+      prompt: "",
       options: {
-        persistSession: false,
         pathToClaudeCodeExecutable: binaryPath,
-        abortController: abort,
+        abortController,
         maxTurns: 0,
-        settingSources: [],
+        settingSources: ["user", "project", "local"],
         allowedTools: [],
         stderr: () => {},
       },
     });
-    const init = await q.initializationResult();
-    return { subscriptionType: init.account?.subscriptionType };
-  }).pipe(
-    Effect.ensuring(
-      Effect.sync(() => {
-        if (!abort.signal.aborted) abort.abort();
-      }),
-    ),
-    Effect.timeoutOption(CAPABILITIES_PROBE_TIMEOUT_MS),
-    Effect.result,
-    Effect.map((result) => {
-      if (Result.isFailure(result)) return undefined;
-      return Option.isSome(result.success) ? result.success.value : undefined;
-    }),
-  );
-};
+
+    try {
+      const init = await queryRuntime.initializationResult();
+      return {
+        subscriptionType: init.account?.subscriptionType,
+        slashCommands: parseClaudeInitializationCommands(init.commands),
+      };
+    } finally {
+      abortController.abort();
+      queryRuntime.close();
+    }
+  }).pipe(Effect.timeout(CAPABILITIES_PROBE_TIMEOUT_MS));
 
 const runClaudeCommand = Effect.fn("runClaudeCommand")(function* (args: ReadonlyArray<string>) {
   const claudeSettings = yield* Effect.service(ServerSettingsService).pipe(
@@ -162,6 +215,9 @@ const runClaudeCommand = Effect.fn("runClaudeCommand")(function* (args: Readonly
 
 export const checkClaudeProviderStatus = Effect.fn("checkClaudeProviderStatus")(function* (
   resolveSubscriptionType?: (binaryPath: string) => Effect.Effect<string | undefined>,
+  resolveSlashCommands?: (
+    binaryPath: string,
+  ) => Effect.Effect<ReadonlyArray<ServerProviderSlashCommand> | undefined>,
 ): Effect.fn.Return<
   ServerProvider,
   ServerSettingsError,
@@ -257,6 +313,14 @@ export const checkClaudeProviderStatus = Effect.fn("checkClaudeProviderStatus")(
     });
   }
 
+  const slashCommands =
+    (resolveSlashCommands
+      ? yield* resolveSlashCommands(claudeSettings.binaryPath).pipe(
+          Effect.orElseSucceed(() => undefined),
+        )
+      : undefined) ?? [];
+  const dedupedSlashCommands = dedupeSlashCommands(slashCommands);
+
   // ── Auth check + subscription detection ────────────────────────────
 
   const authProbe = yield* runClaudeCommand(["auth", "status"]).pipe(
@@ -267,16 +331,18 @@ export const checkClaudeProviderStatus = Effect.fn("checkClaudeProviderStatus")(
   let subscriptionType: string | undefined;
   let authMethod: string | undefined;
 
-  if (Result.isSuccess(authProbe) && Option.isSome(authProbe.success)) {
+  if (resolveSubscriptionType) {
+    subscriptionType = yield* resolveSubscriptionType(claudeSettings.binaryPath).pipe(
+      Effect.orElseSucceed(() => undefined),
+    );
+  }
+
+  if (!subscriptionType && Result.isSuccess(authProbe) && Option.isSome(authProbe.success)) {
     subscriptionType = extractSubscriptionTypeFromOutput(authProbe.success.value);
     authMethod = extractClaudeAuthMethodFromOutput(authProbe.success.value);
+  } else if (Result.isSuccess(authProbe) && Option.isSome(authProbe.success)) {
+    authMethod = extractClaudeAuthMethodFromOutput(authProbe.success.value);
   }
-
-  if (!subscriptionType && resolveSubscriptionType) {
-    subscriptionType = yield* resolveSubscriptionType(claudeSettings.binaryPath);
-  }
-
-  const resolvedModels = adjustModelsForSubscription(models, subscriptionType);
 
   if (Result.isFailure(authProbe)) {
     const error = authProbe.failure;
@@ -284,7 +350,8 @@ export const checkClaudeProviderStatus = Effect.fn("checkClaudeProviderStatus")(
       provider: PROVIDER,
       enabled: claudeSettings.enabled,
       checkedAt,
-      models: resolvedModels,
+      models,
+      slashCommands: dedupedSlashCommands,
       probe: {
         installed: true,
         version: parsedVersion,
@@ -303,7 +370,8 @@ export const checkClaudeProviderStatus = Effect.fn("checkClaudeProviderStatus")(
       provider: PROVIDER,
       enabled: claudeSettings.enabled,
       checkedAt,
-      models: resolvedModels,
+      models,
+      slashCommands: dedupedSlashCommands,
       probe: {
         installed: true,
         version: parsedVersion,
@@ -320,7 +388,8 @@ export const checkClaudeProviderStatus = Effect.fn("checkClaudeProviderStatus")(
     provider: PROVIDER,
     enabled: claudeSettings.enabled,
     checkedAt,
-    models: resolvedModels,
+    models,
+    slashCommands: dedupedSlashCommands,
     probe: {
       installed: true,
       version: parsedVersion,
@@ -339,16 +408,23 @@ export const ClaudeProviderLive = Layer.effect(
   Effect.gen(function* () {
     const serverSettings = yield* ServerSettingsService;
     const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
-
-    const subscriptionProbeCache = yield* Cache.make({
+    const capabilitiesProbeCache = yield* Cache.make({
       capacity: 1,
       timeToLive: Duration.minutes(5),
-      lookup: (binaryPath: string) =>
-        probeClaudeCapabilities(binaryPath).pipe(Effect.map((r) => r?.subscriptionType)),
+      lookup: (binaryPath: string) => probeClaudeCapabilities(binaryPath).pipe(Effect.option),
     });
 
-    const checkProvider = checkClaudeProviderStatus((binaryPath) =>
-      Cache.get(subscriptionProbeCache, binaryPath),
+    const checkProvider = checkClaudeProviderStatus(
+      (binaryPath) =>
+        Cache.get(capabilitiesProbeCache, binaryPath).pipe(
+          Effect.map((result) =>
+            Option.isSome(result) ? result.value.subscriptionType : undefined,
+          ),
+        ),
+      (binaryPath) =>
+        Cache.get(capabilitiesProbeCache, binaryPath).pipe(
+          Effect.map((result) => (Option.isSome(result) ? result.value.slashCommands : undefined)),
+        ),
     ).pipe(
       Effect.provideService(ServerSettingsService, serverSettings),
       Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),

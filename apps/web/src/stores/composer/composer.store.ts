@@ -59,7 +59,7 @@ export {
 } from "./normalizers.store";
 
 export {
-  hydreatePersistedComposerImageAttachment,
+  hydratePersistedComposerImageAttachment,
   hydrateImagesFromPersisted,
   partializeComposerDraftStoreState,
   readPersistedAttachmentIdsFromStorage,

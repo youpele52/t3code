@@ -24,6 +24,10 @@ import {
 } from "./normalization.store";
 import { DeepMutable } from "effect/Types";
 
+function isRuntimeMode(value: unknown): value is import("@bigcode/contracts").RuntimeMode {
+  return value === "approval-required" || value === "auto-accept-edits" || value === "full-access";
+}
+
 // ── Persisted-value normalizers ───────────────────────────────────────
 
 export function normalizePersistedAttachment(
@@ -147,11 +151,9 @@ export function normalizePersistedDraftThreads(
           typeof createdAt === "string" && createdAt.length > 0
             ? createdAt
             : new Date().toISOString(),
-        runtimeMode:
-          candidateDraftThread.runtimeMode === "approval-required" ||
-          candidateDraftThread.runtimeMode === "full-access"
-            ? candidateDraftThread.runtimeMode
-            : DEFAULT_RUNTIME_MODE,
+        runtimeMode: isRuntimeMode(candidateDraftThread.runtimeMode)
+          ? candidateDraftThread.runtimeMode
+          : DEFAULT_RUNTIME_MODE,
         interactionMode:
           candidateDraftThread.interactionMode === "plan" ||
           candidateDraftThread.interactionMode === "default"
@@ -234,11 +236,9 @@ export function normalizePersistedDraftsByThreadId(
           return normalized ? [normalized] : [];
         })
       : [];
-    const runtimeMode =
-      draftCandidate.runtimeMode === "approval-required" ||
-      draftCandidate.runtimeMode === "full-access"
-        ? draftCandidate.runtimeMode
-        : null;
+    const runtimeMode = isRuntimeMode(draftCandidate.runtimeMode)
+      ? draftCandidate.runtimeMode
+      : null;
     const interactionMode =
       draftCandidate.interactionMode === "plan" || draftCandidate.interactionMode === "default"
         ? draftCandidate.interactionMode

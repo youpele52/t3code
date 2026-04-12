@@ -18,6 +18,7 @@ import { toastManager, type ThreadToastData } from "~/components/ui/toast";
 import { gitMutationKeys, gitRunStackedActionMutationOptions } from "~/lib/gitReactQuery";
 import { newCommandId, randomUUID } from "~/lib/utils";
 import { readNativeApi } from "../../rpc/nativeApi";
+import { useComposerDraftStore } from "../../stores/composer";
 import { useStore } from "../../stores/main";
 
 type GitActionToastId = ReturnType<typeof toastManager.add>;
@@ -76,6 +77,10 @@ export function useGitActionRunner({
   const activeServerThread = useStore((store) =>
     activeThreadId ? store.threads.find((thread) => thread.id === activeThreadId) : undefined,
   );
+  const activeDraftThread = useComposerDraftStore((store) =>
+    activeThreadId ? store.getDraftThread(activeThreadId) : null,
+  );
+  const setDraftThreadContext = useComposerDraftStore((store) => store.setDraftThreadContext);
   const setThreadBranch = useStore((store) => store.setThreadBranch);
   const queryClient = useQueryClient();
   const activeGitActionProgressRef = useRef<ActiveGitActionProgress | null>(null);
@@ -108,23 +113,42 @@ export function useGitActionRunner({
 
   const persistThreadBranchSync = useCallback(
     (branch: string | null) => {
-      if (!activeThreadId || !activeServerThread || activeServerThread.branch === branch) return;
-      const worktreePath = activeServerThread.worktreePath;
-      const api = readNativeApi();
-      if (api) {
-        void api.orchestration
-          .dispatchCommand({
-            type: "thread.meta.update",
-            commandId: newCommandId(),
-            threadId: activeThreadId,
-            branch,
-            worktreePath,
-          })
-          .catch(() => undefined);
+      if (!activeThreadId) {
+        return;
       }
-      setThreadBranch(activeThreadId, branch, worktreePath);
+
+      if (activeServerThread) {
+        if (activeServerThread.branch === branch) {
+          return;
+        }
+
+        const worktreePath = activeServerThread.worktreePath;
+        const api = readNativeApi();
+        if (api) {
+          void api.orchestration
+            .dispatchCommand({
+              type: "thread.meta.update",
+              commandId: newCommandId(),
+              threadId: activeThreadId,
+              branch,
+              worktreePath,
+            })
+            .catch(() => undefined);
+        }
+        setThreadBranch(activeThreadId, branch, worktreePath);
+        return;
+      }
+
+      if (!activeDraftThread || activeDraftThread.branch === branch) {
+        return;
+      }
+
+      setDraftThreadContext(activeThreadId, {
+        branch,
+        worktreePath: activeDraftThread.worktreePath,
+      });
     },
-    [activeServerThread, activeThreadId, setThreadBranch],
+    [activeDraftThread, activeServerThread, activeThreadId, setDraftThreadContext, setThreadBranch],
   );
 
   const syncThreadBranchAfterGitAction = useCallback(

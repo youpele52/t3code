@@ -11,11 +11,25 @@ import {
   parseNumstatEntries,
   parsePorcelainPath,
   createGitCommandError,
+  isMissingGitCwdError,
 } from "./GitCoreUtils.ts";
 import { type GitHelpers } from "./GitCoreExecutor.ts";
 import { makeRemoteOps } from "./GitStatus.remotes.ts";
 import { makeUpstreamOps } from "./GitStatus.upstream.ts";
 import { makeCommitOps } from "./GitStatus.commit.ts";
+
+const NON_REPOSITORY_STATUS_DETAILS = Object.freeze<GitStatusDetails>({
+  isRepo: false,
+  hasOriginRemote: false,
+  isDefaultBranch: false,
+  branch: null,
+  upstreamRef: null,
+  hasWorkingTreeChanges: false,
+  workingTree: { files: [], insertions: 0, deletions: 0 },
+  hasUpstream: false,
+  aheadCount: 0,
+  behindCount: 0,
+});
 
 export interface GitStatusOps {
   statusDetails: GitCoreShape["statusDetails"];
@@ -55,7 +69,10 @@ export const makeGitStatusOps = Effect.fn("makeGitStatusOps")(function* (
   } = upstreamOps;
 
   const statusDetails: GitCoreShape["statusDetails"] = Effect.fn("statusDetails")(function* (cwd) {
-    yield* refreshStatusUpstreamIfStale(cwd).pipe(Effect.ignoreCause({ log: true }));
+    yield* refreshStatusUpstreamIfStale(cwd).pipe(
+      Effect.catchIf(isMissingGitCwdError, () => Effect.void),
+      Effect.ignoreCause({ log: true }),
+    );
 
     const statusResult = yield* executeGit(
       "GitCore.statusDetails.status",
@@ -64,7 +81,11 @@ export const makeGitStatusOps = Effect.fn("makeGitStatusOps")(function* (
       {
         allowNonZeroExit: true,
       },
-    );
+    ).pipe(Effect.catchIf(isMissingGitCwdError, () => Effect.succeed(null)));
+
+    if (statusResult === null) {
+      return NON_REPOSITORY_STATUS_DETAILS;
+    }
 
     if (statusResult.code !== 0) {
       const stderr = statusResult.stderr.trim();
@@ -203,7 +224,11 @@ export const makeGitStatusOps = Effect.fn("makeGitStatusOps")(function* (
         {
           allowNonZeroExit: true,
         },
-      );
+      ).pipe(Effect.catchIf(isMissingGitCwdError, () => Effect.succeed(null)));
+
+      if (statusResult === null) {
+        return NON_REPOSITORY_STATUS_DETAILS;
+      }
 
       if (statusResult.code !== 0) {
         const stderr = statusResult.stderr.trim();

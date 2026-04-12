@@ -1,7 +1,7 @@
 import { splitPromptIntoComposerSegments } from "./editor-mentions.logic";
 import { INLINE_TERMINAL_CONTEXT_PLACEHOLDER } from "../../lib/terminalContext";
 
-export type ComposerTriggerKind = "path" | "slash-command" | "slash-model";
+export type ComposerTriggerKind = "path" | "slash-command" | "slash-model" | "skill";
 export type ComposerSlashCommand = "model" | "plan" | "default" | "agents" | "skills";
 
 export interface ComposerTrigger {
@@ -245,10 +245,31 @@ export function detectComposerTrigger(text: string, cursorInput: number): Compos
         };
       }
     }
+
+    const providerSlashCommandMatch = /^\/([^\s]+)(?:\s+(.*))?$/.exec(linePrefix);
+    if (providerSlashCommandMatch) {
+      return {
+        kind: "slash-command",
+        query:
+          (providerSlashCommandMatch[2] ?? "").trim().length > 0
+            ? `${providerSlashCommandMatch[1]} ${(providerSlashCommandMatch[2] ?? "").trim()}`
+            : `${providerSlashCommandMatch[1] ?? ""} `,
+        rangeStart: lineStart,
+        rangeEnd: cursor,
+      };
+    }
   }
 
   const tokenStart = tokenStartForCursor(text, cursor);
   const token = text.slice(tokenStart, cursor);
+  if (token.startsWith("$") && !token.includes("@")) {
+    return {
+      kind: "skill",
+      query: token.slice(1),
+      rangeStart: tokenStart,
+      rangeEnd: cursor,
+    };
+  }
   if (!token.startsWith("@")) {
     return null;
   }

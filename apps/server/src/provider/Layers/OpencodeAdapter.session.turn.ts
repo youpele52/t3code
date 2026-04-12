@@ -5,10 +5,12 @@
  * @module OpencodeAdapter.session.turn
  */
 import { randomUUID } from "node:crypto";
+import { pathToFileURL } from "node:url";
 
 import { TurnId, type ProviderTurnStartResult } from "@bigcode/contracts";
 import { Effect } from "effect";
 
+import { resolveAttachmentPath } from "../../attachments/attachmentStore.ts";
 import { ProviderAdapterRequestError, ProviderAdapterValidationError } from "../Errors.ts";
 import type { OpencodeAdapterShape } from "../Services/OpencodeAdapter.ts";
 import { toMessage, withOpencodeDirectory } from "./OpencodeAdapter.stream.ts";
@@ -61,8 +63,28 @@ export function makeTurnMethods(deps: TurnMethodDeps) {
       ]);
 
       // Use promptAsync for non-blocking send with SSE streaming
+      const fileParts = (input.attachments ?? []).map((attachment) => {
+        const path = resolveAttachmentPath({
+          attachmentsDir: deps.serverConfig.attachmentsDir,
+          attachment,
+        });
+        if (!path) {
+          throw new ProviderAdapterRequestError({
+            provider: PROVIDER,
+            method: "session.promptAsync",
+            detail: `Invalid attachment id '${attachment.id}'.`,
+          });
+        }
+        return {
+          type: "file" as const,
+          mime: attachment.mimeType,
+          filename: attachment.name,
+          url: pathToFileURL(path).href,
+        };
+      });
+
       const promptBody = {
-        parts: [{ type: "text" as const, text: input.input ?? "" }],
+        parts: [{ type: "text" as const, text: input.input ?? "" }, ...fileParts],
         ...(record.model
           ? {
               model: {

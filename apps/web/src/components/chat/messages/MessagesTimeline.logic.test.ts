@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { computeMessageDurationStart, normalizeCompactToolLabel } from "./MessagesTimeline.logic";
+import { MessageId, TurnId } from "@bigcode/contracts";
+import {
+  computeMessageDurationStart,
+  deriveMessagesTimelineRows,
+  normalizeCompactToolLabel,
+} from "./MessagesTimeline.logic";
 
 describe("computeMessageDurationStart", () => {
   it("returns message createdAt when there is no preceding user message", () => {
@@ -141,5 +146,81 @@ describe("normalizeCompactToolLabel", () => {
 
   it("removes trailing completion wording from other labels", () => {
     expect(normalizeCompactToolLabel("Read file completed")).toBe("Read file");
+  });
+});
+
+describe("deriveMessagesTimelineRows", () => {
+  it("only shows assistant copy on the final assistant message in a turn", () => {
+    const turnId = TurnId.makeUnsafe("turn-1");
+    const rows = deriveMessagesTimelineRows({
+      timelineEntries: [
+        {
+          id: "assistant-entry-1",
+          kind: "message",
+          createdAt: "2026-01-01T00:00:01Z",
+          message: {
+            id: MessageId.makeUnsafe("assistant-1"),
+            role: "assistant",
+            text: "First chunk",
+            turnId,
+            createdAt: "2026-01-01T00:00:01Z",
+            streaming: false,
+          },
+        },
+        {
+          id: "assistant-entry-2",
+          kind: "message",
+          createdAt: "2026-01-01T00:00:02Z",
+          message: {
+            id: MessageId.makeUnsafe("assistant-2"),
+            role: "assistant",
+            text: "Final chunk",
+            turnId,
+            createdAt: "2026-01-01T00:00:02Z",
+            streaming: false,
+          },
+        },
+      ],
+      completionDividerBeforeEntryId: null,
+      isWorking: false,
+      activeTurnStartedAt: null,
+    });
+
+    const assistantRows = rows.filter(
+      (row): row is Extract<(typeof rows)[number], { kind: "message" }> => row.kind === "message",
+    );
+
+    expect(assistantRows).toHaveLength(2);
+    expect(assistantRows[0]?.showAssistantCopyButton).toBe(false);
+    expect(assistantRows[1]?.showAssistantCopyButton).toBe(true);
+  });
+
+  it("shows assistant copy for standalone assistant messages without a turn id", () => {
+    const rows = deriveMessagesTimelineRows({
+      timelineEntries: [
+        {
+          id: "assistant-entry-standalone",
+          kind: "message",
+          createdAt: "2026-01-01T00:00:01Z",
+          message: {
+            id: MessageId.makeUnsafe("assistant-standalone"),
+            role: "assistant",
+            text: "Standalone answer",
+            turnId: null,
+            createdAt: "2026-01-01T00:00:01Z",
+            streaming: false,
+          },
+        },
+      ],
+      completionDividerBeforeEntryId: null,
+      isWorking: false,
+      activeTurnStartedAt: null,
+    });
+
+    const assistantRow = rows.find(
+      (row): row is Extract<(typeof rows)[number], { kind: "message" }> => row.kind === "message",
+    );
+
+    expect(assistantRow?.showAssistantCopyButton).toBe(true);
   });
 });

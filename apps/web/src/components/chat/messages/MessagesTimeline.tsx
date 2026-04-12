@@ -45,6 +45,8 @@ interface MessagesTimelineProps {
   nowIso: string;
   expandedWorkGroups: Record<string, boolean>;
   onToggleWorkGroup: (groupId: string) => void;
+  changedFilesExpandedByTurnId: Record<string, boolean>;
+  onSetChangedFilesExpanded: (turnId: TurnId, expanded: boolean) => void;
   onOpenTurnDiff: (turnId: TurnId, filePath?: string) => void;
   revertTurnCountByUserMessageId: Map<MessageId, number>;
   onRevertUserMessage: (messageId: MessageId) => void;
@@ -80,6 +82,8 @@ export const MessagesTimeline = memo(function MessagesTimeline({
   nowIso,
   expandedWorkGroups,
   onToggleWorkGroup,
+  changedFilesExpandedByTurnId,
+  onSetChangedFilesExpanded,
   onOpenTurnDiff,
   revertTurnCountByUserMessageId,
   onRevertUserMessage,
@@ -262,15 +266,6 @@ export const MessagesTimeline = memo(function MessagesTimeline({
 
   const virtualRows = rowVirtualizer.getVirtualItems();
   const nonVirtualizedRows = rows.slice(virtualizedRowCount);
-  const [allDirectoriesExpandedByTurnId, setAllDirectoriesExpandedByTurnId] = useState<
-    Record<string, boolean>
-  >({});
-  const onToggleAllDirectories = useCallback((turnId: TurnId) => {
-    setAllDirectoriesExpandedByTurnId((current) => ({
-      ...current,
-      [turnId]: !(current[turnId] ?? true),
-    }));
-  }, []);
 
   const renderRowContent = (row: TimelineRow) => (
     <div
@@ -394,7 +389,7 @@ export const MessagesTimeline = memo(function MessagesTimeline({
                       </Button>
                     )}
                   </div>
-                  <p className="text-right text-[10px] text-muted-foreground/30">
+                  <p className="text-right text-xs text-muted-foreground/50">
                     {formatTimestamp(row.message.createdAt, timestampFormat)}
                   </p>
                 </div>
@@ -408,8 +403,8 @@ export const MessagesTimeline = memo(function MessagesTimeline({
           row={row as AssistantMessageRow}
           completionSummary={completionSummary}
           turnDiffSummaryByAssistantMessageId={turnDiffSummaryByAssistantMessageId}
-          allDirectoriesExpandedByTurnId={allDirectoriesExpandedByTurnId}
-          onToggleAllDirectories={onToggleAllDirectories}
+          changedFilesExpandedByTurnId={changedFilesExpandedByTurnId}
+          onSetChangedFilesExpanded={onSetChangedFilesExpanded}
           onOpenTurnDiff={onOpenTurnDiff}
           markdownCwd={markdownCwd}
           resolvedTheme={resolvedTheme}

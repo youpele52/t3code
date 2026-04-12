@@ -9,19 +9,6 @@ interface UseScrollBehaviorInput {
   phase: string;
   timelineEntries: unknown[];
   composerFormRef: React.RefObject<HTMLFormElement | null>;
-  composerFooterRef: React.RefObject<HTMLDivElement | null>;
-  composerFooterLeadingRef: React.RefObject<HTMLDivElement | null>;
-  composerFooterActionsRef: React.RefObject<HTMLDivElement | null>;
-  resolveComposerFooterContentWidth: (input: {
-    footerWidth: number | null;
-    paddingLeft: number | null;
-    paddingRight: number | null;
-  }) => number | null;
-  shouldForceCompactComposerFooterForFit: (input: {
-    footerContentWidth: number | null;
-    leadingContentWidth: number | null;
-    actionsWidth: number | null;
-  }) => boolean;
   shouldUseCompactComposerFooter: (width: number, options: { hasWideActions: boolean }) => boolean;
   shouldUseCompactComposerPrimaryActions: (
     width: number,
@@ -58,11 +45,6 @@ export function useScrollBehavior({
   phase,
   timelineEntries,
   composerFormRef,
-  composerFooterRef,
-  composerFooterLeadingRef,
-  composerFooterActionsRef,
-  resolveComposerFooterContentWidth,
-  shouldForceCompactComposerFooterForFit,
   shouldUseCompactComposerFooter,
   shouldUseCompactComposerPrimaryActions,
 }: UseScrollBehaviorInput): UseScrollBehaviorResult {
@@ -254,37 +236,24 @@ export function useScrollBehavior({
   }, [activeThreadId, scheduleStickToBottom]);
 
   useLayoutEffect(() => {
+    void composerFooterActionLayoutKey;
     const composerForm = composerFormRef.current;
     if (!composerForm) return;
     const measureComposerFormWidth = () => composerForm.clientWidth;
     const measureFooterCompactness = () => {
       const composerFormWidth = measureComposerFormWidth();
-      const heuristicFooterCompact = shouldUseCompactComposerFooter(composerFormWidth, {
+      const footerCompact = shouldUseCompactComposerFooter(composerFormWidth, {
         hasWideActions: composerFooterHasWideActions,
       });
-      const footer = composerFooterRef.current;
-      const footerStyle = footer ? window.getComputedStyle(footer) : null;
-      const footerContentWidth = resolveComposerFooterContentWidth({
-        footerWidth: footer?.clientWidth ?? null,
-        paddingLeft: footerStyle ? Number.parseFloat(footerStyle.paddingLeft) : null,
-        paddingRight: footerStyle ? Number.parseFloat(footerStyle.paddingRight) : null,
-      });
-      const fitInput = {
-        footerContentWidth,
-        leadingContentWidth: composerFooterLeadingRef.current?.scrollWidth ?? null,
-        actionsWidth: composerFooterActionsRef.current?.scrollWidth ?? null,
-      };
-      const nextFooterCompact =
-        heuristicFooterCompact || shouldForceCompactComposerFooterForFit(fitInput);
-      const nextPrimaryActionsCompact =
-        nextFooterCompact &&
+      const primaryActionsCompact =
+        footerCompact &&
         shouldUseCompactComposerPrimaryActions(composerFormWidth, {
           hasWideActions: composerFooterHasWideActions,
         });
 
       return {
-        primaryActionsCompact: nextPrimaryActionsCompact,
-        footerCompact: nextFooterCompact,
+        primaryActionsCompact,
+        footerCompact,
       };
     };
 
@@ -322,26 +291,22 @@ export function useScrollBehavior({
       observer.disconnect();
     };
   }, [
-    activeThreadId,
     composerFooterActionLayoutKey,
     composerFooterHasWideActions,
     scheduleStickToBottom,
     composerFormRef,
-    composerFooterRef,
-    composerFooterLeadingRef,
-    composerFooterActionsRef,
-    resolveComposerFooterContentWidth,
-    shouldForceCompactComposerFooterForFit,
     shouldUseCompactComposerFooter,
     shouldUseCompactComposerPrimaryActions,
   ]);
 
   useEffect(() => {
+    void messageCount;
     if (!shouldAutoScrollRef.current) return;
     scheduleStickToBottom();
   }, [messageCount, scheduleStickToBottom]);
 
   useEffect(() => {
+    void timelineEntries;
     if (phase !== "running") return;
     if (!shouldAutoScrollRef.current) return;
     scheduleStickToBottom();
