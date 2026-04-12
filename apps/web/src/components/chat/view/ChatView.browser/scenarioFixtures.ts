@@ -165,7 +165,10 @@ export function createSnapshotWithPendingUserInput(): OrchestrationReadModel {
   };
 }
 
-export function createSnapshotWithPlanFollowUpPrompt(): OrchestrationReadModel {
+export function createSnapshotWithPlanFollowUpPrompt(options?: {
+  modelSelection?: { provider: "codex"; model: string };
+  planMarkdown?: string;
+}): OrchestrationReadModel {
   const snapshot = createSnapshotForTargetUser({
     targetMessageId: "msg-user-plan-follow-up-target" as MessageId,
     targetText: "plan follow-up thread",
@@ -174,12 +177,22 @@ export function createSnapshotWithPlanFollowUpPrompt(): OrchestrationReadModel {
   if (!baseSession) {
     throw new Error("Expected seeded thread session for plan follow-up snapshot.");
   }
+  const modelSelection = options?.modelSelection ?? {
+    provider: "codex" as const,
+    model: "gpt-5",
+  };
+  const planMarkdown =
+    options?.planMarkdown ?? "# Follow-up plan\n\n- Keep the composer footer stable on resize.";
 
   return {
     ...snapshot,
+    projects: snapshot.projects.map((project) =>
+      project.id === PROJECT_ID ? { ...project, defaultModelSelection: modelSelection } : project,
+    ),
     threads: snapshot.threads.map((thread) =>
       thread.id === THREAD_ID
         ? Object.assign({}, thread, {
+            modelSelection,
             interactionMode: "plan",
             latestTurn: {
               turnId: "turn-plan-follow-up" as TurnId,
@@ -193,7 +206,7 @@ export function createSnapshotWithPlanFollowUpPrompt(): OrchestrationReadModel {
               {
                 id: "plan-follow-up-browser-test",
                 turnId: "turn-plan-follow-up" as TurnId,
-                planMarkdown: "# Follow-up plan\n\n- Keep the composer footer stable on resize.",
+                planMarkdown,
                 implementedAt: null,
                 implementationThreadId: null,
                 createdAt: NOW_ISO,

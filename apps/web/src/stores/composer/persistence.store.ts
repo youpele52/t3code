@@ -150,7 +150,7 @@ export function partializeComposerDraftStoreState(
 
 // ── Hydration helpers ─────────────────────────────────────────────────
 
-export function hydreatePersistedComposerImageAttachment(
+export function hydratePersistedComposerImageAttachment(
   attachment: PersistedComposerImageAttachment,
 ): File | null {
   const commaIndex = attachment.dataUrl.indexOf(",");
@@ -186,7 +186,7 @@ export function hydrateImagesFromPersisted(
   attachments: ReadonlyArray<PersistedComposerImageAttachment>,
 ): ComposerImageAttachment[] {
   return attachments.flatMap((attachment) => {
-    const file = hydreatePersistedComposerImageAttachment(attachment);
+    const file = hydratePersistedComposerImageAttachment(attachment);
     if (!file) return [];
 
     return [
