@@ -253,6 +253,9 @@ jobs:
       - name: Align package versions to release version
         run: node scripts/update-release-package-versions.ts "${{ needs.preflight.outputs.version }}"
 
+      - name: Build web app
+        run: bun run build --filter=@bigcode/web
+
       - name: Build CLI package
         run: bun run --cwd apps/server build --verbose
 
