@@ -71,6 +71,7 @@ export interface SharedProjectItemProps {
     originalTitle: string,
   ) => Promise<void>;
   cancelProjectRename: () => void;
+  requestProjectDelete: (projectId: ProjectId) => void;
   attachThreadListAutoAnimateRef: (node: HTMLElement | null) => void;
   handleProjectTitlePointerDownCapture: (event: PointerEvent<HTMLButtonElement>) => void;
   handleProjectTitleClick: (event: MouseEvent<HTMLButtonElement>, projectId: ProjectId) => void;
@@ -94,6 +95,7 @@ export interface SharedProjectItemProps {
   commitRename: (threadId: ThreadId, newTitle: string, originalTitle: string) => Promise<void>;
   cancelRename: () => void;
   attemptArchiveThread: (threadId: ThreadId) => Promise<void>;
+  requestThreadDelete: (threadId: ThreadId) => Promise<void>;
   openPrLink: (event: MouseEvent<HTMLElement>, prUrl: string) => void;
   prByThreadId: Map<ThreadId, ThreadPr>;
   handleNewThread: ReturnType<typeof useHandleNewThread>["handleNewThread"];
@@ -174,6 +176,15 @@ export interface SidebarState {
   } | null;
   dismissPendingDeleteConfirmation: () => void;
   confirmPendingDeleteThreads: () => Promise<void>;
+  requestThreadDelete: (threadId: ThreadId) => Promise<void>;
+  pendingProjectDeleteConfirmation: {
+    projectId: ProjectId;
+    projectName: string;
+    threadCount: number;
+  } | null;
+  dismissPendingProjectDeleteConfirmation: () => void;
+  confirmPendingProjectDelete: () => Promise<void>;
+  requestProjectDelete: (projectId: ProjectId) => void;
   // Thread selection
   selectedThreadIds: ReadonlySet<ThreadId>;
   clearSelection: () => void;
