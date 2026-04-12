@@ -3,7 +3,7 @@ import { resolveSelectableModel } from "@bigcode/shared/model";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import type { VariantProps } from "class-variance-authority";
 import { type ProviderPickerKind, PROVIDER_OPTIONS } from "../../../logic/session";
-import { ArrowLeftIcon, ChevronDownIcon, XIcon } from "lucide-react";
+import { ChevronDownIcon } from "lucide-react";
 import { Button, buttonVariants } from "../../ui/button";
 import {
   Menu,
@@ -19,6 +19,7 @@ import {
   MenuSubTrigger,
   MenuTrigger,
 } from "../../ui/menu";
+import { Searchbar } from "../../ui/Searchbar";
 import { ClaudeAI, CursorIcon, Gemini, GitHubIcon, Icon, OpenAI, OpenCodeIcon } from "../../Icons";
 import { cn } from "~/lib/utils";
 import { getProviderSnapshot } from "../../../models/provider";
@@ -120,18 +121,17 @@ function ModelList({
 
   return (
     <div className="flex flex-col">
-      {/* Search bar + optional back arrow — sticky at top */}
-      <div className="sticky top-0 z-10 flex items-center gap-1 border-b bg-popover px-2 py-1.5">
-        {onBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex shrink-0 items-center justify-center rounded p-0.5 text-muted-foreground/70 transition-colors hover:bg-accent hover:text-foreground focus:outline-none"
-            aria-label="Back to provider selection"
-          >
-            <ArrowLeftIcon className="size-3.5" />
-          </button>
-        )}
+      <Searchbar
+        sticky
+        showSearchIcon={false}
+        backAriaLabel="Back to provider selection"
+        canClear={query.length > 0}
+        onClear={() => {
+          setQuery("");
+          inputRef.current?.focus();
+        }}
+        {...(onBack ? { onBack } : {})}
+      >
         <input
           ref={inputRef}
           type="text"
@@ -143,20 +143,7 @@ function ModelList({
           placeholder="Search models"
           className="min-w-0 flex-1 bg-transparent py-0.5 text-xs tracking-tight text-foreground placeholder:text-xs placeholder:tracking-tight placeholder:text-muted-foreground/50 focus:outline-none"
         />
-        {query && (
-          <button
-            type="button"
-            onClick={() => {
-              setQuery("");
-              inputRef.current?.focus();
-            }}
-            className="flex shrink-0 items-center justify-center rounded p-0.5 text-muted-foreground/50 transition-colors hover:text-foreground focus:outline-none"
-            aria-label="Clear search"
-          >
-            <XIcon className="size-3" />
-          </button>
-        )}
-      </div>
+      </Searchbar>
 
       {/* Model list — grouped or flat */}
       <MenuRadioGroup value={selectedValue} onValueChange={onSelect}>
