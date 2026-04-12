@@ -45,6 +45,7 @@ export interface SidebarThreadActionsOutput {
   } | null;
   dismissPendingDeleteConfirmation: () => void;
   confirmPendingDeleteThreads: () => Promise<void>;
+  requestThreadDelete: (threadId: ThreadId) => Promise<void>;
   // Selection
   selectedThreadIds: ReadonlySet<ThreadId>;
   clearSelection: () => void;
@@ -239,6 +240,27 @@ export function useSidebarThreadActions({
     setPendingDeleteConfirmation(null);
   }, []);
 
+  const requestThreadDelete = useCallback(
+    async (threadId: ThreadId) => {
+      const thread = sidebarThreadsById[threadId];
+      if (!thread) {
+        return;
+      }
+
+      if (appSettings.confirmThreadDelete) {
+        setPendingDeleteConfirmation({
+          title: `Delete thread "${thread.title}"?`,
+          description: "This permanently clears conversation history for this thread.",
+          threadIds: [threadId],
+        });
+        return;
+      }
+
+      await deleteThread(threadId);
+    },
+    [appSettings.confirmThreadDelete, deleteThread, sidebarThreadsById],
+  );
+
   const confirmPendingDeleteThreads = useCallback(async () => {
     if (!pendingDeleteConfirmation) {
       return;
@@ -352,24 +374,15 @@ export function useSidebarThreadActions({
         return;
       }
       if (clicked !== "delete") return;
-      if (appSettings.confirmThreadDelete) {
-        setPendingDeleteConfirmation({
-          title: `Delete thread "${thread.title}"?`,
-          description: "This permanently clears conversation history for this thread.",
-          threadIds: [threadId],
-        });
-        return;
-      }
-      await deleteThread(threadId);
+      await requestThreadDelete(threadId);
     },
     [
-      appSettings.confirmThreadDelete,
       cancelProjectRename,
       copyPathToClipboard,
       copyThreadIdToClipboard,
-      deleteThread,
       markThreadUnread,
       projectCwdById,
+      requestThreadDelete,
       sidebarThreadsById,
     ],
   );
@@ -443,6 +456,7 @@ export function useSidebarThreadActions({
     pendingDeleteConfirmation,
     dismissPendingDeleteConfirmation,
     confirmPendingDeleteThreads,
+    requestThreadDelete,
     selectedThreadIds,
     clearSelection,
     handleThreadClick,

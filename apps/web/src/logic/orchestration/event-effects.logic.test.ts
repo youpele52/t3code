@@ -70,6 +70,7 @@ describe("deriveOrchestrationBatchEffects", () => {
 
     expect(effects.clearPromotedDraftThreadIds).toEqual([createdThreadId]);
     expect(effects.clearDeletedThreadIds).toEqual([deletedThreadId]);
+    expect(effects.removeSelectedThreadIds).toEqual([deletedThreadId]);
     expect(effects.removeTerminalStateThreadIds).toEqual([deletedThreadId, archivedThreadId]);
     expect(effects.needsProviderInvalidation).toBe(false);
   });
@@ -108,6 +109,7 @@ describe("deriveOrchestrationBatchEffects", () => {
 
     expect(effects.clearPromotedDraftThreadIds).toEqual([threadId]);
     expect(effects.clearDeletedThreadIds).toEqual([]);
+    expect(effects.removeSelectedThreadIds).toEqual([]);
     expect(effects.removeTerminalStateThreadIds).toEqual([]);
     expect(effects.needsProviderInvalidation).toBe(true);
   });
@@ -129,6 +131,7 @@ describe("deriveOrchestrationBatchEffects", () => {
 
     expect(effects.clearPromotedDraftThreadIds).toEqual([]);
     expect(effects.clearDeletedThreadIds).toEqual([]);
+    expect(effects.removeSelectedThreadIds).toEqual([]);
     expect(effects.removeTerminalStateThreadIds).toEqual([]);
   });
 });

@@ -8,23 +8,32 @@ import {
 } from "react";
 import type React from "react";
 import { type DragCancelEvent, type DragStartEvent, type DragEndEvent } from "@dnd-kit/core";
-import { DEFAULT_MODEL_BY_PROVIDER, type ProjectId, type ThreadId } from "@bigcode/contracts";
+import {
+  DEFAULT_MODEL_BY_PROVIDER,
+  ThreadId,
+  type ProjectId,
+  type ThreadId as ThreadIdType,
+} from "@bigcode/contracts";
+import { useNavigate, useParams } from "@tanstack/react-router";
 import { isNonEmpty as isNonEmptyString } from "effect/String";
 import { isMacPlatform, newCommandId, newProjectId } from "../../lib/utils";
 import { useUiStateStore } from "../../stores/ui";
 import { useComposerDraftStore } from "../../stores/composer";
+import { useThreadSelectionStore } from "../../stores/thread";
+import { useTerminalStateStore } from "../../stores/terminal";
+import { useStore } from "../../stores/main";
 import { readNativeApi } from "../../rpc/nativeApi";
 import { toastManager } from "../ui/toast";
 import { useHandleNewThread } from "../../hooks/useHandleNewThread";
 import { useSettings } from "../../hooks/useSettings";
-import { isContextMenuPointerDown } from "./Sidebar.logic";
+import { getFallbackThreadIdAfterDelete, isContextMenuPointerDown } from "./Sidebar.logic";
 import type { Project } from "../../models/types";
 import type { SidebarProjectSnapshot } from "./Sidebar.types";
 
 export interface SidebarProjectActionsInput {
   /** Projects list from the main store. */
   projects: Project[];
-  threadIdsByProjectId: Record<string, ThreadId[]>;
+  threadIdsByProjectId: Record<string, ThreadIdType[]>;
   sidebarProjects: SidebarProjectSnapshot[];
   appSettings: ReturnType<typeof useSettings>;
   isAddingProject: boolean;
@@ -67,6 +76,14 @@ export interface SidebarProjectActionsOutput {
     originalTitle: string,
   ) => Promise<void>;
   cancelProjectRename: () => void;
+  pendingProjectDeleteConfirmation: {
+    projectId: ProjectId;
+    projectName: string;
+    threadCount: number;
+  } | null;
+  dismissPendingProjectDeleteConfirmation: () => void;
+  confirmPendingProjectDelete: () => Promise<void>;
+  requestProjectDelete: (projectId: ProjectId) => void;
   // Other actions
   addProjectFromPath: (rawCwd: string) => Promise<void>;
   handleAddProject: () => void;
@@ -114,15 +131,30 @@ export function useSidebarProjectActions({
   const reorderProjects = useUiStateStore((store) => store.reorderProjects);
   const toggleProject = useUiStateStore((store) => store.toggleProject);
   const clearComposerDraftForThread = useComposerDraftStore((store) => store.clearDraftThread);
+  const clearProjectDraftThreadById = useComposerDraftStore(
+    (store) => store.clearProjectDraftThreadById,
+  );
   const getDraftThreadByProjectId = useComposerDraftStore(
     (store) => store.getDraftThreadByProjectId,
   );
   const clearProjectDraftThreadId = useComposerDraftStore(
     (store) => store.clearProjectDraftThreadId,
   );
+  const clearTerminalState = useTerminalStateStore((store) => store.clearTerminalState);
+  const removeFromSelection = useThreadSelectionStore((store) => store.removeFromSelection);
+  const routeThreadId = useParams({
+    strict: false,
+    select: (params) => (params.threadId ? ThreadId.makeUnsafe(params.threadId) : null),
+  });
+  const navigate = useNavigate();
 
   const [renamingProjectId, setRenamingProjectId] = useState<ProjectId | null>(null);
   const [renamingProjectTitle, setRenamingProjectTitle] = useState("");
+  const [pendingProjectDeleteConfirmation, setPendingProjectDeleteConfirmation] = useState<{
+    projectId: ProjectId;
+    projectName: string;
+    threadCount: number;
+  } | null>(null);
   const projectRenamingCommittedRef = useRef(false);
   const projectRenamingInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -195,6 +227,127 @@ export function useSidebarProjectActions({
     },
     [],
   );
+
+  const dismissPendingProjectDeleteConfirmation = useCallback(() => {
+    setPendingProjectDeleteConfirmation(null);
+  }, []);
+
+  const requestProjectDelete = useCallback(
+    (projectId: ProjectId) => {
+      const project = projects.find((entry) => entry.id === projectId);
+      if (!project) return;
+
+      setPendingProjectDeleteConfirmation({
+        projectId,
+        projectName: project.name,
+        threadCount: threadIdsByProjectId[projectId]?.length ?? 0,
+      });
+    },
+    [projects, threadIdsByProjectId],
+  );
+
+  const confirmPendingProjectDelete = useCallback(async () => {
+    if (!pendingProjectDeleteConfirmation) {
+      return;
+    }
+
+    const { projectId, projectName } = pendingProjectDeleteConfirmation;
+    setPendingProjectDeleteConfirmation(null);
+
+    const api = readNativeApi();
+    if (!api) {
+      return;
+    }
+
+    try {
+      const { threads } = useStore.getState();
+      const projectThreadIdSet = new Set(threadIdsByProjectId[projectId] ?? []);
+      const projectThreads = threads.filter(
+        (thread) => thread.projectId === projectId && projectThreadIdSet.has(thread.id),
+      );
+      const deletedThreadIds = new Set<ThreadIdType>(projectThreads.map((thread) => thread.id));
+
+      for (const thread of projectThreads) {
+        if (thread.session && thread.session.status !== "closed") {
+          await api.orchestration
+            .dispatchCommand({
+              type: "thread.session.stop",
+              commandId: newCommandId(),
+              threadId: thread.id,
+              createdAt: new Date().toISOString(),
+            })
+            .catch(() => undefined);
+        }
+
+        try {
+          await api.terminal.close({ threadId: thread.id, deleteHistory: true });
+        } catch {
+          // Terminal may already be closed.
+        }
+      }
+
+      const projectDraftThread = getDraftThreadByProjectId(projectId);
+
+      const fallbackThreadId =
+        routeThreadId && deletedThreadIds.has(routeThreadId)
+          ? getFallbackThreadIdAfterDelete({
+              threads,
+              deletedThreadId: routeThreadId,
+              deletedThreadIds,
+              sortOrder: appSettings.sidebarThreadSortOrder,
+            })
+          : null;
+
+      await api.orchestration.dispatchCommand({
+        type: "project.delete",
+        commandId: newCommandId(),
+        projectId,
+      });
+
+      for (const thread of projectThreads) {
+        clearComposerDraftForThread(thread.id);
+        clearProjectDraftThreadById(thread.projectId, thread.id);
+        clearTerminalState(thread.id);
+      }
+      if (projectDraftThread) {
+        clearComposerDraftForThread(projectDraftThread.threadId);
+      }
+      clearProjectDraftThreadId(projectId);
+      removeFromSelection(projectThreads.map((thread) => thread.id));
+
+      if (routeThreadId && deletedThreadIds.has(routeThreadId)) {
+        if (fallbackThreadId) {
+          await navigate({
+            to: "/$threadId",
+            params: { threadId: fallbackThreadId },
+            replace: true,
+          });
+        } else {
+          await navigate({ to: "/", replace: true });
+        }
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error removing project.";
+      console.error("Failed to remove project", { projectId, error });
+      toastManager.add({
+        type: "error",
+        title: `Failed to remove "${projectName}"`,
+        description: message,
+      });
+    }
+  }, [
+    clearComposerDraftForThread,
+    clearProjectDraftThreadById,
+    clearProjectDraftThreadId,
+    clearTerminalState,
+    getDraftThreadByProjectId,
+    appSettings.sidebarThreadSortOrder,
+    navigate,
+    pendingProjectDeleteConfirmation,
+    removeFromSelection,
+    routeThreadId,
+    threadIdsByProjectId,
+  ]);
 
   const addProjectFromPath = useCallback(
     async (rawCwd: string) => {
@@ -338,49 +491,9 @@ export function useSidebarProjectActions({
       }
       if (clicked !== "delete") return;
 
-      const projectThreadIds = threadIdsByProjectId[projectId] ?? [];
-      if (projectThreadIds.length > 0) {
-        toastManager.add({
-          type: "warning",
-          title: "Project is not empty",
-          description: "Delete all threads in this project before removing it.",
-        });
-        return;
-      }
-
-      const confirmed = await api.dialogs.confirm(`Remove project "${project.name}"?`);
-      if (!confirmed) return;
-
-      try {
-        const projectDraftThread = getDraftThreadByProjectId(projectId);
-        if (projectDraftThread) {
-          clearComposerDraftForThread(projectDraftThread.threadId);
-        }
-        clearProjectDraftThreadId(projectId);
-        await api.orchestration.dispatchCommand({
-          type: "project.delete",
-          commandId: newCommandId(),
-          projectId,
-        });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Unknown error removing project.";
-        console.error("Failed to remove project", { projectId, error });
-        toastManager.add({
-          type: "error",
-          title: `Failed to remove "${project.name}"`,
-          description: message,
-        });
-      }
+      requestProjectDelete(projectId);
     },
-    [
-      cancelThreadRename,
-      clearComposerDraftForThread,
-      clearProjectDraftThreadId,
-      copyPathToClipboard,
-      getDraftThreadByProjectId,
-      projects,
-      threadIdsByProjectId,
-    ],
+    [cancelThreadRename, copyPathToClipboard, projects, requestProjectDelete],
   );
 
   const handleProjectContextMenu = useCallback(
@@ -498,6 +611,10 @@ export function useSidebarProjectActions({
     markProjectRenameCommitted,
     commitProjectRename,
     cancelProjectRename,
+    pendingProjectDeleteConfirmation,
+    dismissPendingProjectDeleteConfirmation,
+    confirmPendingProjectDelete,
+    requestProjectDelete,
     addProjectFromPath,
     handleAddProject,
     handlePickFolder,

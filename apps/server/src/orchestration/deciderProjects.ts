@@ -11,7 +11,11 @@ import type {
 import { Effect } from "effect";
 
 import { OrchestrationCommandInvariantError } from "./Errors.ts";
-import { requireProject, requireProjectAbsent } from "./commandInvariants.ts";
+import {
+  listThreadsByProjectId,
+  requireProject,
+  requireProjectAbsent,
+} from "./commandInvariants.ts";
 import { nowIso, withEventBase } from "./deciderHelpers.ts";
 
 export const decideProjectCommand = Effect.fn("decideProjectCommand")(function* ({
@@ -90,19 +94,41 @@ export const decideProjectCommand = Effect.fn("decideProjectCommand")(function* 
         projectId: command.projectId,
       });
       const occurredAt = nowIso();
-      return {
-        ...withEventBase({
-          aggregateKind: "project",
-          aggregateId: command.projectId,
-          occurredAt,
-          commandId: command.commandId,
-        }),
-        type: "project.deleted",
-        payload: {
-          projectId: command.projectId,
-          deletedAt: occurredAt,
+      const activeThreads = listThreadsByProjectId(readModel, command.projectId).filter(
+        (thread) => thread.deletedAt === null,
+      );
+      return [
+        ...activeThreads.map((thread) =>
+          Object.assign(
+            withEventBase({
+              aggregateKind: "thread",
+              aggregateId: thread.id,
+              occurredAt,
+              commandId: command.commandId,
+            }),
+            {
+              type: "thread.deleted" as const,
+              payload: {
+                threadId: thread.id,
+                deletedAt: occurredAt,
+              },
+            },
+          ),
+        ),
+        {
+          ...withEventBase({
+            aggregateKind: "project",
+            aggregateId: command.projectId,
+            occurredAt,
+            commandId: command.commandId,
+          }),
+          type: "project.deleted",
+          payload: {
+            projectId: command.projectId,
+            deletedAt: occurredAt,
+          },
         },
-      };
+      ];
     }
   }
 });

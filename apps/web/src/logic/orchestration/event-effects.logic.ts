@@ -3,6 +3,7 @@ import type { OrchestrationEvent, ThreadId } from "@bigcode/contracts";
 export interface OrchestrationBatchEffects {
   clearPromotedDraftThreadIds: ThreadId[];
   clearDeletedThreadIds: ThreadId[];
+  removeSelectedThreadIds: ThreadId[];
   removeTerminalStateThreadIds: ThreadId[];
   needsProviderInvalidation: boolean;
 }
@@ -72,6 +73,7 @@ export function deriveOrchestrationBatchEffects(
 
   const clearPromotedDraftThreadIds: ThreadId[] = [];
   const clearDeletedThreadIds: ThreadId[] = [];
+  const removeSelectedThreadIds: ThreadId[] = [];
   const removeTerminalStateThreadIds: ThreadId[] = [];
   for (const [threadId, effect] of threadLifecycleEffects) {
     if (effect.clearPromotedDraft) {
@@ -79,6 +81,7 @@ export function deriveOrchestrationBatchEffects(
     }
     if (effect.clearDeletedThread) {
       clearDeletedThreadIds.push(threadId);
+      removeSelectedThreadIds.push(threadId);
     }
     if (effect.removeTerminalState) {
       removeTerminalStateThreadIds.push(threadId);
@@ -88,6 +91,7 @@ export function deriveOrchestrationBatchEffects(
   return {
     clearPromotedDraftThreadIds,
     clearDeletedThreadIds,
+    removeSelectedThreadIds,
     removeTerminalStateThreadIds,
     needsProviderInvalidation,
   };
