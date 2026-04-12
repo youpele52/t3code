@@ -243,6 +243,15 @@ const buildAppUnderTest = (options?: {
       Layer.provide(
         Layer.mock(GitStatusBroadcaster)({
           subscribe: () => Effect.succeed(Stream.empty),
+          refreshLocalStatus: () =>
+            Effect.succeed({
+              isRepo: true,
+              hasOriginRemote: false,
+              isDefaultBranch: true,
+              branch: "main",
+              hasWorkingTreeChanges: false,
+              workingTree: { files: [], insertions: 0, deletions: 0 },
+            }),
           invalidateLocal: () => Effect.void,
           invalidateRemote: () => Effect.void,
         }),
