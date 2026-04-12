@@ -4,9 +4,7 @@ import * as OS from "node:os";
 import * as Path from "node:path";
 
 import { app, BrowserWindow, dialog, protocol } from "electron";
-import * as Effect from "effect/Effect";
 
-import { NetService } from "@bigcode/shared/Net";
 import type { RotatingFileSink } from "@bigcode/shared/logging";
 import {
   clearUpdatePollTimer,
@@ -46,6 +44,7 @@ import {
 import { resolveDesktopRuntimeInfo } from "./env/runtimeArch";
 import { syncShellEnvironment } from "./backend/syncShellEnvironment";
 import { createWindow } from "./window/windowManager";
+import { DEFAULT_DESKTOP_BACKEND_PORT, resolveDesktopBackendPort } from "./backend/backendPort";
 
 syncShellEnvironment();
 
@@ -306,12 +305,13 @@ function makeWindow(): BrowserWindow {
 
 async function bootstrap(): Promise<void> {
   logHeader("bootstrap start");
-  const port = await Effect.service(NetService).pipe(
-    Effect.flatMap((net) => net.reserveLoopbackPort()),
-    Effect.provide(NetService.layer),
-    Effect.runPromise,
+  const port = await resolveDesktopBackendPort({
+    host: "127.0.0.1",
+    startPort: DEFAULT_DESKTOP_BACKEND_PORT,
+  });
+  logHeader(
+    `selected backend port via sequential scan startPort=${DEFAULT_DESKTOP_BACKEND_PORT} port=${port}`,
   );
-  logHeader(`reserved backend port via NetService port=${port}`);
   const authToken = Crypto.randomBytes(24).toString("hex");
   const baseUrl = `ws://127.0.0.1:${port}`;
   const wsUrl = `${baseUrl}/?token=${encodeURIComponent(authToken)}`;
