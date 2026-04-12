@@ -79,6 +79,7 @@ export const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* 
 
   const stageAppDir = path.join(stageRoot, "app");
   const stageResourcesDir = path.join(stageAppDir, "apps/desktop/resources");
+  const stageServerDir = path.join(stageAppDir, "apps/server");
   const distDirs = {
     desktopDist: path.join(repoRoot, "apps/desktop/dist-electron"),
     desktopResources: path.join(repoRoot, "apps/desktop/resources"),
@@ -113,12 +114,12 @@ export const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* 
 
   yield* validateBundledClientAssets(path.dirname(bundledClientEntry));
   yield* fs.makeDirectory(path.join(stageAppDir, "apps/desktop"), { recursive: true });
-  yield* fs.makeDirectory(path.join(stageAppDir, "apps/server"), { recursive: true });
+  yield* fs.makeDirectory(stageServerDir, { recursive: true });
 
   yield* Effect.log("[desktop-artifact] Staging release app...");
   yield* fs.copy(distDirs.desktopDist, path.join(stageAppDir, "apps/desktop/dist-electron"));
   yield* fs.copy(distDirs.desktopResources, stageResourcesDir);
-  yield* fs.copy(distDirs.serverDist, path.join(stageAppDir, "apps/server/dist"));
+  yield* fs.copy(distDirs.serverDist, path.join(stageServerDir, "dist"));
   yield* assertPlatformBuildResources(options.platform, stageResourcesDir, options.verbose);
   yield* fs.copy(stageResourcesDir, path.join(stageAppDir, "apps/desktop/prod-resources"));
 
@@ -151,10 +152,32 @@ export const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* 
   const stagePackageJsonString = yield* encodeJsonString(stagePackageJson);
   yield* fs.writeFileString(path.join(stageAppDir, "package.json"), `${stagePackageJsonString}\n`);
 
+  const stageServerPackageJson = {
+    name: serverPackageJson.name,
+    version: appVersion,
+    private: true,
+    type: serverPackageJson.type,
+    bin: serverPackageJson.bin,
+    files: serverPackageJson.files,
+    dependencies: resolvedServerDependencies,
+  };
+  const stageServerPackageJsonString = yield* encodeJsonString(stageServerPackageJson);
+  yield* fs.writeFileString(
+    path.join(stageServerDir, "package.json"),
+    `${stageServerPackageJsonString}\n`,
+  );
+
   yield* Effect.log("[desktop-artifact] Installing staged production dependencies...");
   yield* runCommand(
     ChildProcess.make({
       cwd: stageAppDir,
+      ...commandOutputOptions(options.verbose),
+      shell: process.platform === "win32",
+    })`bun install --production`,
+  );
+  yield* runCommand(
+    ChildProcess.make({
+      cwd: stageServerDir,
       ...commandOutputOptions(options.verbose),
       shell: process.platform === "win32",
     })`bun install --production`,

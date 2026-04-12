@@ -202,11 +202,12 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
       "**/node_modules/@msgpackr-extract/**",
     ],
     // child_process.spawn cannot execute scripts from inside an asar archive.
-    // Place the server dist outside the asar so the backend child process can be spawned.
+    // Place the full packaged server runtime outside the asar so the backend child
+    // process can be spawned with its own resolvable node_modules tree.
     extraResources: [
       {
-        from: "apps/server/dist",
-        to: "server/dist",
+        from: "apps/server",
+        to: "server",
       },
     ],
   };
