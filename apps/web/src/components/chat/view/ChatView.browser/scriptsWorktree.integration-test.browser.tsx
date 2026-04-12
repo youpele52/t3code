@@ -253,11 +253,11 @@ describe("ChatView scripts and worktree integration", () => {
       branchButton.click();
 
       const branchInput = await waitForElement(
-        () => document.querySelector<HTMLInputElement>('input[placeholder="Search branches..."]'),
+        () => document.querySelector<HTMLInputElement>('input[placeholder="Search branches"]'),
         "Unable to find branch search input.",
       );
       branchInput.focus();
-      await page.getByPlaceholder("Search branches...").fill("1359");
+      await page.getByPlaceholder("Search branches").fill("1359");
 
       const checkoutItem = await waitForElement(
         () =>

@@ -4,7 +4,6 @@ import { ChevronDownIcon, GitBranchIcon } from "lucide-react";
 import {
   type CSSProperties,
   useCallback,
-  useDeferredValue,
   useEffect,
   useMemo,
   useOptimistic,
@@ -38,6 +37,7 @@ import {
   ComboboxStatus,
   ComboboxTrigger,
 } from "../ui/combobox";
+import { Searchbar } from "../ui/Searchbar";
 import { toastManager } from "../ui/toast";
 
 interface BranchToolbarBranchSelectorProps {
@@ -85,11 +85,9 @@ export function BranchToolbarBranchSelector({
   const queryClient = useQueryClient();
   const [isBranchMenuOpen, setIsBranchMenuOpen] = useState(false);
   const [branchQuery, setBranchQuery] = useState("");
-  const deferredBranchQuery = useDeferredValue(branchQuery);
 
   const branchStatusQuery = useQuery(gitStatusQueryOptions(branchCwd));
   const trimmedBranchQuery = branchQuery.trim();
-  const deferredTrimmedBranchQuery = deferredBranchQuery.trim();
 
   useEffect(() => {
     if (!branchCwd) return;
@@ -106,7 +104,7 @@ export function BranchToolbarBranchSelector({
   } = useInfiniteQuery(
     gitBranchSearchInfiniteQueryOptions({
       cwd: branchCwd,
-      query: deferredTrimmedBranchQuery,
+      query: trimmedBranchQuery,
       enabled: isBranchMenuOpen,
     }),
   );
@@ -127,7 +125,7 @@ export function BranchToolbarBranchSelector({
     () => new Map(branches.map((branch) => [branch.name, branch] as const)),
     [branches],
   );
-  const normalizedDeferredBranchQuery = deferredTrimmedBranchQuery.toLowerCase();
+  const normalizedBranchQuery = trimmedBranchQuery.toLowerCase();
   const prReference = parsePullRequestReference(trimmedBranchQuery);
   const isSelectingWorktreeBase =
     effectiveEnvMode === "worktree" && !envLocked && !activeWorktreePath;
@@ -150,22 +148,17 @@ export function BranchToolbarBranchSelector({
   }, [branchNames, checkoutPullRequestItemValue, createBranchItemValue, hasExactBranchMatch]);
   const filteredBranchPickerItems = useMemo(
     () =>
-      normalizedDeferredBranchQuery.length === 0
+      normalizedBranchQuery.length === 0
         ? branchPickerItems
         : branchPickerItems.filter((itemValue) =>
             shouldIncludeBranchPickerItem({
               itemValue,
-              normalizedQuery: normalizedDeferredBranchQuery,
+              normalizedQuery: normalizedBranchQuery,
               createBranchItemValue,
               checkoutPullRequestItemValue,
             }),
           ),
-    [
-      branchPickerItems,
-      checkoutPullRequestItemValue,
-      createBranchItemValue,
-      normalizedDeferredBranchQuery,
-    ],
+    [branchPickerItems, checkoutPullRequestItemValue, createBranchItemValue, normalizedBranchQuery],
   );
   const [resolvedActiveBranch, setOptimisticBranch] = useOptimistic(
     canonicalActiveBranch,
@@ -415,17 +408,24 @@ export function BranchToolbarBranchSelector({
         <ChevronDownIcon />
       </ComboboxTrigger>
       <ComboboxPopup align="end" side="top" className="w-80">
-        <div className="border-b p-1">
+        <Searchbar
+          showSearchIcon={false}
+          canClear={branchQuery.length > 0}
+          onClear={() => setBranchQuery("")}
+        >
           <ComboboxInput
-            className="[&_input]:font-sans rounded-md"
+            className="rounded-none border-transparent! bg-transparent! shadow-none before:hidden has-focus-within:ring-0 has-focus-visible:ring-0 [&_input]:bg-transparent [&_input]:px-0 [&_input]:py-0.5 [&_input]:font-sans [&_input]:text-xs [&_input]:tracking-tight [&_input]:placeholder:text-xs [&_input]:placeholder:tracking-tight [&_input]:placeholder:text-muted-foreground/50"
             inputClassName="ring-0"
-            placeholder="Search branches..."
+            onKeyDown={(event) => {
+              event.stopPropagation();
+            }}
+            placeholder="Search branches"
             showTrigger={false}
             size="sm"
             value={branchQuery}
             onChange={(event) => setBranchQuery(event.target.value)}
           />
-        </div>
+        </Searchbar>
         <ComboboxEmpty>No branches found.</ComboboxEmpty>
 
         <ComboboxList className="max-h-56">
