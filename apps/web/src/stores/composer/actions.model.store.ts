@@ -22,6 +22,10 @@ import { type ComposerDraftStoreState, type ComposerThreadDraftState } from "./t
 type SetFn = StoreApi<ComposerDraftStoreState>["setState"];
 type GetFn = StoreApi<ComposerDraftStoreState>["getState"];
 
+function isRuntimeMode(value: unknown): value is RuntimeMode {
+  return value === "approval-required" || value === "auto-accept-edits" || value === "full-access";
+}
+
 /** Model selection and sticky-state actions for the composer draft store. */
 export function createModelActions(set: SetFn, _get: GetFn) {
   return {
@@ -268,8 +272,7 @@ export function createModelActions(set: SetFn, _get: GetFn) {
       if (threadId.length === 0) {
         return;
       }
-      const nextRuntimeMode: RuntimeMode | null =
-        runtimeMode === "approval-required" || runtimeMode === "full-access" ? runtimeMode : null;
+      const nextRuntimeMode: RuntimeMode | null = isRuntimeMode(runtimeMode) ? runtimeMode : null;
       set((state) => {
         const existing = state.draftsByThreadId[threadId];
         if (!existing && nextRuntimeMode === null) {

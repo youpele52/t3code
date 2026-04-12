@@ -152,6 +152,10 @@ export function useChatViewComposerDerivedState(base: ChatViewBaseState) {
     }),
     [providerStatuses],
   );
+  const activeProviderStatus = useMemo(
+    () => providerStatuses.find((status) => status.provider === selectedProvider) ?? null,
+    [selectedProvider, providerStatuses],
+  );
 
   const selectedModelForPickerWithCustomFallback = useMemo(() => {
     const currentOptions = modelOptionsByProvider[selectedProvider];
@@ -198,6 +202,34 @@ export function useChatViewComposerDerivedState(base: ChatViewBaseState) {
 
   const composerMenuItems = useMemo<ComposerCommandItem[]>(() => {
     if (!base.composerTrigger) return [];
+    if (base.composerTrigger.kind === "skill") {
+      const query = base.composerTrigger.query.trim().toLowerCase();
+      const providerFirstSkills = discoveredSkills.filter(
+        (skill) => skill.provider === selectedProvider,
+      );
+      const fallbackSkills = discoveredSkills.filter(
+        (skill) => skill.provider !== selectedProvider,
+      );
+      const rankAndFilter = (skills: typeof discoveredSkills) =>
+        skills
+          .filter((skill) => {
+            if (!query) return true;
+            return (
+              skill.name.toLowerCase().includes(query) ||
+              skill.provider.toLowerCase().includes(query) ||
+              (skill.description?.toLowerCase().includes(query) ?? false)
+            );
+          })
+          .map((skill) => ({
+            id: `provider-skill:${skill.provider}:${skill.id}`,
+            type: "skill",
+            skill,
+            label: `$${skill.name}`,
+            description: `${skill.provider}${skill.description ? ` · ${skill.description}` : ""}`,
+          })) satisfies ReadonlyArray<Extract<ComposerCommandItem, { type: "skill" }>>;
+
+      return [...rankAndFilter(providerFirstSkills), ...rankAndFilter(fallbackSkills)];
+    }
     if (base.composerTrigger.kind === "path") {
       const query = base.composerTrigger.query.trim().toLowerCase();
       const agentItems = discoveredAgents
@@ -228,6 +260,19 @@ export function useChatViewComposerDerivedState(base: ChatViewBaseState) {
     }
 
     if (base.composerTrigger.kind === "slash-command") {
+      const providerSlashCommandItems: ReadonlyArray<
+        Extract<ComposerCommandItem, { type: "slash-command" }>
+      > = (activeProviderStatus?.slashCommands ?? []).map((command) => ({
+        id: `provider-slash:${selectedProvider}:${command.name}`,
+        type: "slash-command",
+        command: command.name,
+        label: `/${command.name}`,
+        description:
+          command.description ??
+          [selectedProvider, command.input?.hint ? `input: ${command.input.hint}` : null]
+            .filter(Boolean)
+            .join(" · "),
+      }));
       const slashCommandItems = [
         {
           id: "slash:model",
@@ -264,6 +309,7 @@ export function useChatViewComposerDerivedState(base: ChatViewBaseState) {
           label: "/skills",
           description: "Browse discovered skills across providers",
         },
+        ...providerSlashCommandItems,
       ] satisfies ReadonlyArray<Extract<ComposerCommandItem, { type: "slash-command" }>>;
       const query = base.composerTrigger.query.trim().toLowerCase();
       const skillItems = discoveredSkills
@@ -344,10 +390,12 @@ export function useChatViewComposerDerivedState(base: ChatViewBaseState) {
         return item;
       });
   }, [
+    activeProviderStatus,
     base.composerTrigger,
     discoveredAgents,
     discoveredSkills,
     searchableModelOptions,
+    selectedProvider,
     workspaceEntries,
   ]);
 
@@ -367,10 +415,6 @@ export function useChatViewComposerDerivedState(base: ChatViewBaseState) {
   const nonPersistedComposerImageIdSet = useMemo(
     () => new Set(base.nonPersistedComposerImageIds),
     [base.nonPersistedComposerImageIds],
-  );
-  const activeProviderStatus = useMemo(
-    () => providerStatuses.find((status) => status.provider === selectedProvider) ?? null,
-    [selectedProvider, providerStatuses],
   );
   const isGitRepo = gitStatusQuery.data?.isRepo ?? true;
   const terminalShortcutLabelOptions = useMemo(
@@ -435,6 +479,7 @@ export function useChatViewComposerDerivedState(base: ChatViewBaseState) {
     gitStatusQuery,
     keybindings,
     availableEditors,
+    discoveredSkills,
     modelOptionsByProvider,
     selectedModelForPickerWithCustomFallback,
     workspaceEntriesQuery,

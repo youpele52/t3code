@@ -24,6 +24,7 @@ import {
 import { newCommandId, newMessageId, newThreadId } from "~/lib/utils";
 import { readNativeApi } from "~/rpc/nativeApi";
 import { toastManager } from "../../../ui/toast";
+import { resolveEffectiveEnvMode } from "~/components/git/BranchToolbar.logic";
 import type { ChatViewBaseState } from "./chat-view-base-state.hooks";
 import type { ChatViewComposerDerivedState } from "./chat-view-composer-derived.hooks";
 import type { ChatViewThreadDerivedState } from "./chat-view-thread-derived.hooks";
@@ -108,11 +109,11 @@ export function useChatViewInteractions({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [base.expandedImage, closeExpandedImage, navigateExpandedImage]);
 
-  const envMode: DraftThreadEnvMode = base.activeThread?.worktreePath
-    ? "worktree"
-    : base.isLocalDraftThread
-      ? (base.draftThread?.envMode ?? "local")
-      : "local";
+  const envMode: DraftThreadEnvMode = resolveEffectiveEnvMode({
+    activeWorktreePath: base.activeThread?.worktreePath ?? null,
+    hasServerThread: base.isServerThread,
+    draftThreadEnvMode: base.isLocalDraftThread ? base.draftThread?.envMode : undefined,
+  });
 
   const branchThreadForProviderChange = useCallback(
     async (nextModelSelection: ModelSelection) => {
@@ -606,7 +607,10 @@ export function useChatViewInteractions({
     onRevertUserMessage,
     onEnvModeChange: (mode: DraftThreadEnvMode) => {
       if (base.isLocalDraftThread) {
-        base.setDraftThreadContext(base.threadId, { envMode: mode });
+        base.setDraftThreadContext(base.threadId, {
+          envMode: mode,
+          ...(mode === "worktree" && base.draftThread?.worktreePath ? { worktreePath: null } : {}),
+        });
       }
       runtime.scheduleComposerFocus();
     },

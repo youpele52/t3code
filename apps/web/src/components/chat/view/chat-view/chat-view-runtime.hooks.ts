@@ -19,8 +19,6 @@ import { useTerminalActions } from "../ChatView.terminalActions.logic";
 import { useProjectScripts } from "../ChatView.projectScripts.logic";
 import { useScrollBehavior } from "../ChatView.scrollBehavior.logic";
 import {
-  resolveComposerFooterContentWidth,
-  shouldForceCompactComposerFooterForFit,
   shouldUseCompactComposerFooter,
   shouldUseCompactComposerPrimaryActions,
 } from "../composerFooterLayout";
@@ -290,12 +288,6 @@ export function useChatViewRuntime({ base, thread, composer, timeline }: ChatVie
     handleInteractionModeChange(base.interactionMode === "plan" ? "default" : "plan");
   }, [base.interactionMode, handleInteractionModeChange]);
 
-  const toggleRuntimeMode = useCallback(() => {
-    void handleRuntimeModeChange(
-      base.runtimeMode === "full-access" ? "approval-required" : "full-access",
-    );
-  }, [base.runtimeMode, handleRuntimeModeChange]);
-
   const togglePlanSidebar = useCallback(() => {
     base.setPlanSidebarOpen((open) => {
       if (open) {
@@ -369,11 +361,6 @@ export function useChatViewRuntime({ base, thread, composer, timeline }: ChatVie
     phase: thread.phase,
     timelineEntries: timeline.timelineEntries,
     composerFormRef: base.composerFormRef,
-    composerFooterRef: base.composerFooterRef,
-    composerFooterLeadingRef: base.composerFooterLeadingRef,
-    composerFooterActionsRef: base.composerFooterActionsRef,
-    resolveComposerFooterContentWidth,
-    shouldForceCompactComposerFooterForFit,
     shouldUseCompactComposerFooter,
     shouldUseCompactComposerPrimaryActions,
   });
@@ -401,7 +388,6 @@ export function useChatViewRuntime({ base, thread, composer, timeline }: ChatVie
     handleRuntimeModeChange,
     handleInteractionModeChange,
     toggleInteractionMode,
-    toggleRuntimeMode,
     togglePlanSidebar,
     persistThreadSettingsForNextTurn,
     scrollBehavior,

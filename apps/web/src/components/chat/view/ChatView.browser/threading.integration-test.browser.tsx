@@ -12,6 +12,7 @@ import {
   createSnapshotForTargetUser,
 } from "./fixtures";
 import {
+  dispatchCommandPaletteShortcut,
   dispatchSidebarToggleShortcut,
   triggerChatNewShortcutUntilPath,
   waitForComposerEditor,
@@ -419,6 +420,48 @@ describe("ChatView threading integration", () => {
       dispatchSidebarToggleShortcut();
       await vi.waitFor(() => {
         expect(sidebarRoot.dataset.state).toBe("collapsed");
+      });
+    } finally {
+      await mounted.cleanup();
+    }
+  });
+
+  it("opens the command palette from mod+k while the composer is focused", async () => {
+    const mounted = await ctx.mountChatView({
+      viewport: DEFAULT_VIEWPORT,
+      snapshot: createSnapshotForTargetUser({
+        targetMessageId: "msg-user-command-palette-shortcut-test" as never,
+        targetText: "command palette shortcut test",
+      }),
+      configureFixture: (fixture) => {
+        fixture.serverConfig = {
+          ...fixture.serverConfig,
+          keybindings: [
+            {
+              command: "commandPalette.toggle",
+              shortcut: {
+                key: "k",
+                metaKey: false,
+                ctrlKey: false,
+                shiftKey: false,
+                altKey: false,
+                modKey: true,
+              },
+              whenAst: { type: "not", node: { type: "identifier", name: "terminalFocus" } },
+            },
+          ],
+        };
+      },
+    });
+
+    try {
+      await ctx.waitForServerConfigToApply();
+      const composerEditor = await waitForComposerEditor();
+      composerEditor.focus();
+      dispatchCommandPaletteShortcut();
+
+      await vi.waitFor(() => {
+        expect(document.querySelector('[data-testid="command-palette"]')).toBeTruthy();
       });
     } finally {
       await mounted.cleanup();

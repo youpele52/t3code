@@ -6,7 +6,7 @@
  *
  * @module GitManager.prLookup
  */
-import { Effect } from "effect";
+import { Effect, Result } from "effect";
 
 import type { GitRunStackedActionResult } from "@bigcode/contracts";
 import type { GitCoreShape } from "../Services/GitCore.ts";
@@ -14,9 +14,12 @@ import type { GitHubCliShape } from "../Services/GitHubCli.ts";
 import {
   gitManagerError,
   matchesBranchHeadContext,
-  parsePullRequestList,
   toPullRequestInfo,
 } from "./GitManager.prUtils.ts";
+import {
+  decodeGitHubPullRequestListJson,
+  formatGitHubJsonDecodeError,
+} from "../githubPullRequests.ts";
 import { summarizeGitActionResult } from "./GitManager.commitUtils.ts";
 import type { BranchHeadContext, PullRequestInfo } from "./GitManager.types.ts";
 import type { makeBranchContext } from "./GitManager.branchContext.ts";
@@ -97,13 +100,22 @@ export function makePrLookup(
         continue;
       }
 
-      const parsedJson = yield* Effect.try({
-        try: () => JSON.parse(raw) as unknown,
-        catch: (cause) =>
-          gitManagerError("findLatestPr", "GitHub CLI returned invalid PR list JSON.", cause),
-      });
+      const pullRequests = yield* Effect.sync(() => decodeGitHubPullRequestListJson(raw)).pipe(
+        Effect.flatMap((decoded) => {
+          if (!Result.isSuccess(decoded)) {
+            return Effect.fail(
+              gitManagerError(
+                "findLatestPr",
+                `GitHub CLI returned invalid PR list JSON: ${formatGitHubJsonDecodeError(decoded.failure)}`,
+                decoded.failure,
+              ),
+            );
+          }
+          return Effect.succeed(decoded.success);
+        }),
+      );
 
-      for (const pr of parsePullRequestList(parsedJson)) {
+      for (const pr of pullRequests) {
         if (!matchesBranchHeadContext(pr, headContext)) {
           continue;
         }

@@ -26,7 +26,7 @@ export type { OpencodeAdapterLiveOptions } from "./OpencodeAdapter.types.ts";
 const makeOpencodeAdapter = Effect.fn("makeOpencodeAdapter")(function* (
   options?: import("./OpencodeAdapter.types.ts").OpencodeAdapterLiveOptions,
 ) {
-  yield* ServerConfig;
+  const serverConfig = yield* ServerConfig;
   yield* ServerSettingsService;
   const serverManager = yield* OpencodeServerManager;
 
@@ -52,6 +52,7 @@ const makeOpencodeAdapter = Effect.fn("makeOpencodeAdapter")(function* (
     sessions,
     runtimeEventQueue,
     serverManager,
+    serverConfig: { attachmentsDir: serverConfig.attachmentsDir },
     nextEventId,
     makeEventStamp,
     nativeEventLogger,

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   extractTerminalLinks,
+  extractWrappedTerminalLinkSegments,
   isTerminalLinkActivation,
   resolvePathLinkTarget,
 } from "./links.utils";
@@ -66,6 +67,58 @@ describe("extractTerminalLinks", () => {
         text: "C:/tmp/x.ts",
         start: 1,
         end: 12,
+      },
+    ]);
+  });
+
+  it("maps wrapped urls back into per-line terminal ranges", () => {
+    expect(
+      extractWrappedTerminalLinkSegments([
+        { lineNumber: 12, text: "See https://example.com/very/long/" },
+        { lineNumber: 13, text: "path/that-wraps for details" },
+      ]),
+    ).toEqual([
+      {
+        kind: "url",
+        text: "https://example.com/very/long/path/that-wraps",
+        range: {
+          start: { x: 5, y: 12 },
+          end: { x: 34, y: 12 },
+        },
+      },
+      {
+        kind: "url",
+        text: "https://example.com/very/long/path/that-wraps",
+        range: {
+          start: { x: 1, y: 13 },
+          end: { x: 15, y: 13 },
+        },
+      },
+    ]);
+  });
+
+  it("maps wrapped file paths back into per-line terminal ranges", () => {
+    expect(
+      extractWrappedTerminalLinkSegments([
+        { lineNumber: 3, text: "src/components/chat/messages/" },
+        { lineNumber: 4, text: "MessagesTimeline.tsx:42 failed" },
+      ]),
+    ).toEqual([
+      {
+        kind: "path",
+        text: "src/components/chat/messages/MessagesTimeline.tsx:42",
+        range: {
+          start: { x: 1, y: 3 },
+          end: { x: 29, y: 3 },
+        },
+      },
+      {
+        kind: "path",
+        text: "src/components/chat/messages/MessagesTimeline.tsx:42",
+        range: {
+          start: { x: 1, y: 4 },
+          end: { x: 23, y: 4 },
+        },
       },
     ]);
   });

@@ -4,6 +4,7 @@ import { RpcClient } from "effect/unstable/rpc";
 import {
   createWsRpcProtocolLayer,
   makeWsRpcProtocolClient,
+  type WsProtocolLifecycleHandlers,
   type WsRpcProtocolClient,
 } from "./protocol";
 
@@ -33,12 +34,15 @@ function formatErrorMessage(error: unknown): string {
 }
 
 export class WsTransport {
+  private readonly lifecycleHandlers: WsProtocolLifecycleHandlers | undefined;
   private readonly url: string | undefined;
   private disposed = false;
+  private hasReportedTransportDisconnect = false;
   private reconnectChain: Promise<void> = Promise.resolve();
   private session: TransportSession;
 
-  constructor(url?: string) {
+  constructor(url?: string, lifecycleHandlers?: WsProtocolLifecycleHandlers) {
+    this.lifecycleHandlers = lifecycleHandlers;
     this.url = url;
     this.session = this.createSession();
   }
@@ -117,6 +121,7 @@ export class WsTransport {
             listener,
             () => active,
             () => {
+              this.hasReportedTransportDisconnect = false;
               hasReceivedValue = true;
             },
           );
@@ -129,9 +134,12 @@ export class WsTransport {
             return;
           }
 
-          console.warn("WebSocket RPC subscription disconnected", {
-            error: formatErrorMessage(error),
-          });
+          if (!this.hasReportedTransportDisconnect) {
+            console.warn("WebSocket RPC subscription disconnected", {
+              error: formatErrorMessage(error),
+            });
+          }
+          this.hasReportedTransportDisconnect = true;
           await sleep(retryDelayMs);
         }
       }
@@ -177,7 +185,7 @@ export class WsTransport {
   }
 
   private createSession(): TransportSession {
-    const runtime = ManagedRuntime.make(createWsRpcProtocolLayer(this.url));
+    const runtime = ManagedRuntime.make(createWsRpcProtocolLayer(this.url, this.lifecycleHandlers));
     const clientScope = runtime.runSync(Scope.make());
     return {
       runtime,

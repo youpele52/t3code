@@ -53,6 +53,7 @@ export interface TurnMethodDeps {
   ) => Effect.Effect<ActiveOpencodeSession, ProviderAdapterSessionNotFoundError>;
   readonly syntheticEventFn: ReturnType<typeof makeSyntheticEventFn>;
   readonly emitFn: (events: ReadonlyArray<ProviderRuntimeEvent>) => Effect.Effect<void>;
+  readonly serverConfig: { readonly attachmentsDir: string };
 }
 
 /** Deps required by query/stop methods. */
@@ -66,6 +67,7 @@ export interface SessionMethodDeps {
   readonly sessions: Map<ThreadId, ActiveOpencodeSession>;
   readonly runtimeEventQueue: Queue.Queue<ProviderRuntimeEvent>;
   readonly serverManager: OpencodeServerManagerShape;
+  readonly serverConfig: { readonly attachmentsDir: string };
   readonly nextEventId: Effect.Effect<EventId>;
   readonly makeEventStamp: () => Effect.Effect<{ eventId: EventId; createdAt: string }>;
   readonly nativeEventLogger: EventNdjsonLogger | undefined;
@@ -79,6 +81,7 @@ export function makeSessionMethods(deps: SessionMethodDeps) {
     sessions,
     runtimeEventQueue,
     serverManager,
+    serverConfig,
     nextEventId,
     makeEventStamp,
     nativeEventLogger,
@@ -103,6 +106,7 @@ export function makeSessionMethods(deps: SessionMethodDeps) {
     requireSession,
     syntheticEventFn,
     emitFn,
+    serverConfig,
   };
 
   const turnMethods = makeTurnMethods(sharedDeps);

@@ -16,13 +16,14 @@ import React, {
 } from "react";
 import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
+import { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { openInPreferredEditor } from "../../../models/editor";
 import { resolveDiffThemeName, type DiffThemeName } from "../../../lib/diffRendering";
 import { fnv1a32 } from "../../../lib/diffRendering";
 import { LRUCache } from "../../../lib/lruCache";
 import { useTheme } from "../../../hooks/useTheme";
-import { resolveMarkdownFileLinkTarget } from "../../../utils/markdown";
+import { resolveMarkdownFileLinkTarget, rewriteMarkdownFileUriHref } from "../../../utils/markdown";
 import { readNativeApi } from "../../../rpc/nativeApi";
 
 class CodeHighlightErrorBoundary extends React.Component<
@@ -165,7 +166,7 @@ function MarkdownCodeBlock({ code, children }: { code: string; children: ReactNo
   );
 
   return (
-    <div className="chat-markdown-codeblock">
+    <div className="chat-markdown-codeblock leading-snug">
       <button
         type="button"
         className="chat-markdown-copy-button"
@@ -198,47 +199,68 @@ function SuspenseShikiCodeBlock({
   const cachedHighlightedHtml = !isStreaming ? highlightedCodeCache.get(cacheKey) : null;
 
   if (cachedHighlightedHtml != null) {
-    return (
-      <div
-        className="chat-markdown-shiki"
-        dangerouslySetInnerHTML={{ __html: cachedHighlightedHtml }}
-      />
-    );
+    return <RenderedHighlightedCode html={cachedHighlightedHtml} />;
   }
 
-  const highlighter = use(getHighlighterPromise(language));
+  return (
+    <RenderedShikiCodeBlock
+      cacheKey={cacheKey}
+      code={code}
+      isStreaming={isStreaming}
+      language={language}
+      themeName={themeName}
+    />
+  );
+}
+
+function RenderedShikiCodeBlock(props: {
+  cacheKey: string;
+  code: string;
+  isStreaming: boolean;
+  language: string;
+  themeName: DiffThemeName;
+}) {
+  const highlighter = use(getHighlighterPromise(props.language));
   const highlightedHtml = useMemo(() => {
     try {
-      return highlighter.codeToHtml(code, { lang: language, theme: themeName });
+      return highlighter.codeToHtml(props.code, { lang: props.language, theme: props.themeName });
     } catch (error) {
       // Log highlighting failures for debugging while falling back to plain text
       console.warn(
-        `Code highlighting failed for language "${language}", falling back to plain text.`,
+        `Code highlighting failed for language "${props.language}", falling back to plain text.`,
         error instanceof Error ? error.message : error,
       );
       // If highlighting fails for this language, render as plain text
-      return highlighter.codeToHtml(code, { lang: "text", theme: themeName });
+      return highlighter.codeToHtml(props.code, { lang: "text", theme: props.themeName });
     }
-  }, [code, highlighter, language, themeName]);
+  }, [highlighter, props.code, props.language, props.themeName]);
 
   useEffect(() => {
-    if (!isStreaming) {
+    if (!props.isStreaming) {
       highlightedCodeCache.set(
-        cacheKey,
+        props.cacheKey,
         highlightedHtml,
-        estimateHighlightedSize(highlightedHtml, code),
+        estimateHighlightedSize(highlightedHtml, props.code),
       );
     }
-  }, [cacheKey, code, highlightedHtml, isStreaming]);
+  }, [highlightedHtml, props.cacheKey, props.code, props.isStreaming]);
 
+  return <RenderedHighlightedCode html={highlightedHtml} />;
+}
+
+function RenderedHighlightedCode({ html }: { html: string }) {
   return (
-    <div className="chat-markdown-shiki" dangerouslySetInnerHTML={{ __html: highlightedHtml }} />
+    // biome-ignore lint/security/noDangerouslySetInnerHtml: Shiki renders trusted syntax-highlighted HTML.
+    <div className="chat-markdown-shiki" dangerouslySetInnerHTML={{ __html: html }} />
   );
 }
 
 function ChatMarkdown({ text, cwd, isStreaming = false }: ChatMarkdownProps) {
   const { resolvedTheme } = useTheme();
   const diffThemeName = resolveDiffThemeName(resolvedTheme);
+  const markdownUrlTransform = useCallback((href: string) => {
+    return rewriteMarkdownFileUriHref(href) ?? defaultUrlTransform(href);
+  }, []);
   const markdownComponents = useMemo<Components>(
     () => ({
       a({ node: _node, href, ...props }) {
@@ -291,7 +313,11 @@ function ChatMarkdown({ text, cwd, isStreaming = false }: ChatMarkdownProps) {
 
   return (
     <div className="chat-markdown w-full min-w-0 text-sm leading-relaxed text-foreground/80">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={markdownComponents}
+        urlTransform={markdownUrlTransform}
+      >
         {text}
       </ReactMarkdown>
     </div>

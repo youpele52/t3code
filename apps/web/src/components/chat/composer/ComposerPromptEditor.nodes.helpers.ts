@@ -19,6 +19,7 @@ import {
   type ElementNode,
   type LexicalNode,
 } from "lexical";
+import type { ServerDiscoveredSkill } from "@bigcode/contracts";
 import type { TerminalContextDraft } from "~/lib/terminalContext";
 import { splitPromptIntoComposerSegments } from "../../../logic/composer";
 import {
@@ -319,6 +320,57 @@ export function $setSelectionAtComposerOffset(nextOffset: number): void {
   $setSelection(selection);
 }
 
+export function $setSelectionRangeAtComposerOffsets(startOffset: number, endOffset: number): void {
+  const root = $getRoot();
+  const composerLength = $getComposerRootLength();
+  const boundedStart = Math.max(0, Math.min(startOffset, composerLength));
+  const boundedEnd = Math.max(0, Math.min(endOffset, composerLength));
+  const anchorRemainingRef = { value: boundedStart };
+  const focusRemainingRef = { value: boundedEnd };
+  const anchorPoint = findSelectionPointAtOffset(root, anchorRemainingRef) ?? {
+    key: root.getKey(),
+    offset: root.getChildren().length,
+    type: "element" as const,
+  };
+  const focusPoint = findSelectionPointAtOffset(root, focusRemainingRef) ?? {
+    key: root.getKey(),
+    offset: root.getChildren().length,
+    type: "element" as const,
+  };
+  const selection = $createRangeSelection();
+  selection.anchor.set(anchorPoint.key, anchorPoint.offset, anchorPoint.type);
+  selection.focus.set(focusPoint.key, focusPoint.offset, focusPoint.type);
+  $setSelection(selection);
+}
+
+export function getSelectionRangeForExpandedComposerOffsets(
+  selection: ReturnType<typeof $getSelection>,
+): {
+  start: number;
+  end: number;
+} | null {
+  if (!$isRangeSelection(selection)) {
+    return null;
+  }
+
+  const anchorNode = selection.anchor.getNode();
+  const focusNode = selection.focus.getNode();
+  const anchorOffset = getExpandedAbsoluteOffsetForPoint(anchorNode, selection.anchor.offset);
+  const focusOffset = getExpandedAbsoluteOffsetForPoint(focusNode, selection.focus.offset);
+  return {
+    start: Math.min(anchorOffset, focusOffset),
+    end: Math.max(anchorOffset, focusOffset),
+  };
+}
+
+export function $selectionTouchesInlineToken(selection: ReturnType<typeof $getSelection>): boolean {
+  if (!$isRangeSelection(selection)) {
+    return false;
+  }
+
+  return selection.getNodes().some((node) => isComposerInlineTokenNode(node));
+}
+
 export function $readSelectionOffsetFromEditorState(fallback: number): number {
   const selection = $getSelection();
   if (!$isRangeSelection(selection) || !selection.isCollapsed()) {
@@ -357,19 +409,26 @@ export function $appendTextWithLineBreaks(parent: ElementNode, text: string): vo
 export function $setComposerEditorPrompt(
   prompt: string,
   terminalContexts: ReadonlyArray<TerminalContextDraft>,
+  discoveredSkills: ReadonlyArray<ServerDiscoveredSkill> = [],
 ): void {
   const root = $getRoot();
   root.clear();
   const paragraph = $createParagraphNode();
   root.append(paragraph);
+  const discoveredSkillsByName = new Map(discoveredSkills.map((skill) => [skill.name, skill]));
 
   const segments = splitPromptIntoComposerSegments(prompt, terminalContexts);
   for (const segment of segments) {
     if (segment.type === "mention") {
+      const resolvedSkill =
+        segment.mentionKind === "skill"
+          ? (discoveredSkillsByName.get(segment.displayLabel) ??
+            discoveredSkillsByName.get(segment.rawValue.replace(/^skill::?/, "")))
+          : undefined;
       paragraph.append(
         $createComposerMentionNode({
           rawValue: segment.rawValue,
-          displayLabel: segment.displayLabel,
+          displayLabel: resolvedSkill?.name ?? segment.displayLabel,
           mentionKind: segment.mentionKind,
         }),
       );

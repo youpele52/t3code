@@ -50,6 +50,8 @@ const TEST_PROVIDERS: ReadonlyArray<ServerProvider> = [
         },
       },
     ],
+    slashCommands: [],
+    skills: [],
   },
   {
     provider: "claudeAgent",
@@ -107,6 +109,8 @@ const TEST_PROVIDERS: ReadonlyArray<ServerProvider> = [
         },
       },
     ],
+    slashCommands: [],
+    skills: [],
   },
   {
     provider: "copilot",
@@ -142,6 +146,8 @@ const TEST_PROVIDERS: ReadonlyArray<ServerProvider> = [
         },
       },
     ],
+    slashCommands: [],
+    skills: [],
   },
   {
     provider: "opencode",
@@ -165,6 +171,8 @@ const TEST_PROVIDERS: ReadonlyArray<ServerProvider> = [
         },
       },
     ],
+    slashCommands: [],
+    skills: [],
   },
 ];
 
@@ -178,6 +186,8 @@ function buildCodexProvider(models: ServerProvider["models"]): ServerProvider {
     auth: { status: "authenticated" },
     checkedAt: new Date().toISOString(),
     models,
+    slashCommands: [],
+    skills: [],
   };
 }
 

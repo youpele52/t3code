@@ -147,7 +147,7 @@ export async function expectComposerActionsContained(): Promise<void> {
 }
 
 export async function waitForInteractionModeButton(
-  expectedLabel: "Chat" | "Plan",
+  expectedLabel: "Build" | "Plan",
 ): Promise<HTMLButtonElement> {
   return waitForElement(
     () =>
@@ -177,6 +177,19 @@ export function dispatchSidebarToggleShortcut(): void {
   window.dispatchEvent(
     new KeyboardEvent("keydown", {
       key: "b",
+      metaKey: useMetaForMod,
+      ctrlKey: !useMetaForMod,
+      bubbles: true,
+      cancelable: true,
+    }),
+  );
+}
+
+export function dispatchCommandPaletteShortcut(): void {
+  const useMetaForMod = isMacPlatform(navigator.platform);
+  window.dispatchEvent(
+    new KeyboardEvent("keydown", {
+      key: "k",
       metaKey: useMetaForMod,
       ctrlKey: !useMetaForMod,
       bubbles: true,

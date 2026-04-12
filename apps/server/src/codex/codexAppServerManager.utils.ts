@@ -13,20 +13,26 @@ import { type ChildProcessWithoutNullStreams } from "node:child_process";
  * Maps the T3 runtime mode to Codex approval policy and sandbox settings.
  */
 export function mapCodexRuntimeMode(runtimeMode: RuntimeMode): {
-  readonly approvalPolicy: "on-request" | "never";
-  readonly sandbox: "workspace-write" | "danger-full-access";
+  readonly approvalPolicy: "untrusted" | "on-request" | "never";
+  readonly sandbox: "read-only" | "workspace-write" | "danger-full-access";
 } {
-  if (runtimeMode === "approval-required") {
-    return {
-      approvalPolicy: "on-request",
-      sandbox: "workspace-write",
-    };
+  switch (runtimeMode) {
+    case "approval-required":
+      return {
+        approvalPolicy: "untrusted",
+        sandbox: "read-only",
+      };
+    case "auto-accept-edits":
+      return {
+        approvalPolicy: "on-request",
+        sandbox: "workspace-write",
+      };
+    case "full-access":
+      return {
+        approvalPolicy: "never",
+        sandbox: "danger-full-access",
+      };
   }
-
-  return {
-    approvalPolicy: "never",
-    sandbox: "danger-full-access",
-  };
 }
 
 /**

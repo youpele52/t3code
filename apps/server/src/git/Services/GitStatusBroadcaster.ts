@@ -8,7 +8,11 @@
  */
 import { ServiceMap } from "effect";
 import type { Effect, Stream } from "effect";
-import type { GitStatusStreamEvent, GitManagerServiceError } from "@bigcode/contracts";
+import type {
+  GitManagerServiceError,
+  GitStatusLocalResult,
+  GitStatusStreamEvent,
+} from "@bigcode/contracts";
 
 export interface GitStatusBroadcasterShape {
   /**
@@ -19,6 +23,13 @@ export interface GitStatusBroadcasterShape {
   readonly subscribe: (
     cwd: string,
   ) => Effect.Effect<Stream.Stream<GitStatusStreamEvent, GitManagerServiceError>>;
+
+  /**
+   * Refresh and return the current local snapshot for the given cwd.
+   */
+  readonly refreshLocalStatus: (
+    cwd: string,
+  ) => Effect.Effect<GitStatusLocalResult, GitManagerServiceError>;
 
   /**
    * Trigger an immediate local status refresh for the given cwd (e.g. after a branch op).

@@ -60,6 +60,35 @@ export const ServerProviderModel = Schema.Struct({
 });
 export type ServerProviderModel = typeof ServerProviderModel.Type;
 
+export const ServerProviderSlashCommandInput = Schema.Struct({
+  hint: TrimmedNonEmptyString,
+});
+export type ServerProviderSlashCommandInput = typeof ServerProviderSlashCommandInput.Type;
+
+export const ServerProviderSlashCommand = Schema.Struct({
+  name: TrimmedNonEmptyString,
+  description: Schema.optional(TrimmedNonEmptyString),
+  input: Schema.optional(ServerProviderSlashCommandInput),
+});
+export type ServerProviderSlashCommand = typeof ServerProviderSlashCommand.Type;
+
+export const ServerProviderSlashCommands = Schema.Array(ServerProviderSlashCommand);
+export type ServerProviderSlashCommands = typeof ServerProviderSlashCommands.Type;
+
+export const ServerProviderSkill = Schema.Struct({
+  name: TrimmedNonEmptyString,
+  path: TrimmedNonEmptyString,
+  enabled: Schema.Boolean,
+  displayName: Schema.optional(TrimmedNonEmptyString),
+  description: Schema.optional(TrimmedNonEmptyString),
+  shortDescription: Schema.optional(TrimmedNonEmptyString),
+  scope: Schema.optional(TrimmedNonEmptyString),
+});
+export type ServerProviderSkill = typeof ServerProviderSkill.Type;
+
+export const ServerProviderSkills = Schema.Array(ServerProviderSkill);
+export type ServerProviderSkills = typeof ServerProviderSkills.Type;
+
 export const ServerProvider = Schema.Struct({
   provider: ProviderKind,
   enabled: Schema.Boolean,
@@ -70,6 +99,8 @@ export const ServerProvider = Schema.Struct({
   checkedAt: IsoDateTime,
   message: Schema.optional(TrimmedNonEmptyString),
   models: Schema.Array(ServerProviderModel),
+  slashCommands: ServerProviderSlashCommands,
+  skills: ServerProviderSkills,
 });
 export type ServerProvider = typeof ServerProvider.Type;
 

@@ -16,7 +16,6 @@ import {
   type ServerConfigIssue,
 } from "@bigcode/contracts";
 import {
-  Array,
   Cache,
   Cause,
   Deferred,
@@ -60,6 +59,7 @@ export const DEFAULT_KEYBINDINGS: ReadonlyArray<KeybindingRule> = [
   { key: "mod+n", command: "terminal.new", when: "terminalFocus" },
   { key: "mod+w", command: "terminal.close", when: "terminalFocus" },
   { key: "mod+shift+g", command: "diff.toggle", when: "!terminalFocus" },
+  { key: "mod+k", command: "commandPalette.toggle", when: "!terminalFocus" },
   { key: "mod+n", command: "chat.new", when: "!terminalFocus" },
   { key: "mod+shift+o", command: "chat.new", when: "!terminalFocus" },
   { key: "mod+shift+n", command: "chat.newLocal", when: "!terminalFocus" },
@@ -253,7 +253,7 @@ const makeKeybindings = Effect.gen(function* () {
         }
         return decodedRule.value;
       }),
-    ).pipe(Effect.map(Array.filter(Predicate.isNotNull)));
+    ).pipe(Effect.map((values) => values.filter(Predicate.isNotNull)));
   });
 
   const loadRuntimeCustomKeybindingsConfig = Effect.fn(function* (): Effect.fn.Return<

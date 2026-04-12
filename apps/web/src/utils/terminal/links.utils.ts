@@ -9,6 +9,20 @@ export interface TerminalLinkMatch {
   end: number;
 }
 
+export interface TerminalWrappedLineFragment {
+  lineNumber: number;
+  text: string;
+}
+
+export interface TerminalLinkSegment {
+  kind: TerminalLinkKind;
+  text: string;
+  range: {
+    start: { x: number; y: number };
+    end: { x: number; y: number };
+  };
+}
+
 const URL_PATTERN = /https?:\/\/[^\s"'`<>]+/g;
 const FILE_PATH_PATTERN =
   /(?:~\/|\.{1,2}\/|\/|[A-Za-z]:[\\/]|\\\\)[^\s"'`<>]+|[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)+(?::\d+){0,2}/g;
@@ -143,6 +157,55 @@ export function extractTerminalLinks(line: string): TerminalLinkMatch[] {
   const urlMatches = collectMatches(line, "url", URL_PATTERN, []);
   const pathMatches = collectMatches(line, "path", FILE_PATH_PATTERN, urlMatches);
   return [...urlMatches, ...pathMatches].toSorted((a, b) => a.start - b.start);
+}
+
+export function extractWrappedTerminalLinkSegments(
+  fragments: ReadonlyArray<TerminalWrappedLineFragment>,
+): TerminalLinkSegment[] {
+  if (fragments.length === 0) {
+    return [];
+  }
+
+  const offsets = fragments.map((fragment) => fragment.text.length);
+  const fullLine = fragments.map((fragment) => fragment.text).join("");
+  const links = extractTerminalLinks(fullLine);
+  const segments: TerminalLinkSegment[] = [];
+
+  for (const link of links) {
+    let fragmentStartOffset = 0;
+
+    for (let index = 0; index < fragments.length; index += 1) {
+      const fragment = fragments[index];
+      if (!fragment) {
+        continue;
+      }
+      const fragmentLength = offsets[index] ?? 0;
+      const fragmentEndOffset = fragmentStartOffset + fragmentLength;
+      const intersectionStart = Math.max(link.start, fragmentStartOffset);
+      const intersectionEnd = Math.min(link.end, fragmentEndOffset);
+
+      if (intersectionStart < intersectionEnd) {
+        segments.push({
+          kind: link.kind,
+          text: link.text,
+          range: {
+            start: {
+              x: intersectionStart - fragmentStartOffset + 1,
+              y: fragment.lineNumber,
+            },
+            end: {
+              x: intersectionEnd - fragmentStartOffset,
+              y: fragment.lineNumber,
+            },
+          },
+        });
+      }
+
+      fragmentStartOffset = fragmentEndOffset;
+    }
+  }
+
+  return segments;
 }
 
 export function isTerminalLinkActivation(

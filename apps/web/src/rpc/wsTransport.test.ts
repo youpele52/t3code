@@ -1,6 +1,9 @@
+import { Stream } from "effect";
 import { WS_METHODS } from "@bigcode/contracts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { resetRequestLatencyStateForTests } from "./requestLatencyState";
+import { getWsConnectionStatus, resetWsConnectionStateForTests } from "./wsConnectionState";
 import { WsTransport } from "./wsTransport";
 
 type WsEventType = "open" | "message" | "close" | "error";
@@ -8,6 +11,7 @@ type WsEvent = { code?: number; data?: unknown; reason?: string; type?: string }
 type WsListener = (event?: WsEvent) => void;
 
 const sockets: MockWebSocket[] = [];
+const transports: WsTransport[] = [];
 
 class MockWebSocket {
   static readonly CONNECTING = 0;
@@ -64,6 +68,12 @@ class MockWebSocket {
 
 const originalWebSocket = globalThis.WebSocket;
 
+function createTransport(...args: ConstructorParameters<typeof WsTransport>): WsTransport {
+  const transport = new WsTransport(...args);
+  transports.push(transport);
+  return transport;
+}
+
 function getSocket(): MockWebSocket {
   const socket = sockets.at(-1);
   if (!socket) {
@@ -88,7 +98,11 @@ async function waitFor(assertion: () => void, timeoutMs = 1_000): Promise<void> 
 }
 
 beforeEach(() => {
+  vi.useRealTimers();
   sockets.length = 0;
+  transports.length = 0;
+  resetRequestLatencyStateForTests();
+  resetWsConnectionStateForTests();
 
   Object.defineProperty(globalThis, "window", {
     configurable: true,
@@ -106,14 +120,18 @@ beforeEach(() => {
   globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 });
 
-afterEach(() => {
+afterEach(async () => {
+  await Promise.allSettled(transports.map((transport) => transport.dispose()));
+  transports.length = 0;
   globalThis.WebSocket = originalWebSocket;
+  resetRequestLatencyStateForTests();
+  resetWsConnectionStateForTests();
   vi.restoreAllMocks();
 });
 
 describe("WsTransport", () => {
   it("normalizes root websocket urls to /ws and preserves query params", async () => {
-    const transport = new WsTransport("ws://localhost:3020/?token=secret-token");
+    const transport = createTransport("ws://localhost:3020/?token=secret-token");
 
     await waitFor(() => {
       expect(sockets).toHaveLength(1);
@@ -131,7 +149,7 @@ describe("WsTransport", () => {
       protocol: "https:",
     });
 
-    const transport = new WsTransport();
+    const transport = createTransport();
 
     await waitFor(() => {
       expect(sockets).toHaveLength(1);
@@ -142,7 +160,7 @@ describe("WsTransport", () => {
   });
 
   it("sends unary RPC requests and resolves successful exits", async () => {
-    const transport = new WsTransport("ws://localhost:3020");
+    const transport = createTransport("ws://localhost:3020");
 
     const requestPromise = transport.request((client) =>
       client[WS_METHODS.serverUpsertKeybinding]({
@@ -200,7 +218,7 @@ describe("WsTransport", () => {
   });
 
   it("delivers stream chunks to subscribers", async () => {
-    const transport = new WsTransport("ws://localhost:3020");
+    const transport = createTransport("ws://localhost:3020");
     const listener = vi.fn();
 
     const unsubscribe = transport.subscribe(
@@ -248,7 +266,7 @@ describe("WsTransport", () => {
   });
 
   it("re-subscribes stream listeners after the stream exits", async () => {
-    const transport = new WsTransport("ws://localhost:3020");
+    const transport = createTransport("ws://localhost:3020");
     const listener = vi.fn();
 
     const unsubscribe = transport.subscribe(
@@ -340,7 +358,7 @@ describe("WsTransport", () => {
   });
 
   it("streams finite request events without re-subscribing", async () => {
-    const transport = new WsTransport("ws://localhost:3020");
+    const transport = createTransport("ws://localhost:3020");
     const listener = vi.fn();
 
     await waitFor(() => {
@@ -399,6 +417,79 @@ describe("WsTransport", () => {
         return parsed._tag === "Request" && parsed.tag === WS_METHODS.gitRunStackedAction;
       }),
     ).toHaveLength(1);
+    await transport.dispose();
+  });
+
+  it("composes custom lifecycle handlers with default websocket state tracking", async () => {
+    const onOpen = vi.fn();
+    const onClose = vi.fn();
+    const transport = createTransport("ws://localhost:3020", {
+      onOpen,
+      onClose,
+    });
+
+    await waitFor(() => {
+      expect(sockets).toHaveLength(1);
+    });
+
+    const socket = getSocket();
+    socket.open();
+
+    await waitFor(() => {
+      expect(onOpen).toHaveBeenCalledOnce();
+      expect(getWsConnectionStatus()).toMatchObject({
+        hasConnected: true,
+        phase: "connected",
+      });
+    });
+
+    socket.close(1012, "service restart");
+
+    await waitFor(() => {
+      expect(onClose).toHaveBeenCalledWith({
+        code: 1012,
+        reason: "service restart",
+      });
+
+      const status = getWsConnectionStatus();
+      expect(status.closeReason).toBe("service restart");
+      expect(status.hasConnected).toBe(true);
+      expect(["disconnected", "connecting"]).toContain(status.phase);
+    }, 2_000);
+
+    await transport.dispose();
+  });
+
+  it("logs a transport disconnect once even when multiple subscriptions fail together", async () => {
+    const transport = createTransport("ws://localhost:3020");
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
+    const unsubscribeA = transport.subscribe(
+      () => Stream.fail(new Error("SocketCloseError: 1006")),
+      vi.fn(),
+      { retryDelay: 10 },
+    );
+    const unsubscribeB = transport.subscribe(
+      () => Stream.fail(new Error("SocketCloseError: 1006")),
+      vi.fn(),
+      { retryDelay: 10 },
+    );
+
+    await waitFor(() => {
+      expect(sockets).toHaveLength(1);
+    });
+
+    getSocket().open();
+
+    await waitFor(() => {
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+    });
+    expect(warnSpy).toHaveBeenCalledWith("WebSocket RPC subscription disconnected", {
+      error: "SocketCloseError: 1006",
+    });
+
+    unsubscribeA();
+    unsubscribeB();
     await transport.dispose();
   });
 

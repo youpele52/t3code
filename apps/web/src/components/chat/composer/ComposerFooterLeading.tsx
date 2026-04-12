@@ -1,5 +1,5 @@
 import { type ComponentProps, forwardRef } from "react";
-import { BotIcon, ListTodoIcon, LockIcon, LockOpenIcon } from "lucide-react";
+import { BotIcon, ListTodoIcon, LockIcon, LockOpenIcon, PenLineIcon } from "lucide-react";
 import {
   type ProviderInteractionMode,
   type RuntimeMode,
@@ -11,6 +11,29 @@ import { Separator } from "../../ui/separator";
 import { cn } from "~/lib/utils";
 import { ProviderModelPicker } from "../provider/ProviderModelPicker";
 import { CompactComposerControlsMenu } from "../common/CompactComposerControlsMenu";
+
+function runtimeModeMeta(runtimeMode: RuntimeMode) {
+  switch (runtimeMode) {
+    case "approval-required":
+      return {
+        label: "Supervised",
+        title: "Ask before commands and file changes",
+        icon: LockIcon,
+      };
+    case "auto-accept-edits":
+      return {
+        label: "Auto-accept edits",
+        title: "Auto-approve edits, ask before other actions",
+        icon: PenLineIcon,
+      };
+    case "full-access":
+      return {
+        label: "Full access",
+        title: "Allow commands and edits without prompts",
+        icon: LockOpenIcon,
+      };
+  }
+}
 
 type ModelOptionsByProvider = ComponentProps<typeof ProviderModelPicker>["modelOptionsByProvider"];
 interface ComposerFooterLeadingProps {
@@ -35,7 +58,7 @@ interface ComposerFooterLeadingProps {
   onProviderUnlock: () => void;
   onToggleInteractionMode: () => void;
   onTogglePlanSidebar: () => void;
-  onToggleRuntimeMode: () => void;
+  onRuntimeModeChange: (mode: RuntimeMode) => void;
 }
 
 export const ComposerFooterLeading = forwardRef<HTMLDivElement, ComposerFooterLeadingProps>(
@@ -60,10 +83,13 @@ export const ComposerFooterLeading = forwardRef<HTMLDivElement, ComposerFooterLe
       onProviderUnlock,
       onToggleInteractionMode,
       onTogglePlanSidebar,
-      onToggleRuntimeMode,
+      onRuntimeModeChange,
     }: ComposerFooterLeadingProps,
     ref,
   ) {
+    const runtimeModeOption = runtimeModeMeta(runtimeMode);
+    const RuntimeModeIcon = runtimeModeOption.icon;
+
     return (
       <div
         ref={ref}
@@ -98,7 +124,7 @@ export const ComposerFooterLeading = forwardRef<HTMLDivElement, ComposerFooterLe
             traitsMenuContent={providerTraitsMenuContent}
             onToggleInteractionMode={onToggleInteractionMode}
             onTogglePlanSidebar={onTogglePlanSidebar}
-            onToggleRuntimeMode={onToggleRuntimeMode}
+            onRuntimeModeChange={onRuntimeModeChange}
           />
         ) : (
           <>
@@ -136,17 +162,15 @@ export const ComposerFooterLeading = forwardRef<HTMLDivElement, ComposerFooterLe
               className="shrink-0 whitespace-nowrap px-2 text-muted-foreground/70 hover:text-foreground/80 sm:px-3"
               size="sm"
               type="button"
-              onClick={onToggleRuntimeMode}
-              title={
-                runtimeMode === "full-access"
-                  ? "Full access — click to require approvals"
-                  : "Approval required — click for full access"
+              onClick={() =>
+                onRuntimeModeChange(
+                  runtimeMode === "approval-required" ? "auto-accept-edits" : "full-access",
+                )
               }
+              title={runtimeModeOption.title}
             >
-              {runtimeMode === "full-access" ? <LockOpenIcon /> : <LockIcon />}
-              <span className="sr-only sm:not-sr-only">
-                {runtimeMode === "full-access" ? "Full access" : "Supervised"}
-              </span>
+              <RuntimeModeIcon />
+              <span className="sr-only sm:not-sr-only">{runtimeModeOption.label}</span>
             </Button>
 
             {activePlan || sidebarProposedPlan || planSidebarOpen ? (

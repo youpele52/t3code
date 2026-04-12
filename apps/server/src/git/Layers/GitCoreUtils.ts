@@ -246,6 +246,16 @@ export function parseDefaultBranchFromRemoteHeadRef(
   return branch.length > 0 ? branch : null;
 }
 
+export function isMissingGitCwdError(error: GitCommandError): boolean {
+  const normalized = `${error.detail}\n${error.message}`.toLowerCase();
+  return (
+    normalized.includes("no such file or directory") ||
+    normalized.includes("notfound: filesystem.access") ||
+    normalized.includes("enoent") ||
+    normalized.includes("not a directory")
+  );
+}
+
 export function createGitCommandError(
   operation: string,
   cwd: string,

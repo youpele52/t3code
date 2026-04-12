@@ -10,6 +10,35 @@ import { useStore } from "../stores/main";
 import { useThreadById } from "../stores/main";
 import { useUiStateStore } from "../stores/ui";
 
+export function resolveContextualNewThreadOptions(input: {
+  activeDraftThread:
+    | {
+        branch?: string | null;
+        worktreePath?: string | null;
+        envMode?: DraftThreadEnvMode;
+      }
+    | null
+    | undefined;
+  activeThread:
+    | {
+        branch?: string | null;
+        worktreePath?: string | null;
+      }
+    | null
+    | undefined;
+}): {
+  branch: string | null;
+  worktreePath: string | null;
+  envMode: DraftThreadEnvMode;
+} {
+  return {
+    branch: input.activeThread?.branch ?? input.activeDraftThread?.branch ?? null,
+    worktreePath: input.activeThread?.worktreePath ?? input.activeDraftThread?.worktreePath ?? null,
+    envMode:
+      input.activeDraftThread?.envMode ?? (input.activeThread?.worktreePath ? "worktree" : "local"),
+  };
+}
+
 export function useHandleNewThread() {
   const projectIds = useStore(useShallow((store) => store.projects.map((project) => project.id)));
   const projectOrder = useUiStateStore((store) => store.projectOrder);

@@ -16,6 +16,7 @@ import {
   type EventId,
   ProviderItemId,
   type ProviderRuntimeEvent,
+  type RuntimeMode,
   type ProviderSession,
   type ProviderSendTurnInput,
   type ProviderSessionStartInput,
@@ -77,6 +78,17 @@ export interface SessionStartDeps {
   readonly offerRuntimeEvent: (event: ProviderRuntimeEvent) => Effect.Effect<void>;
   readonly nowIso: Effect.Effect<string>;
   readonly streamHandlers: StreamHandlers;
+}
+
+function resolveBasePermissionMode(runtimeMode: RuntimeMode | undefined) {
+  switch (runtimeMode) {
+    case "auto-accept-edits":
+      return "acceptEdits" as const;
+    case "full-access":
+      return "bypassPermissions" as const;
+    default:
+      return undefined;
+  }
 }
 
 /** Log a raw SDK message to the native event log if enabled. */
@@ -272,7 +284,7 @@ export const makeStartSession = (deps: SessionStartDeps) => {
         ? modelSelection.options.thinking
         : undefined;
     const effectiveEffort = getEffectiveClaudeCodeEffort(effort);
-    const permissionMode = undefined;
+    const permissionMode = resolveBasePermissionMode(input.runtimeMode);
     const settings = {
       ...(typeof thinking === "boolean" ? { alwaysThinkingEnabled: thinking } : {}),
       ...(fastMode ? { fastMode: true } : {}),

@@ -2,9 +2,10 @@
  * Runtime modes control how the provider executes commands and file operations.
  *
  * - `approval-required`: User must approve all file changes and command executions
+ * - `auto-accept-edits`: Provider may edit files automatically but still asks for other actions
  * - `full-access`: Provider can execute commands and modify files without approval
  */
-export const RUNTIME_MODES = ["approval-required", "full-access"] as const;
+export const RUNTIME_MODES = ["approval-required", "auto-accept-edits", "full-access"] as const;
 
 /**
  * Default runtime mode for new threads.

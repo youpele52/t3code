@@ -82,6 +82,7 @@ export const makeGitStatusBroadcaster = Effect.fn("makeGitStatusBroadcaster")(fu
     const local = toLocalResult(details);
     yield* Ref.set(entry.localRef, local);
     yield* PubSub.publish(entry.pubSub, { _tag: "localUpdated", local } as GitStatusStreamEvent);
+    return local;
   });
 
   // ── Public API ────────────────────────────────────────────────────────────
@@ -128,6 +129,13 @@ export const makeGitStatusBroadcaster = Effect.fn("makeGitStatusBroadcaster")(fu
       );
     });
 
+  const refreshLocalStatus: GitStatusBroadcasterShape["refreshLocalStatus"] = Effect.fn(
+    "refreshLocalStatus",
+  )(function* (cwd) {
+    const entry = yield* getOrCreateEntry(cwd);
+    return yield* refreshLocal(cwd, entry);
+  });
+
   const invalidateRemote: GitStatusBroadcasterShape["invalidateRemote"] = (cwd) =>
     Effect.gen(function* () {
       const entry = yield* getOrCreateEntry(cwd);
@@ -161,6 +169,7 @@ export const makeGitStatusBroadcaster = Effect.fn("makeGitStatusBroadcaster")(fu
 
   return {
     subscribe,
+    refreshLocalStatus,
     invalidateLocal,
     invalidateRemote,
   } satisfies GitStatusBroadcasterShape;

@@ -26,6 +26,7 @@ import { CheckpointStoreLive } from "../src/checkpointing/Layers/CheckpointStore
 import { CheckpointStore } from "../src/checkpointing/Services/CheckpointStore.ts";
 import { GitCoreLive } from "../src/git/Layers/GitCore.ts";
 import { GitCore, type GitCoreShape } from "../src/git/Services/GitCore.ts";
+import { GitStatusBroadcaster } from "../src/git/Services/GitStatusBroadcaster.ts";
 import { TextGeneration, type TextGenerationShape } from "../src/git/Services/TextGeneration.ts";
 import { OrchestrationCommandReceiptRepositoryLive } from "../src/persistence/Layers/OrchestrationCommandReceipts.ts";
 import { OrchestrationEventStoreLive } from "../src/persistence/Layers/OrchestrationEventStore.ts";
@@ -328,6 +329,22 @@ export const makeOrchestrationIntegrationHarness = (
     );
     const checkpointReactorLayer = CheckpointReactorLive.pipe(
       Layer.provideMerge(runtimeServicesLayer),
+      Layer.provideMerge(
+        Layer.succeed(GitStatusBroadcaster, {
+          subscribe: () => Stream.empty.pipe(Effect.succeed),
+          refreshLocalStatus: () =>
+            Effect.succeed({
+              isRepo: true,
+              hasOriginRemote: false,
+              isDefaultBranch: true,
+              branch: "main",
+              hasWorkingTreeChanges: false,
+              workingTree: { files: [], insertions: 0, deletions: 0 },
+            }),
+          invalidateLocal: () => Effect.void,
+          invalidateRemote: () => Effect.void,
+        }),
+      ),
       Layer.provideMerge(
         WorkspaceEntriesLive.pipe(
           Layer.provide(WorkspacePathsLive),

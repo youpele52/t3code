@@ -28,6 +28,7 @@ export type MessagesTimelineRow =
       message: ChatMessage;
       durationStart: string;
       showCompletionDivider: boolean;
+      showAssistantCopyButton: boolean;
     }
   | {
       kind: "proposed-plan";
@@ -76,6 +77,17 @@ export function deriveMessagesTimelineRows(input: {
   const durationStartByMessageId = computeMessageDurationStart(
     input.timelineEntries.flatMap((entry) => (entry.kind === "message" ? [entry.message] : [])),
   );
+  const finalAssistantMessageIdByTurnId = new Map<string, string>();
+
+  for (const timelineEntry of input.timelineEntries) {
+    if (timelineEntry?.kind !== "message" || timelineEntry.message.role !== "assistant") {
+      continue;
+    }
+    if (!timelineEntry.message.turnId) {
+      continue;
+    }
+    finalAssistantMessageIdByTurnId.set(timelineEntry.message.turnId, timelineEntry.message.id);
+  }
 
   for (let index = 0; index < input.timelineEntries.length; index += 1) {
     const timelineEntry = input.timelineEntries[index];
@@ -132,6 +144,12 @@ export function deriveMessagesTimelineRows(input: {
       showCompletionDivider:
         timelineEntry.message.role === "assistant" &&
         input.completionDividerBeforeEntryId === timelineEntry.id,
+      showAssistantCopyButton:
+        timelineEntry.message.role === "assistant" &&
+        (timelineEntry.message.turnId === null || timelineEntry.message.turnId === undefined
+          ? true
+          : finalAssistantMessageIdByTurnId.get(timelineEntry.message.turnId) ===
+            timelineEntry.message.id),
     });
   }
 
