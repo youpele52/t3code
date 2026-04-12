@@ -43,12 +43,9 @@ This document covers how to run desktop releases from one tag, first without sig
 ## Desktop bootstrap installers
 
 - Keep GitHub Releases as the source of truth for desktop binaries.
-- Publish the bootstrap scripts as GitHub Release assets:
-  - `install.sh`
-  - `install.ps1`
 - User-facing install commands:
-  - macOS/Linux: `curl -fsSL https://github.com/youpele52/bigCode/releases/latest/download/install.sh | sh`
-  - Windows: `powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://github.com/youpele52/bigCode/releases/latest/download/install.ps1 | iex"`
+  - macOS/Linux: `curl -fsSL https://raw.githubusercontent.com/youpele52/bigCode/main/apps/marketing/public/install.sh | sh`
+  - Windows: `powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/youpele52/bigCode/main/apps/marketing/public/install.ps1 | iex"`
 - Installer behavior:
   - prefer GitHub `releases/latest` when a stable release exists
   - fall back to the general `releases` feed when only prereleases exist
@@ -56,9 +53,9 @@ This document covers how to run desktop releases from one tag, first without sig
     - macOS `arm64` or `x64` DMG
     - Linux `x64` AppImage
     - Windows `x64` NSIS installer
-- The bootstrap script sources live in `apps/marketing/public/` and the release workflow copies them into `release-assets/` before publishing the GitHub Release.
+- The bootstrap script sources live in `apps/marketing/public/` and are fetched directly from the repository by the user-facing install commands.
 - For the current public repo setup, no GitHub auth token is required for the bootstrap installers.
-- GitHub `releases/latest/download/...` only resolves for the latest non-prerelease release. If you only have prereleases, use a tag-specific release URL until the first stable release exists.
+- The bootstrap script itself resolves the correct GitHub Release asset. If no desktop release exists yet, the script fails with a GitHub Releases error.
 
 ## CI vs release builds
 
