@@ -22,17 +22,31 @@ Install and authenticate at least one provider:
 
 ### Desktop App
 
-Install the desktop app directly from GitHub Releases:
+Install the desktop app directly from GitHub Releases once a release has been published.
+
+Important:
+
+1. A successful `main` CI run does not publish install scripts or public release assets.
+2. Public install assets are only published by `.github/workflows/release.yml`.
+3. The bootstrap scripts below are fetched directly from the repository and then resolve the correct release asset automatically.
+4. You still need at least one published GitHub Release for the installer to download a desktop binary.
+5. To publish installable desktop assets, run the release workflow by pushing a version tag like `v1.2.3` or by using the workflow's `workflow_dispatch` input.
+
+#### macOS / Linux
 
 ```bash
-curl -fsSL https://github.com/youpele52/bigCode/releases/latest/download/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/youpele52/bigCode/main/apps/marketing/public/install.sh | sh
 ```
+
+#### Windows
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://github.com/youpele52/bigCode/releases/latest/download/install.ps1 | iex"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/youpele52/bigCode/main/apps/marketing/public/install.ps1 | iex"
 ```
 
-`releases/latest/download/...` resolves only for the latest non-prerelease release. If only prereleases exist, use a tag-specific release URL instead.
+If no release has been published yet, the installer script will fail with a GitHub Releases error because there is no desktop binary available to download.
+
+See [`docs/release.md`](./docs/release.md) for the release workflow and publishing steps.
 
 ### From Source
 
