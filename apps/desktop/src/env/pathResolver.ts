@@ -153,6 +153,11 @@ export function resolveAboutCommitHash(rootDir: string): string | null {
 // ---------------------------------------------------------------------------
 
 export function resolveBackendEntry(rootDir: string): string {
+  if (app.isPackaged) {
+    // child_process.spawn cannot execute scripts from inside an asar archive.
+    // In packaged builds the server dist is placed outside via extraResources.
+    return Path.join(process.resourcesPath, "server/dist/bin.mjs");
+  }
   return Path.join(resolveAppRoot(rootDir), "apps/server/dist/bin.mjs");
 }
 
@@ -168,11 +173,15 @@ export function resolveBackendCwd(rootDir: string): string {
 // ---------------------------------------------------------------------------
 
 export function resolveDesktopStaticDir(rootDir: string): string | null {
-  const appRoot = resolveAppRoot(rootDir);
-  const candidates = [
-    Path.join(appRoot, "apps/server/dist/client"),
-    Path.join(appRoot, "apps/web/dist"),
-  ];
+  const candidates = app.isPackaged
+    ? [
+        Path.join(process.resourcesPath, "server/dist/client"),
+        Path.join(resolveAppRoot(rootDir), "apps/server/dist/client"),
+      ]
+    : [
+        Path.join(resolveAppRoot(rootDir), "apps/server/dist/client"),
+        Path.join(resolveAppRoot(rootDir), "apps/web/dist"),
+      ];
 
   for (const candidate of candidates) {
     if (FS.existsSync(Path.join(candidate, "index.html"))) {

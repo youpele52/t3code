@@ -201,6 +201,14 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
       "**/node_modules/@github/copilot/clipboard/**",
       "**/node_modules/@msgpackr-extract/**",
     ],
+    // child_process.spawn cannot execute scripts from inside an asar archive.
+    // Place the server dist outside the asar so the backend child process can be spawned.
+    extraResources: [
+      {
+        from: "apps/server/dist",
+        to: "server/dist",
+      },
+    ],
   };
 
   const publishConfig = resolveGitHubPublishConfig();
