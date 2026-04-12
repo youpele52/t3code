@@ -10,6 +10,7 @@ import { RuntimeReceiptBus } from "../Services/RuntimeReceiptBus.ts";
 import { CheckpointStoreError } from "../../checkpointing/Errors.ts";
 import { OrchestrationDispatchError } from "../Errors.ts";
 import { WorkspaceEntries } from "../../workspace/Services/WorkspaceEntries.ts";
+import { GitStatusBroadcaster } from "../../git/Services/GitStatusBroadcaster.ts";
 import {
   makeAppendRevertFailureActivity,
   makeAppendCaptureFailureActivity,
@@ -33,6 +34,7 @@ const make = Effect.gen(function* () {
   const checkpointStore = yield* CheckpointStore;
   const receiptBus = yield* RuntimeReceiptBus;
   const workspaceEntries = yield* WorkspaceEntries;
+  const gitStatusBroadcaster = yield* GitStatusBroadcaster;
 
   // Build curried helpers
   const appendRevertFailureActivity = makeAppendRevertFailureActivity(orchestrationEngine);
@@ -167,6 +169,26 @@ const make = Effect.gen(function* () {
     });
   });
 
+  const refreshLocalGitStatusFromTurnCompletion = Effect.fn(
+    "refreshLocalGitStatusFromTurnCompletion",
+  )(function* (event: Extract<ProviderRuntimeEvent, { type: "turn.completed" }>) {
+    const sessionRuntime = yield* resolveSessionRuntimeForThread(event.threadId);
+    if (sessionRuntime._tag !== "Some") {
+      return;
+    }
+
+    yield* gitStatusBroadcaster.refreshLocalStatus(sessionRuntime.value.cwd).pipe(
+      Effect.catch((error: any) =>
+        Effect.logWarning("failed to refresh local git status after turn completion", {
+          threadId: event.threadId,
+          turnId: event.turnId ?? null,
+          cwd: sessionRuntime.value.cwd,
+          detail: error.message,
+        }),
+      ),
+    );
+  });
+
   const processDomainEvent = Effect.fn("processDomainEvent")(function* (event: OrchestrationEvent) {
     if (event.type === "thread.turn-start-requested" || event.type === "thread.message-sent") {
       yield* ensurePreTurnBaselineFromDomainTurnStart(event);
@@ -211,6 +233,7 @@ const make = Effect.gen(function* () {
 
     if (event.type === "turn.completed") {
       const turnId = toTurnId(event.turnId);
+      yield* refreshLocalGitStatusFromTurnCompletion(event);
       yield* captureCheckpointFromTurnCompletion(event).pipe(
         Effect.catch((error: any) =>
           appendCaptureFailureActivity({

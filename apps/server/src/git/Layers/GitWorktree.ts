@@ -18,6 +18,12 @@ import type { GitStatusOpsResult } from "./GitStatus.ts";
 
 const WORKSPACE_FILES_MAX_OUTPUT_BYTES = 16 * 1024 * 1024;
 const GIT_CHECK_IGNORE_MAX_STDIN_BYTES = 256 * 1024;
+const WORKSPACE_GIT_HARDENED_CONFIG_ARGS = [
+  "-c",
+  "core.fsmonitor=false",
+  "-c",
+  "core.untrackedCache=false",
+] as const;
 
 export interface GitWorktreeOps {
   createWorktree: GitCoreShape["createWorktree"];
@@ -138,7 +144,14 @@ export function makeGitWorktreeOps(
     executeGit(
       "GitCore.listWorkspaceFiles",
       cwd,
-      ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+      [
+        ...WORKSPACE_GIT_HARDENED_CONFIG_ARGS,
+        "ls-files",
+        "--cached",
+        "--others",
+        "--exclude-standard",
+        "-z",
+      ],
       {
         allowNonZeroExit: true,
         timeoutMs: 20_000,
@@ -156,7 +169,14 @@ export function makeGitWorktreeOps(
               createGitCommandError(
                 "GitCore.listWorkspaceFiles",
                 cwd,
-                ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+                [
+                  ...WORKSPACE_GIT_HARDENED_CONFIG_ARGS,
+                  "ls-files",
+                  "--cached",
+                  "--others",
+                  "--exclude-standard",
+                  "-z",
+                ],
                 result.stderr.trim().length > 0 ? result.stderr.trim() : "git ls-files failed",
               ),
             ),
@@ -176,7 +196,7 @@ export function makeGitWorktreeOps(
         const result = yield* executeGit(
           "GitCore.filterIgnoredPaths",
           cwd,
-          ["check-ignore", "--no-index", "-z", "--stdin"],
+          [...WORKSPACE_GIT_HARDENED_CONFIG_ARGS, "check-ignore", "--no-index", "-z", "--stdin"],
           {
             stdin: `${chunk.join("\0")}\0`,
             allowNonZeroExit: true,
@@ -190,7 +210,7 @@ export function makeGitWorktreeOps(
           return yield* createGitCommandError(
             "GitCore.filterIgnoredPaths",
             cwd,
-            ["check-ignore", "--no-index", "-z", "--stdin"],
+            [...WORKSPACE_GIT_HARDENED_CONFIG_ARGS, "check-ignore", "--no-index", "-z", "--stdin"],
             result.stderr.trim().length > 0 ? result.stderr.trim() : "git check-ignore failed",
           );
         }
