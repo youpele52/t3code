@@ -108,6 +108,31 @@ export default function Sidebar() {
               ) : null}
             </AlertDialogPopup>
           </AlertDialog>
+
+          <AlertDialog
+            open={s.pendingProjectDeleteConfirmation !== null}
+            onOpenChange={(open) => {
+              if (!open) {
+                s.dismissPendingProjectDeleteConfirmation();
+              }
+            }}
+          >
+            <AlertDialogPopup className="max-w-sm p-0" bottomStickOnMobile={false}>
+              {s.pendingProjectDeleteConfirmation ? (
+                <ConfirmationPanel
+                  title={`Remove project "${s.pendingProjectDeleteConfirmation.projectName}"?`}
+                  description="This only removes the project from bigCode, not from your system. Removing the project will also delete all its threads."
+                  cancelLabel="Cancel"
+                  confirmLabel="Remove"
+                  confirmVariant="destructive"
+                  onCancel={s.dismissPendingProjectDeleteConfirmation}
+                  onConfirm={() => {
+                    void s.confirmPendingProjectDelete();
+                  }}
+                />
+              ) : null}
+            </AlertDialogPopup>
+          </AlertDialog>
         </>
       )}
     </>

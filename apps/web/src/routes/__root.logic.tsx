@@ -25,6 +25,7 @@ import {
   useComposerDraftStore,
 } from "../stores/composer";
 import { useStore } from "../stores/main";
+import { useThreadSelectionStore } from "../stores/thread";
 import { useUiStateStore } from "../stores/ui";
 import { useTerminalStateStore } from "../stores/terminal";
 import { migrateLocalSettingsToServer } from "../hooks/useSettings";
@@ -92,6 +93,7 @@ export function EventRouter() {
   const syncProjects = useUiStateStore((store) => store.syncProjects);
   const syncThreads = useUiStateStore((store) => store.syncThreads);
   const clearThreadUi = useUiStateStore((store) => store.clearThreadUi);
+  const removeFromSelection = useThreadSelectionStore((store) => store.removeFromSelection);
   const removeTerminalState = useTerminalStateStore((store) => store.removeTerminalState);
   const removeOrphanedTerminalStates = useTerminalStateStore(
     (store) => store.removeOrphanedTerminalStates,
@@ -293,6 +295,9 @@ export function EventRouter() {
         draftStore.clearDraftThread(threadId);
         clearThreadUi(threadId);
       }
+      if (batchEffects.removeSelectedThreadIds.length > 0) {
+        removeFromSelection(batchEffects.removeSelectedThreadIds);
+      }
       for (const threadId of batchEffects.removeTerminalStateThreadIds) {
         removeTerminalState(threadId);
       }
@@ -460,6 +465,7 @@ export function EventRouter() {
   }, [
     applyOrchestrationEvents,
     queryClient,
+    removeFromSelection,
     removeTerminalState,
     removeOrphanedTerminalStates,
     applyTerminalEvent,
