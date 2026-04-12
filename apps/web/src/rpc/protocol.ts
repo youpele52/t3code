@@ -25,7 +25,59 @@ type RpcClientFactory = typeof makeWsRpcProtocolClient;
 export type WsRpcProtocolClient =
   RpcClientFactory extends Effect.Effect<infer Client, any, any> ? Client : never;
 
-export function createWsRpcProtocolLayer(url?: string) {
+export interface WsProtocolLifecycleHandlers {
+  readonly onAttempt?: (socketUrl: string) => void;
+  readonly onOpen?: () => void;
+  readonly onError?: (message: string) => void;
+  readonly onClose?: (details: { readonly code: number; readonly reason: string }) => void;
+}
+
+function defaultLifecycleHandlers(): Required<WsProtocolLifecycleHandlers> {
+  return {
+    onAttempt: (socketUrl) => {
+      recordWsConnectionAttempt(socketUrl);
+    },
+    onOpen: () => {
+      recordWsConnectionOpened();
+    },
+    onError: (message) => {
+      clearAllTrackedRpcRequests();
+      recordWsConnectionErrored(message);
+    },
+    onClose: (details) => {
+      clearAllTrackedRpcRequests();
+      recordWsConnectionClosed(details);
+    },
+  };
+}
+
+function composeLifecycleHandlers(
+  handlers?: WsProtocolLifecycleHandlers,
+): Required<WsProtocolLifecycleHandlers> {
+  const defaults = defaultLifecycleHandlers();
+
+  return {
+    onAttempt: (socketUrl) => {
+      defaults.onAttempt(socketUrl);
+      handlers?.onAttempt?.(socketUrl);
+    },
+    onOpen: () => {
+      defaults.onOpen();
+      handlers?.onOpen?.();
+    },
+    onError: (message) => {
+      defaults.onError(message);
+      handlers?.onError?.(message);
+    },
+    onClose: (details) => {
+      defaults.onClose(details);
+      handlers?.onClose?.(details);
+    },
+  };
+}
+
+export function createWsRpcProtocolLayer(url?: string, handlers?: WsProtocolLifecycleHandlers) {
+  const lifecycle = composeLifecycleHandlers(handlers);
   const resolvedUrl = resolveServerUrl({
     url,
     protocol: window.location.protocol === "https:" ? "wss" : "ws",
@@ -34,29 +86,27 @@ export function createWsRpcProtocolLayer(url?: string) {
   const trackingWebSocketConstructorLayer = Layer.succeed(
     Socket.WebSocketConstructor,
     (socketUrl, protocols) => {
-      recordWsConnectionAttempt(socketUrl);
+      lifecycle.onAttempt(socketUrl);
       const socket = new globalThis.WebSocket(socketUrl, protocols);
 
       socket.addEventListener(
         "open",
         () => {
-          recordWsConnectionOpened();
+          lifecycle.onOpen();
         },
         { once: true },
       );
       socket.addEventListener(
         "error",
         () => {
-          clearAllTrackedRpcRequests();
-          recordWsConnectionErrored(`Unable to connect to the ${APP_SERVER_NAME} WebSocket.`);
+          lifecycle.onError(`Unable to connect to the ${APP_SERVER_NAME} WebSocket.`);
         },
         { once: true },
       );
       socket.addEventListener(
         "close",
         (event) => {
-          clearAllTrackedRpcRequests();
-          recordWsConnectionClosed({
+          lifecycle.onClose({
             code: event.code,
             reason: event.reason,
           });

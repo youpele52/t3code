@@ -34,6 +34,7 @@ import { collectActiveTerminalThreadIds } from "../lib/terminalStateCleanup";
 import { deriveOrchestrationBatchEffects } from "../logic/orchestration";
 import { createOrchestrationRecoveryCoordinator } from "../logic/orchestration";
 import { deriveReplayRetryDecision } from "../logic/orchestration";
+import { retryTransportRecoveryOperation } from "../logic/orchestration";
 import { getWsRpcClient } from "../rpc/wsRpcClient";
 
 const REPLAY_RECOVERY_RETRY_DELAY_MS = 100;
@@ -321,13 +322,19 @@ export function EventRouter() {
 
       const fromSequenceExclusive = recovery.getState().latestSequence;
       try {
-        const events = await api.orchestration.replayEvents(fromSequenceExclusive);
+        const events = await retryTransportRecoveryOperation(
+          () => api.orchestration.replayEvents(fromSequenceExclusive),
+          { shouldAbort: () => disposed },
+        );
         if (!disposed) {
           applyEventBatch(events);
         }
       } catch {
         replayRetryTracker = null;
         recovery.failReplayRecovery();
+        if (disposed) {
+          return;
+        }
         void fallbackToSnapshotRecovery();
         return;
       }
@@ -386,7 +393,12 @@ export function EventRouter() {
       }
 
       try {
-        const snapshot = await api.orchestration.getSnapshot();
+        const snapshot = await retryTransportRecoveryOperation(
+          () => api.orchestration.getSnapshot(),
+          {
+            shouldAbort: () => disposed,
+          },
+        );
         if (!disposed) {
           syncServerReadModel(snapshot);
           reconcileSnapshotDerivedState();

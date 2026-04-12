@@ -43,6 +43,8 @@ import {
 
 import { type TerminalLaunchContext } from "./shared";
 
+const EMPTY_CHANGED_FILES_EXPANDED_BY_TURN_ID: Record<string, boolean> = {};
+
 interface ChatViewBaseStateInput {
   threadId: ThreadId;
 }
@@ -53,6 +55,14 @@ export function useChatViewBaseState({ threadId }: ChatViewBaseStateInput) {
   const markThreadVisited = useUiStateStore((store) => store.markThreadVisited);
   const activeThreadLastVisitedAt = useUiStateStore(
     (store) => store.threadLastVisitedAtById[threadId],
+  );
+  const threadChangedFilesExpandedByTurnId = useUiStateStore((store) =>
+    serverThread
+      ? (store.threadChangedFilesExpandedById[threadId] ?? EMPTY_CHANGED_FILES_EXPANDED_BY_TURN_ID)
+      : EMPTY_CHANGED_FILES_EXPANDED_BY_TURN_ID,
+  );
+  const setThreadChangedFilesExpanded = useUiStateStore(
+    (store) => store.setThreadChangedFilesExpanded,
   );
   const settings = useSettings();
   const setStickyComposerModelSelection = useComposerDraftStore(
@@ -172,9 +182,6 @@ export function useChatViewBaseState({ threadId }: ChatViewBaseStateInput) {
   );
   const composerEditorRef = useRef<ComposerPromptEditorHandle>(null);
   const composerFormRef = useRef<HTMLFormElement>(null);
-  const composerFooterRef = useRef<HTMLDivElement>(null);
-  const composerFooterLeadingRef = useRef<HTMLDivElement>(null);
-  const composerFooterActionsRef = useRef<HTMLDivElement>(null);
   const composerImagesRef = useRef(composerImages);
   const composerSelectLockRef = useRef(false);
   const composerMenuOpenRef = useRef(false);
@@ -318,6 +325,8 @@ export function useChatViewBaseState({ threadId }: ChatViewBaseStateInput) {
     setStoreThreadError,
     markThreadVisited,
     activeThreadLastVisitedAt,
+    threadChangedFilesExpandedByTurnId,
+    setThreadChangedFilesExpanded,
     settings,
     setStickyComposerModelSelection,
     timestampFormat,
@@ -397,9 +406,6 @@ export function useChatViewBaseState({ threadId }: ChatViewBaseStateInput) {
     setLastInvokedScriptByProjectId,
     composerEditorRef,
     composerFormRef,
-    composerFooterRef,
-    composerFooterLeadingRef,
-    composerFooterActionsRef,
     composerImagesRef,
     composerSelectLockRef,
     composerMenuOpenRef,

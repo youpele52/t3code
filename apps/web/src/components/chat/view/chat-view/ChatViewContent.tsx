@@ -157,6 +157,14 @@ export function ChatViewContent({
                 nowIso={thread.nowIso}
                 expandedWorkGroups={base.expandedWorkGroups}
                 onToggleWorkGroup={interactions.onToggleWorkGroup}
+                changedFilesExpandedByTurnId={base.threadChangedFilesExpandedByTurnId}
+                onSetChangedFilesExpanded={(turnId, expanded) => {
+                  if (!base.isServerThread) {
+                    return;
+                  }
+
+                  base.setThreadChangedFilesExpanded(base.activeThread!.id, turnId, expanded);
+                }}
                 onOpenTurnDiff={interactions.onOpenTurnDiff}
                 revertTurnCountByUserMessageId={timeline.revertTurnCountByUserMessageId}
                 onRevertUserMessage={interactions.onRevertUserMessage}
@@ -237,7 +245,6 @@ export function ChatViewContent({
           {composer.isGitRepo ? (
             <BranchToolbar
               threadId={base.activeThread!.id}
-              onEnvModeChange={interactions.onEnvModeChange}
               envLocked={runtime.envLocked}
               onComposerFocusRequest={runtime.scheduleComposerFocus}
               {...(base.canCheckoutPullRequestIntoThread
