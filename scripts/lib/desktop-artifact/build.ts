@@ -25,6 +25,23 @@ import {
 } from "./resources.ts";
 import { resolveCatalogDependencies } from "../resolve-catalog.ts";
 
+// Packages that are NOT inlined by tsdown and must be installed at runtime.
+// Must be kept in sync with EXTERNAL_PACKAGES in apps/server/tsdown.config.ts.
+// Bun-only externals (@effect/sql-sqlite-bun, @effect/platform-bun) are excluded
+// because they are never loaded in the Electron/Node.js desktop runtime.
+const SERVER_RUNTIME_EXTERNAL_PACKAGES = new Set(["node-pty", "@github/copilot-sdk"]);
+
+/** Filter a dependency map to only include packages that are external at runtime. */
+function pickExternalDependencies(dependencies: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [name, version] of Object.entries(dependencies)) {
+    if (SERVER_RUNTIME_EXTERNAL_PACKAGES.has(name)) {
+      result[name] = version;
+    }
+  }
+  return result;
+}
+
 export const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
   options: ResolvedBuildOptions,
 ) {
@@ -123,6 +140,11 @@ export const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* 
   yield* assertPlatformBuildResources(options.platform, stageResourcesDir, options.verbose);
   yield* fs.copy(stageResourcesDir, path.join(stageAppDir, "apps/desktop/prod-resources"));
 
+  // The server bundle is self-contained (all JS dependencies inlined by tsdown).
+  // Only packages that cannot be bundled (native addons, runtime require.resolve)
+  // need to be installed in the staged server directory.
+  const serverExternalDependencies = pickExternalDependencies(resolvedServerDependencies);
+
   const stagePackageJson: StagePackageJson = {
     name: "bigcode-desktop",
     version: appVersion,
@@ -141,7 +163,7 @@ export const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* 
       options.mockUpdateServerPort,
     ),
     dependencies: {
-      ...resolvedServerDependencies,
+      ...serverExternalDependencies,
       ...resolvedDesktopRuntimeDependencies,
     },
     devDependencies: {
@@ -159,7 +181,7 @@ export const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* 
     type: serverPackageJson.type,
     bin: serverPackageJson.bin,
     files: serverPackageJson.files,
-    dependencies: resolvedServerDependencies,
+    dependencies: serverExternalDependencies,
   };
   const stageServerPackageJsonString = yield* encodeJsonString(stageServerPackageJson);
   yield* fs.writeFileString(
@@ -175,13 +197,26 @@ export const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* 
       shell: process.platform === "win32",
     })`bun install --production`,
   );
+  // Use npm (not bun) for the server directory so node_modules follows the
+  // standard flat layout that Node.js expects. Bun's symlink-based hoisting
+  // does not survive electron-builder's file copy to extraResources.
   yield* runCommand(
     ChildProcess.make({
       cwd: stageServerDir,
       ...commandOutputOptions(options.verbose),
       shell: process.platform === "win32",
-    })`bun install --production`,
+    })`npm install --production --no-optional`,
   );
+
+  // electron-builder silently strips node_modules from extraResources copies.
+  // Rename to _modules so the directory survives into the packaged app.
+  // The desktop main process sets NODE_PATH to _modules when spawning the
+  // backend child process so Node.js can still resolve these external packages.
+  const serverNodeModules = path.join(stageServerDir, "node_modules");
+  const serverModulesRenamed = path.join(stageServerDir, "_modules");
+  if (yield* fs.exists(serverNodeModules)) {
+    yield* fs.rename(serverNodeModules, serverModulesRenamed);
+  }
 
   const buildEnv: NodeJS.ProcessEnv = { ...process.env };
   for (const [key, value] of Object.entries(buildEnv)) {

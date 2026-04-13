@@ -6,7 +6,11 @@ import {
   captureBackendOutput,
   writeBackendSessionBoundary,
 } from "../logging/logging";
-import { resolveBackendCwd, resolveBackendEntry } from "../env/pathResolver";
+import {
+  ensureBackendModulesSymlink,
+  resolveBackendCwd,
+  resolveBackendEntry,
+} from "../env/pathResolver";
 import type { RotatingFileSink } from "@bigcode/shared/logging";
 import { readPersistedBackendObservabilitySettings } from "../logging/logging";
 
@@ -102,6 +106,10 @@ export function startBackend(): void {
 
   const backendLogSink = _deps.getBackendLogSink();
   const captureBackendLogs = backendLogSink !== null;
+
+  // Ensure _modules → node_modules symlink exists for ESM resolution of
+  // external native packages (e.g. @github/copilot-sdk, node-pty).
+  ensureBackendModulesSymlink();
 
   // Always pipe stderr so we can capture crash output for diagnostics,
   // regardless of whether a log sink is configured.

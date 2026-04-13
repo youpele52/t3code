@@ -168,6 +168,48 @@ export function resolveBackendCwd(rootDir: string): string {
   return OS.homedir();
 }
 
+/**
+ * Ensures native/external modules are resolvable in packaged builds.
+ *
+ * electron-builder silently strips directories named `node_modules` from
+ * extraResources copies.  The build script works around this by renaming the
+ * server's `node_modules` to `_modules`.  At runtime we create a
+ * `node_modules` → `_modules` **symlink** so that Node.js ESM resolution
+ * (which walks up the directory tree looking for `node_modules/`) can find the
+ * external packages normally.
+ *
+ * `NODE_PATH` is intentionally NOT used because Node.js ESM resolution ignores
+ * it — only CJS honours `NODE_PATH`.
+ *
+ * No-ops in dev (modules resolve normally from the monorepo).
+ */
+export function ensureBackendModulesSymlink(): void {
+  if (!app.isPackaged) return;
+
+  const serverDir = Path.join(process.resourcesPath, "server");
+  const modulesDir = Path.join(serverDir, "_modules");
+  const symlinkPath = Path.join(serverDir, "node_modules");
+
+  if (!FS.existsSync(modulesDir)) return;
+
+  // If the symlink already exists (e.g. from a previous launch) skip creation.
+  try {
+    const stat = FS.lstatSync(symlinkPath);
+    if (stat.isSymbolicLink()) return;
+    // Not a symlink — something unexpected.  Remove and recreate.
+    FS.rmSync(symlinkPath, { recursive: true, force: true });
+  } catch {
+    // Does not exist yet — good, we'll create it below.
+  }
+
+  try {
+    // Relative symlink so the .app bundle stays relocatable.
+    FS.symlinkSync("_modules", symlinkPath, "dir");
+  } catch (err) {
+    console.error("[desktop] failed to create node_modules symlink:", err);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Desktop static asset resolution
 // ---------------------------------------------------------------------------
