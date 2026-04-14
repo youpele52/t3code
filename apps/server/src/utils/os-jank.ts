@@ -1,28 +1,53 @@
 import * as OS from "node:os";
 import { Effect, Path } from "effect";
-import { readPathFromLoginShell, resolveLoginShell } from "@bigcode/shared/shell";
+import {
+  listLoginShellCandidates,
+  mergePathEntries,
+  readPathFromLaunchctl,
+  readPathFromLoginShell,
+} from "@bigcode/shared/shell";
 
 export function fixPath(
   options: {
     env?: NodeJS.ProcessEnv;
     platform?: NodeJS.Platform;
     readPath?: typeof readPathFromLoginShell;
+    readLaunchctlPath?: typeof readPathFromLaunchctl;
+    logWarning?: (message: string) => void;
   } = {},
 ): void {
   const platform = options.platform ?? process.platform;
   if (platform !== "darwin" && platform !== "linux") return;
 
   const env = options.env ?? process.env;
+  const warn = options.logWarning ?? (() => {});
+  const candidates = listLoginShellCandidates(platform, env.SHELL);
 
-  try {
-    const shell = resolveLoginShell(platform, env.SHELL);
-    if (!shell) return;
-    const result = (options.readPath ?? readPathFromLoginShell)(shell);
-    if (result) {
-      env.PATH = result;
+  for (const shell of candidates) {
+    try {
+      const shellPath = (options.readPath ?? readPathFromLoginShell)(shell);
+      if (shellPath) {
+        env.PATH = mergePathEntries(shellPath, env.PATH, platform);
+        return;
+      }
+    } catch (error) {
+      warn(
+        `Failed to read PATH from login shell '${shell}': ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
-  } catch {
-    // Silently ignore — keep default PATH
+  }
+
+  if (platform === "darwin") {
+    try {
+      const launchctlPath = (options.readLaunchctlPath ?? readPathFromLaunchctl)();
+      if (launchctlPath) {
+        env.PATH = mergePathEntries(launchctlPath, env.PATH, platform);
+      }
+    } catch (error) {
+      warn(
+        `Failed to read PATH from launchctl: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
 }
 

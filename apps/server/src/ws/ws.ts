@@ -109,15 +109,21 @@ const WsRpcLayer = WsRpcGroup.toLayer(
             cause,
           });
 
+    const refreshGitStatusEffect = (cwd: string) =>
+      gitManager.invalidateStatus(cwd).pipe(
+        Effect.flatMap(() => gitStatusBroadcaster.invalidateLocal(cwd)),
+        Effect.flatMap(() => gitStatusBroadcaster.invalidateRemote(cwd)),
+      );
+
     const dispatchBootstrapTurnStart = makeDispatchBootstrapTurnStart(
       orchestrationEngine,
       git,
       projectSetupScriptRunner,
+      refreshGitStatusEffect,
       appendSetupScriptActivity,
       serverCommandId,
     );
 
-    /** Fire-and-forget helper to invalidate + re-broadcast git status for a cwd. */
     const refreshGitStatus = (cwd: string) =>
       gitManager.invalidateStatus(cwd).pipe(
         Effect.flatMap(() => gitStatusBroadcaster.invalidateLocal(cwd)),

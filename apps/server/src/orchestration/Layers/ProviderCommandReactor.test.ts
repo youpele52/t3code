@@ -27,6 +27,10 @@ import {
   type ProviderServiceShape,
 } from "../../provider/Services/ProviderService.ts";
 import { GitCore, type GitCoreShape } from "../../git/Services/GitCore.ts";
+import {
+  GitStatusBroadcaster,
+  type GitStatusBroadcasterShape,
+} from "../../git/Services/GitStatusBroadcaster.ts";
 import { TextGeneration, type TextGenerationShape } from "../../git/Services/TextGeneration.ts";
 import { OrchestrationEngineLive } from "./OrchestrationEngine.ts";
 import { OrchestrationProjectionPipelineLive } from "./ProjectionPipeline.ts";
@@ -180,6 +184,24 @@ describe("ProviderCommandReactor", () => {
             : "renamed-branch",
       }),
     );
+    const refreshLocalStatus = vi.fn((_: string) =>
+      Effect.succeed({
+        isRepo: true,
+        hasOriginRemote: true,
+        isDefaultBranch: false,
+        branch: "renamed-branch",
+        hasWorkingTreeChanges: false,
+        workingTree: {
+          files: [],
+          insertions: 0,
+          deletions: 0,
+        },
+        hasUpstream: true,
+        aheadCount: 0,
+        behindCount: 0,
+        pr: null,
+      }),
+    );
     const generateBranchName = vi.fn<TextGenerationShape["generateBranchName"]>((_) =>
       Effect.fail(
         new TextGenerationError({
@@ -236,6 +258,11 @@ describe("ProviderCommandReactor", () => {
       ),
       Layer.provideMerge(Layer.succeed(GitCore, { renameBranch } as unknown as GitCoreShape)),
       Layer.provideMerge(
+        Layer.succeed(GitStatusBroadcaster, {
+          refreshLocalStatus,
+        } as unknown as GitStatusBroadcasterShape),
+      ),
+      Layer.provideMerge(
         Layer.mock(TextGeneration, {
           generateBranchName,
           generateThreadTitle,
@@ -290,6 +317,7 @@ describe("ProviderCommandReactor", () => {
       respondToUserInput,
       stopSession,
       renameBranch,
+      refreshLocalStatus,
       generateBranchName,
       generateThreadTitle,
       stateDir,

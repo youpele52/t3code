@@ -99,3 +99,9 @@ Key server files:
 - Open-source Codex repo: https://github.com/openai/codex
 - Codex-Monitor (Tauri, feature-complete reference): https://github.com/Dimillian/CodexMonitor
 - Codex App Server docs: https://developers.openai.com/codex/sdk/#app-server
+
+## Upstream Sync (t3code fork)
+
+bigCode is a purposeful fork of https://github.com/pingdotgg/t3code that has **intentionally diverged** — it has its own conventions, patterns, and features not present upstream. Changes from t3code cannot be copied directly; they must be read, understood, and adapted.
+
+For any task involving upstream t3code changes, use [`@fork-upstream-adapter`](.opencode/agents/fork-upstream-adapter.md) — it enforces the read → understand → adapt → verify workflow and prevents direct copy-paste transplants.

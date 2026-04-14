@@ -87,7 +87,7 @@ const DEFAULT_BINDINGS = compile([
     whenAst: whenNot(whenIdentifier("terminalFocus")),
   },
   {
-    shortcut: modShortcut("d"),
+    shortcut: modShortcut("g", { shiftKey: true }),
     command: "terminal.split",
     whenAst: whenIdentifier("terminalFocus"),
   },
@@ -140,10 +140,14 @@ describe("isTerminalToggleShortcut", () => {
 describe("split/new/close terminal shortcuts", () => {
   it("requires terminalFocus for default split/new/close bindings", () => {
     assert.isFalse(
-      isTerminalSplitShortcut(event({ key: "d", metaKey: true }), DEFAULT_BINDINGS, {
-        platform: "MacIntel",
-        context: { terminalFocus: false },
-      }),
+      isTerminalSplitShortcut(
+        event({ key: "g", metaKey: true, shiftKey: true }),
+        DEFAULT_BINDINGS,
+        {
+          platform: "MacIntel",
+          context: { terminalFocus: false },
+        },
+      ),
     );
     assert.isFalse(
       isTerminalNewShortcut(event({ key: "d", ctrlKey: true, shiftKey: true }), DEFAULT_BINDINGS, {
@@ -161,10 +165,14 @@ describe("split/new/close terminal shortcuts", () => {
 
   it("matches split/new when terminalFocus is true", () => {
     assert.isTrue(
-      isTerminalSplitShortcut(event({ key: "d", metaKey: true }), DEFAULT_BINDINGS, {
-        platform: "MacIntel",
-        context: { terminalFocus: true },
-      }),
+      isTerminalSplitShortcut(
+        event({ key: "g", metaKey: true, shiftKey: true }),
+        DEFAULT_BINDINGS,
+        {
+          platform: "MacIntel",
+          context: { terminalFocus: true },
+        },
+      ),
     );
     assert.isTrue(
       isTerminalNewShortcut(event({ key: "d", ctrlKey: true, shiftKey: true }), DEFAULT_BINDINGS, {
