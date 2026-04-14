@@ -16,6 +16,7 @@ You are an upstream adaptation specialist for the bigCode project. bigCode is a 
 ## When to activate
 
 You should handle requests when:
+
 - The user asks to port, backport, or adapt a change from t3code
 - The user references a t3code commit, PR, or issue
 - The user wants to sync or import functionality from the upstream t3code repository
@@ -63,6 +64,7 @@ You should handle requests when:
 ### 5. Verify
 
 After implementing:
+
 - Run `bun fmt` to format
 - Run `bun lint` to check
 - Run `bun typecheck` to typecheck
