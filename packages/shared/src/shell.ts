@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 
 const PATH_CAPTURE_START = "__T3CODE_PATH_START__";
 const PATH_CAPTURE_END = "__T3CODE_PATH_END__";
@@ -9,6 +9,8 @@ type ExecFileSyncLike = (
   args: ReadonlyArray<string>,
   options: { encoding: "utf8"; timeout: number },
 ) => string;
+
+type ExecSyncLike = (command: string, options: { encoding: "utf8"; timeout: number }) => string;
 
 export function resolveLoginShell(
   platform: NodeJS.Platform,
@@ -28,6 +30,67 @@ export function resolveLoginShell(
   }
 
   return undefined;
+}
+
+export function listLoginShellCandidates(
+  platform: NodeJS.Platform,
+  envShell?: string | undefined,
+  userShell?: string | undefined,
+): ReadonlyArray<string> {
+  const candidates: string[] = [];
+
+  const add = (shell: string | undefined) => {
+    const trimmed = shell?.trim();
+    if (trimmed && !candidates.includes(trimmed)) {
+      candidates.push(trimmed);
+    }
+  };
+
+  add(envShell);
+  add(userShell);
+
+  if (platform === "darwin") {
+    add("/bin/zsh");
+    add("/bin/bash");
+  } else if (platform === "linux") {
+    add("/bin/bash");
+    add("/bin/sh");
+  }
+
+  return candidates;
+}
+
+export function mergePathEntries(
+  shellPath: string,
+  envPath: string | undefined,
+  _platform: NodeJS.Platform,
+): string {
+  const shellEntries = shellPath.split(":").filter((e) => e.length > 0);
+  const envEntries = envPath ? envPath.split(":").filter((e) => e.length > 0) : [];
+
+  const seen = new Set<string>();
+  const merged: string[] = [];
+
+  for (const entry of [...shellEntries, ...envEntries]) {
+    if (!seen.has(entry)) {
+      seen.add(entry);
+      merged.push(entry);
+    }
+  }
+
+  return merged.join(":");
+}
+
+export function readPathFromLaunchctl(execCommand: ExecSyncLike = execSync): string | undefined {
+  try {
+    const result = execCommand("launchctl getenv PATH", {
+      encoding: "utf8",
+      timeout: 3000,
+    }).trim();
+    return result.length > 0 ? result : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export function extractPathFromShellOutput(output: string): string | null {

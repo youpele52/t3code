@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   extractPathFromShellOutput,
+  listLoginShellCandidates,
+  mergePathEntries,
   readEnvironmentFromLoginShell,
+  readPathFromLaunchctl,
   readPathFromLoginShell,
 } from "./shell";
 
@@ -124,5 +127,77 @@ describe("readEnvironmentFromLoginShell", () => {
     expect(readEnvironmentFromLoginShell("/bin/zsh", ["CUSTOM_VAR"], execFile)).toEqual({
       CUSTOM_VAR: "  padded value  ",
     });
+  });
+});
+
+describe("listLoginShellCandidates", () => {
+  it("returns envShell first, then userShell, then platform defaults (macOS)", () => {
+    const candidates = listLoginShellCandidates("darwin", "/opt/homebrew/bin/fish", "/bin/bash");
+    expect(candidates).toEqual(["/opt/homebrew/bin/fish", "/bin/bash", "/bin/zsh"]);
+  });
+
+  it("deduplicates entries", () => {
+    const candidates = listLoginShellCandidates("darwin", "/bin/zsh", "/bin/zsh");
+    expect(candidates).toEqual(["/bin/zsh", "/bin/bash"]);
+  });
+
+  it("returns platform defaults when no shells are specified (macOS)", () => {
+    const candidates = listLoginShellCandidates("darwin");
+    expect(candidates).toEqual(["/bin/zsh", "/bin/bash"]);
+  });
+
+  it("returns platform defaults when no shells are specified (linux)", () => {
+    const candidates = listLoginShellCandidates("linux");
+    expect(candidates).toEqual(["/bin/bash", "/bin/sh"]);
+  });
+
+  it("returns an empty array for unsupported platforms", () => {
+    const candidates = listLoginShellCandidates("win32");
+    expect(candidates).toEqual([]);
+  });
+});
+
+describe("mergePathEntries", () => {
+  it("places shell entries before env entries", () => {
+    expect(mergePathEntries("/a:/b", "/b:/c", "darwin")).toBe("/a:/b:/c");
+  });
+
+  it("deduplicates entries preserving first occurrence", () => {
+    expect(
+      mergePathEntries("/usr/bin:/opt/homebrew/bin", "/opt/homebrew/bin:/usr/local/bin", "darwin"),
+    ).toBe("/usr/bin:/opt/homebrew/bin:/usr/local/bin");
+  });
+
+  it("returns shell entries alone when envPath is undefined", () => {
+    expect(mergePathEntries("/usr/bin:/opt/homebrew/bin", undefined, "darwin")).toBe(
+      "/usr/bin:/opt/homebrew/bin",
+    );
+  });
+
+  it("filters empty segments", () => {
+    expect(mergePathEntries("/a::/b", "/c", "linux")).toBe("/a:/b:/c");
+  });
+});
+
+describe("readPathFromLaunchctl", () => {
+  it("returns the PATH value from launchctl on macOS", () => {
+    const execCommand = vi.fn(() => "/usr/bin:/bin:/usr/sbin:/sbin\n");
+    expect(readPathFromLaunchctl(execCommand as never)).toBe("/usr/bin:/bin:/usr/sbin:/sbin");
+    expect(execCommand).toHaveBeenCalledWith("launchctl getenv PATH", {
+      encoding: "utf8",
+      timeout: 3000,
+    });
+  });
+
+  it("returns undefined when launchctl returns empty", () => {
+    const execCommand = vi.fn(() => "   \n");
+    expect(readPathFromLaunchctl(execCommand as never)).toBeUndefined();
+  });
+
+  it("returns undefined when launchctl throws", () => {
+    const execCommand = vi.fn(() => {
+      throw new Error("launchctl not available");
+    });
+    expect(readPathFromLaunchctl(execCommand as never)).toBeUndefined();
   });
 });
