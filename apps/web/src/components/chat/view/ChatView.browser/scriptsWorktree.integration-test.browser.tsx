@@ -355,7 +355,7 @@ describe("ChatView scripts and worktree integration", () => {
             prepareWorktree: {
               projectCwd: "/repo/project",
               baseBranch: "main",
-              branch: expect.stringMatching(/^t3code\/[0-9a-f]{8}$/),
+              branch: expect.stringMatching(/^bigcode\/[0-9a-f]{8}$/),
             },
             runSetupScript: true,
           },

@@ -82,7 +82,7 @@ function parseCodexSkillsResult(result: unknown, cwd: string): ReadonlyArray<Ser
 export function buildCodexInitializeParams() {
   return {
     clientInfo: {
-      name: "t3code_desktop",
+      name: "bigcode_desktop",
       title: "bigCode Desktop",
       version: "0.1.0",
     },

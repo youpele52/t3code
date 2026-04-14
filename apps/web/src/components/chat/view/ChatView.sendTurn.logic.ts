@@ -16,13 +16,13 @@ import {
   parseStandaloneComposerSlashCommand,
 } from "../../../logic/composer";
 import { resolvePlanFollowUpSubmission } from "../../../logic/proposed-plan";
+import { buildTemporaryWorktreeBranchName } from "@bigcode/shared/git";
 import {
   deriveComposerSendState,
   buildExpiredTerminalContextToastCopy,
   formatOutgoingPrompt,
   readFileAsDataUrl,
   cloneComposerImageForRetry,
-  buildTemporaryWorktreeBranchName,
 } from "./ChatView.logic";
 import { appendTerminalContextsToPrompt } from "../../../lib/terminalContext";
 import { toastManager } from "../../ui/toast";

@@ -13,7 +13,7 @@ import { GeneralSettingsPanel } from "./SettingsPanels";
 function createBaseServerConfig(): ServerConfig {
   return {
     cwd: "/repo/project",
-    keybindingsConfigPath: "/repo/project/.t3code-keybindings.json",
+    keybindingsConfigPath: "/repo/project/.bigcode-keybindings.json",
     keybindings: [],
     issues: [],
     providers: [],
