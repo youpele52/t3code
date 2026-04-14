@@ -36,12 +36,14 @@ export type BootstrapServices = {
       input: ProjectSetupScriptRunnerInput,
     ) => Effect.Effect<ProjectSetupScriptRunnerResult, Error>;
   };
+  readonly refreshGitStatus: (cwd: string) => Effect.Effect<void>;
 };
 
 export function makeDispatchBootstrapTurnStart(
   orchestrationEngine: BootstrapServices["orchestrationEngine"],
   git: BootstrapServices["git"],
   projectSetupScriptRunner: BootstrapServices["projectSetupScriptRunner"],
+  refreshGitStatus: BootstrapServices["refreshGitStatus"],
   appendSetupScriptActivity: (input: {
     readonly threadId: ThreadId;
     readonly kind: "setup-script.requested" | "setup-script.started" | "setup-script.failed";
@@ -197,6 +199,7 @@ export function makeDispatchBootstrapTurnStart(
             branch: worktree.worktree.branch,
             worktreePath: targetWorktreePath,
           });
+          yield* refreshGitStatus(targetWorktreePath).pipe(Effect.ignoreCause({ log: true }));
         }
 
         yield* runSetupProgram();
