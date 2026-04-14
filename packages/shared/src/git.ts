@@ -1,5 +1,17 @@
 import type { GitBranch } from "@bigcode/contracts";
 
+const WORKTREE_BRANCH_PREFIX = "t3code";
+const TEMP_WORKTREE_BRANCH_PATTERN = new RegExp(`^${WORKTREE_BRANCH_PREFIX}\\/[0-9a-f]{8}$`);
+
+/**
+ * Returns true for auto-generated temporary worktree branch names of the form
+ * `t3code/<8-hex-chars>`. These are created during new-worktree setup and
+ * later renamed once the AI generates a semantic name.
+ */
+export function isTemporaryWorktreeBranch(branch: string): boolean {
+  return TEMP_WORKTREE_BRANCH_PATTERN.test(branch.trim().toLowerCase());
+}
+
 /**
  * Sanitize an arbitrary string into a valid, lowercase git branch fragment.
  * Strips quotes, collapses separators, limits to 64 chars.

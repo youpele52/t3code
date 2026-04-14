@@ -1,6 +1,7 @@
 import { Cause, Duration, Effect, Exit, ManagedRuntime, Option, Scope, Stream } from "effect";
 import { RpcClient } from "effect/unstable/rpc";
 
+import { clearAllTrackedRpcRequests } from "./requestLatencyState";
 import {
   createWsRpcProtocolLayer,
   makeWsRpcProtocolClient,
@@ -105,6 +106,7 @@ export class WsTransport {
           return;
         }
 
+        const session = this.session;
         try {
           if (hasReceivedValue) {
             try {
@@ -114,7 +116,6 @@ export class WsTransport {
             }
           }
 
-          const session = this.session;
           const runningStream = this.runStreamOnSession(
             session,
             connect,
@@ -142,6 +143,10 @@ export class WsTransport {
           this.hasReportedTransportDisconnect = true;
           await sleep(retryDelayMs);
         }
+
+        if (session !== this.session) {
+          continue;
+        }
       }
     })();
 
@@ -161,6 +166,7 @@ export class WsTransport {
         throw new Error("Transport disposed");
       }
 
+      clearAllTrackedRpcRequests();
       const previousSession = this.session;
       this.session = this.createSession();
       await this.closeSession(previousSession);
