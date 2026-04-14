@@ -22,6 +22,7 @@ import { Cause, Effect, Equal, Schema } from "effect";
 
 import { resolveThreadWorkspaceCwd } from "../../checkpointing/Utils.ts";
 import type { GitCoreShape } from "../../git/Services/GitCore.ts";
+import type { GitStatusBroadcasterShape } from "../../git/Services/GitStatusBroadcaster.ts";
 import type { TextGenerationShape } from "../../git/Services/TextGeneration.ts";
 import type { OrchestrationEngineShape } from "../Services/OrchestrationEngine.ts";
 import type { ProviderServiceShape } from "../../provider/Services/ProviderService.ts";
@@ -42,6 +43,7 @@ export type SessionOpServices = {
   readonly orchestrationEngine: OrchestrationEngineShape;
   readonly providerService: ProviderServiceShape;
   readonly git: GitCoreShape;
+  readonly gitStatusBroadcaster: GitStatusBroadcasterShape;
   readonly textGeneration: TextGenerationShape;
   readonly serverSettingsService: ServerSettingsShape;
   readonly threadModelSelections: Map<string, ModelSelection>;
@@ -175,14 +177,14 @@ export const ensureSessionForThread = (services: SessionOpServices) =>
         createdAt,
       });
 
+    const activeSession = yield* resolveActiveSession(threadId);
     const existingSessionThreadId =
-      thread.session && thread.session.status !== "stopped" ? thread.id : null;
+      thread.session && thread.session.status !== "stopped" && activeSession ? thread.id : null;
     if (existingSessionThreadId) {
       const runtimeModeChanged = thread.runtimeMode !== thread.session?.runtimeMode;
       const providerChanged =
         requestedModelSelection !== undefined &&
         requestedModelSelection.provider !== currentProvider;
-      const activeSession = yield* resolveActiveSession(existingSessionThreadId);
       if (!activeSession && options?.restartFreshIfInactive) {
         const restartedSession = yield* startProviderSession({ fresh: true });
         yield* bindSessionToThread(restartedSession);
@@ -348,7 +350,13 @@ export const maybeGenerateAndRenameWorktreeBranchForFirstTurn = (services: Sessi
     readonly messageText: string;
     readonly attachments?: ReadonlyArray<ChatAttachment>;
   }) {
-    const { git, textGeneration, serverSettingsService, orchestrationEngine } = services;
+    const {
+      git,
+      textGeneration,
+      serverSettingsService,
+      orchestrationEngine,
+      gitStatusBroadcaster,
+    } = services;
     if (!input.branch || !input.worktreePath) {
       return;
     }
@@ -382,6 +390,7 @@ export const maybeGenerateAndRenameWorktreeBranchForFirstTurn = (services: Sessi
         branch: renamed.branch,
         worktreePath: cwd,
       });
+      yield* gitStatusBroadcaster.refreshLocalStatus(cwd).pipe(Effect.ignoreCause({ log: true }));
     }).pipe(
       Effect.catchCause((cause) =>
         Effect.logWarning("provider command reactor failed to generate or rename worktree branch", {
