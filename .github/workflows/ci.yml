@@ -77,6 +77,20 @@ jobs:
       - name: Exercise release-only workflow steps
         run: node scripts/release-smoke.ts
 
+      - name: Validate bootstrap installer scripts
+        run: node scripts/bootstrap-installer-smoke.ts
+
+  bootstrap_installer_smoke:
+    name: Bootstrap Installer Smoke
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Validate install.ps1 with mocked cmdlets
+        shell: pwsh
+        run: pwsh -File scripts/bootstrap-installer-smoke.ps1
+
   desktop_release_build:
     name: Desktop Release Build ${{ matrix.label }}
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
