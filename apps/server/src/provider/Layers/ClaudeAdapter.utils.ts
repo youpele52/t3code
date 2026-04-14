@@ -9,6 +9,8 @@ import {
   type CanonicalRequestType,
   ClaudeCodeEffort,
   RuntimeRequestId,
+  type RuntimePlanStepStatus,
+  RUNTIME_PLAN_STEP_STATUSES,
   type ThreadTokenUsageSnapshot,
   ThreadId,
   type TurnId,
@@ -168,19 +170,28 @@ export function normalizeClaudeTokenUsage(
       ? record.output_tokens
       : 0;
   const derivedUsedTokens = inputTokens + outputTokens;
+  const totalProcessedTokens = directUsedTokens;
   const usedTokens = directUsedTokens ?? (derivedUsedTokens > 0 ? derivedUsedTokens : undefined);
   if (usedTokens === undefined || usedTokens <= 0) {
     return undefined;
   }
 
+  const hasContextWindow =
+    typeof contextWindow === "number" && Number.isFinite(contextWindow) && contextWindow > 0;
+  const clampedUsedTokens =
+    hasContextWindow && usedTokens > contextWindow ? contextWindow : usedTokens;
+  const shouldIncludeTotalProcessed =
+    totalProcessedTokens !== undefined &&
+    totalProcessedTokens > 0 &&
+    totalProcessedTokens !== clampedUsedTokens;
+
   return {
-    usedTokens,
-    lastUsedTokens: usedTokens,
+    usedTokens: clampedUsedTokens,
+    lastUsedTokens: clampedUsedTokens,
     ...(inputTokens > 0 ? { inputTokens } : {}),
     ...(outputTokens > 0 ? { outputTokens } : {}),
-    ...(typeof contextWindow === "number" && Number.isFinite(contextWindow) && contextWindow > 0
-      ? { maxTokens: contextWindow }
-      : {}),
+    ...(hasContextWindow ? { maxTokens: contextWindow } : {}),
+    ...(shouldIncludeTotalProcessed ? { totalProcessedTokens } : {}),
     ...(typeof record.tool_uses === "number" && Number.isFinite(record.tool_uses)
       ? { toolUses: record.tool_uses }
       : {}),
@@ -290,6 +301,25 @@ export function isReadOnlyToolName(toolName: string): boolean {
     normalized.includes("glob") ||
     normalized.includes("search")
   );
+}
+
+export function isTodoTool(toolName: string): boolean {
+  return toolName === "TodoWrite";
+}
+
+export function extractPlanStepsFromTodoInput(
+  input: Record<string, unknown>,
+): ReadonlyArray<{ step: string; status: RuntimePlanStepStatus }> {
+  const todos = Array.isArray(input.todos) ? input.todos : [];
+  return todos
+    .filter((t): t is Record<string, unknown> => !!t && typeof t === "object")
+    .map((t) => ({
+      step:
+        typeof t.content === "string" && t.content.trim().length > 0 ? t.content.trim() : "Task",
+      status: (RUNTIME_PLAN_STEP_STATUSES as readonly string[]).includes(t.status as string)
+        ? (t.status as RuntimePlanStepStatus)
+        : ("pending" as RuntimePlanStepStatus),
+    }));
 }
 
 export function classifyRequestType(toolName: string): CanonicalRequestType {
