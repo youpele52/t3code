@@ -6,7 +6,11 @@ import {
   captureBackendOutput,
   writeBackendSessionBoundary,
 } from "../logging/logging";
-import { resolveBackendCwd, resolveBackendEntry } from "../env/pathResolver";
+import {
+  ensureBackendModulesSymlink,
+  resolveBackendCwd,
+  resolveBackendEntry,
+} from "../env/pathResolver";
 import type { RotatingFileSink } from "@bigcode/shared/logging";
 import { readPersistedBackendObservabilitySettings } from "../logging/logging";
 
@@ -102,6 +106,13 @@ export function startBackend(): void {
 
   const backendLogSink = _deps.getBackendLogSink();
   const captureBackendLogs = backendLogSink !== null;
+
+  // Ensure _modules → node_modules symlink exists for ESM resolution of
+  // external native packages (e.g. @github/copilot-sdk, node-pty).
+  ensureBackendModulesSymlink();
+
+  // Always pipe stderr so we can capture crash output for diagnostics,
+  // regardless of whether a log sink is configured.
   const child = ChildProcess.spawn(process.execPath, [backendEntry, "--bootstrap-fd", "3"], {
     cwd: resolveBackendCwd(_deps.rootDir),
     // In Electron main, process.execPath points to the Electron binary.
@@ -112,8 +123,25 @@ export function startBackend(): void {
     },
     stdio: captureBackendLogs
       ? ["ignore", "pipe", "pipe", "pipe"]
-      : ["ignore", "inherit", "inherit", "pipe"],
+      : ["ignore", "inherit", "pipe", "pipe"],
   });
+
+  // Buffer the last 2 KB of stderr for crash diagnostics.
+  const stderrTail: string[] = [];
+  const MAX_STDERR_TAIL = 2048;
+  let stderrTailLength = 0;
+  if (child.stderr) {
+    child.stderr.setEncoding("utf8");
+    child.stderr.on("data", (chunk: string) => {
+      stderrTail.push(chunk);
+      stderrTailLength += chunk.length;
+      // Trim oldest chunks when buffer exceeds limit.
+      while (stderrTailLength > MAX_STDERR_TAIL && stderrTail.length > 1) {
+        const removed = stderrTail.shift();
+        stderrTailLength -= removed?.length ?? 0;
+      }
+    });
+  }
   const bootstrapStream = child.stdio[3];
   if (bootstrapStream && "write" in bootstrapStream) {
     bootstrapStream.write(
@@ -175,7 +203,8 @@ export function startBackend(): void {
       `pid=${child.pid ?? "unknown"} code=${code ?? "null"} signal=${signal ?? "null"}`,
     );
     if (_deps?.getIsQuitting() || wasExpected) return;
-    const reason = `code=${code ?? "null"} signal=${signal ?? "null"}`;
+    const crashDetail = stderrTail.join("").trim().slice(-512).replace(/\n/g, " ↵ ");
+    const reason = `code=${code ?? "null"} signal=${signal ?? "null"}${crashDetail ? ` stderr=${crashDetail}` : ""}`;
     scheduleBackendRestart(reason);
   });
 }
