@@ -1,5 +1,6 @@
 import {
   CODEX_REASONING_EFFORT_OPTIONS,
+  COMPOSER_DRAFT_LEGACY_STORAGE_KEYS,
   COMPOSER_DRAFT_STORAGE_KEY,
   COMPOSER_DRAFT_STORAGE_VERSION,
   ModelSelection,
@@ -14,7 +15,11 @@ import * as Schema from "effect/Schema";
 import { type TerminalContextDraft } from "../../lib/terminalContext";
 import { type ChatImageAttachment } from "../../models/types";
 
-export { COMPOSER_DRAFT_STORAGE_KEY, COMPOSER_DRAFT_STORAGE_VERSION };
+export {
+  COMPOSER_DRAFT_LEGACY_STORAGE_KEYS,
+  COMPOSER_DRAFT_STORAGE_KEY,
+  COMPOSER_DRAFT_STORAGE_VERSION,
+};
 export const DraftThreadEnvModeSchema = Schema.Literals(["local", "worktree"]);
 export type DraftThreadEnvMode = typeof DraftThreadEnvModeSchema.Type;
 

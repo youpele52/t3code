@@ -1,7 +1,7 @@
 import { ThreadId } from "@bigcode/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 
 import { getFallbackThreadIdAfterDelete } from "../components/sidebar/Sidebar.logic";
 import { useComposerDraftStore } from "../stores/composer";
@@ -28,6 +28,12 @@ export function useThreadActions() {
   });
   const navigate = useNavigate();
   const { handleNewThread } = useHandleNewThread();
+  // Keep a ref so archiveThread can read the latest handleNewThread without
+  // appearing in its dependency array. handleNewThread is inherently unstable
+  // (depends on the projects list) and would otherwise cascade new references
+  // into every sidebar row via archiveThread.
+  const handleNewThreadRef = useRef(handleNewThread);
+  handleNewThreadRef.current = handleNewThread;
   const queryClient = useQueryClient();
   const removeWorktreeMutation = useMutation(gitRemoveWorktreeMutationOptions({ queryClient }));
 
@@ -48,10 +54,10 @@ export function useThreadActions() {
       });
 
       if (routeThreadId === threadId) {
-        await handleNewThread(thread.projectId);
+        await handleNewThreadRef.current(thread.projectId);
       }
     },
-    [handleNewThread, routeThreadId],
+    [routeThreadId],
   );
 
   const unarchiveThread = useCallback(async (threadId: ThreadId) => {

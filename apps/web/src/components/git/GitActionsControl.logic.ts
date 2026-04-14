@@ -3,6 +3,7 @@ import type {
   GitStackedAction,
   GitStatusResult,
 } from "@bigcode/contracts";
+import { isTemporaryWorktreeBranch } from "@bigcode/shared/git";
 
 export type GitActionIconName = "commit" | "push" | "pr";
 
@@ -351,6 +352,18 @@ export function resolveLiveThreadBranchUpdate(input: {
   }
 
   if (input.threadBranch === input.gitStatus.branch) {
+    return null;
+  }
+
+  // Prevent a semantic branch from regressing back to a temporary worktree
+  // branch name. This can happen transiently while a worktree is being set up
+  // and the git HEAD hasn't been renamed yet.
+  if (
+    input.threadBranch !== null &&
+    input.gitStatus.branch !== null &&
+    !isTemporaryWorktreeBranch(input.threadBranch) &&
+    isTemporaryWorktreeBranch(input.gitStatus.branch)
+  ) {
     return null;
   }
 
