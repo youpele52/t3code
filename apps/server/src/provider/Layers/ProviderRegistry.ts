@@ -1,10 +1,15 @@
 /**
  * ProviderRegistryLive - Aggregates provider-specific snapshot services.
  *
+ * Provider probes are kicked off asynchronously after construction so a
+ * missing CLI binary (ENOENT) never blocks server startup.  The registry
+ * starts with an empty list and hydrates via the individual providers'
+ * `streamChanges` streams, publishing each delta through `changesPubSub`.
+ *
  * @module ProviderRegistryLive
  */
 import type { ProviderKind, ServerProvider } from "@bigcode/contracts";
-import { Effect, Equal, Layer, PubSub, Ref, Stream } from "effect";
+import { Deferred, Effect, Equal, Layer, Option, PubSub, Ref, Stream } from "effect";
 
 import { ClaudeProviderLive } from "./ClaudeProvider";
 import { CopilotProviderLive } from "./CopilotProvider";
@@ -43,6 +48,14 @@ export const haveProvidersChanged = (
   nextProviders: ReadonlyArray<ServerProvider>,
 ): boolean => !Equal.equals(previousProviders, nextProviders);
 
+/** Returns the first provider with status "ready", or None. */
+const findFirstReadyProvider = (
+  providers: ReadonlyArray<ServerProvider>,
+): Option.Option<ServerProvider> => {
+  const found = providers.find((p) => p.enabled && p.status === "ready");
+  return found ? Option.some(found) : Option.none();
+};
+
 export const ProviderRegistryLive = Layer.effect(
   ProviderRegistry,
   Effect.gen(function* () {
@@ -54,9 +67,13 @@ export const ProviderRegistryLive = Layer.effect(
       PubSub.unbounded<ReadonlyArray<ServerProvider>>(),
       PubSub.shutdown,
     );
-    const providersRef = yield* Ref.make<ReadonlyArray<ServerProvider>>(
-      yield* loadProviders(codexProvider, claudeProvider, copilotProvider, opencodeProvider),
-    );
+
+    // Start empty — probes are kicked off asynchronously below.
+    const providersRef = yield* Ref.make<ReadonlyArray<ServerProvider>>([]);
+
+    // Latches the first provider that becomes ready.  Subsequent ready
+    // providers do not override the latched value.
+    const firstReadyDeferred = yield* Deferred.make<ServerProvider>();
 
     const syncProviders = Effect.fn("syncProviders")(function* (options?: {
       readonly publish?: boolean;
@@ -70,12 +87,26 @@ export const ProviderRegistryLive = Layer.effect(
       );
       yield* Ref.set(providersRef, providers);
 
+      // Latch the first ready provider (idempotent after first success).
+      const maybeReady = findFirstReadyProvider(providers);
+      if (Option.isSome(maybeReady)) {
+        yield* Deferred.succeed(firstReadyDeferred, maybeReady.value).pipe(Effect.ignore);
+      }
+
       if (options?.publish !== false && haveProvidersChanged(previousProviders, providers)) {
         yield* PubSub.publish(changesPubSub, providers);
       }
 
       return providers;
     });
+
+    // Kick off an initial probe for each provider asynchronously — a failure
+    // in any individual probe is contained inside `makeManagedServerProvider`
+    // and will surface as a degraded snapshot, never as a startup failure.
+    yield* syncProviders({ publish: true }).pipe(
+      Effect.ignoreCause({ log: true }),
+      Effect.forkScoped,
+    );
 
     yield* Stream.runForEach(codexProvider.streamChanges, () => syncProviders()).pipe(
       Effect.forkScoped,
@@ -122,7 +153,7 @@ export const ProviderRegistryLive = Layer.effect(
     });
 
     return {
-      getProviders: syncProviders({ publish: false }).pipe(
+      getProviders: Ref.get(providersRef).pipe(
         Effect.tapError(Effect.logError),
         Effect.orElseSucceed(() => []),
       ),
@@ -134,6 +165,9 @@ export const ProviderRegistryLive = Layer.effect(
       get streamChanges() {
         return Stream.fromPubSub(changesPubSub);
       },
+      awaitFirstReadyProvider: Deferred.await(firstReadyDeferred).pipe(
+        Effect.timeoutOption(10_000),
+      ),
     } satisfies ProviderRegistryShape;
   }),
 ).pipe(

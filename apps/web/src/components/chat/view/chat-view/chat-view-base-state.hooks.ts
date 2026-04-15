@@ -1,4 +1,4 @@
-import { DEFAULT_MODEL_BY_PROVIDER, type ThreadId } from "@bigcode/contracts";
+import { type ThreadId } from "@bigcode/contracts";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useCallback, useMemo, useRef, useState } from "react";
 
@@ -42,6 +42,8 @@ import {
 } from "../ChatView.logic";
 
 import { type TerminalLaunchContext } from "./shared";
+import { useServerProviders } from "../../../../rpc/serverState";
+import { getDefaultModelSelection } from "../../../../models/provider/provider.models";
 
 const EMPTY_CHANGED_FILES_EXPANDED_BY_TURN_ID: Record<string, boolean> = {};
 
@@ -68,6 +70,7 @@ export function useChatViewBaseState({ threadId }: ChatViewBaseStateInput) {
   const setStickyComposerModelSelection = useComposerDraftStore(
     (store) => store.setStickyModelSelection,
   );
+  const serverProviders = useServerProviders();
   const timestampFormat = settings.timestampFormat;
   const navigate = useNavigate();
   const rawSearch = useSearch({
@@ -287,14 +290,18 @@ export function useChatViewBaseState({ threadId }: ChatViewBaseStateInput) {
         ? buildLocalDraftThread(
             threadId,
             draftThread,
-            fallbackDraftProject?.defaultModelSelection ?? {
-              provider: "codex",
-              model: DEFAULT_MODEL_BY_PROVIDER.codex,
-            },
+            fallbackDraftProject?.defaultModelSelection ??
+              getDefaultModelSelection(serverProviders),
             localDraftError,
           )
         : undefined,
-    [draftThread, fallbackDraftProject?.defaultModelSelection, localDraftError, threadId],
+    [
+      draftThread,
+      fallbackDraftProject?.defaultModelSelection,
+      localDraftError,
+      serverProviders,
+      threadId,
+    ],
   );
   const activeThread = serverThread ?? localDraftThread;
   const runtimeMode =
