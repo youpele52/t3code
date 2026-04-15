@@ -13,6 +13,23 @@ import {
 } from "./ProjectionPipeline.helpers.ts";
 import { type ProjectorDefinition, type ProjectorDeps } from "./ProjectionPipeline.projectors.ts";
 
+/**
+ * Returns true if the failure detail string indicates the approval request was
+ * already stale (i.e. the provider tried to respond to an approval that no
+ * longer exists). These stale failures should resolve the pending approval row
+ * rather than leave it dangling.
+ */
+function isStalePendingApprovalFailureDetail(detail: string | null): boolean {
+  if (detail === null) {
+    return false;
+  }
+  return (
+    detail.includes("stale pending approval request") ||
+    detail.includes("unknown pending approval request") ||
+    detail.includes("unknown pending permission request")
+  );
+}
+
 export function makePendingApprovalsProjector(
   deps: Pick<ProjectorDeps, "projectionPendingApprovalRepository">,
 ): ProjectorDefinition {
@@ -63,6 +80,33 @@ export function makePendingApprovalsProjector(
               : event.payload.activity.createdAt,
             resolvedAt: event.payload.activity.createdAt,
           });
+          return;
+        }
+        if (event.payload.activity.kind === "provider.approval.respond.failed") {
+          const payload =
+            typeof event.payload.activity.payload === "object" &&
+            event.payload.activity.payload !== null
+              ? (event.payload.activity.payload as Record<string, unknown>)
+              : null;
+          const detail = typeof payload?.detail === "string" ? payload.detail.toLowerCase() : null;
+          if (isStalePendingApprovalFailureDetail(detail)) {
+            if (Option.isNone(existingRow)) {
+              return;
+            }
+            if (existingRow.value.status === "resolved") {
+              return;
+            }
+            yield* projectionPendingApprovalRepository.upsert({
+              requestId,
+              threadId: existingRow.value.threadId,
+              turnId: existingRow.value.turnId,
+              status: "resolved",
+              decision: null,
+              createdAt: existingRow.value.createdAt,
+              resolvedAt: event.payload.activity.createdAt,
+            });
+            return;
+          }
           return;
         }
         if (Option.isSome(existingRow) && existingRow.value.status === "resolved") {

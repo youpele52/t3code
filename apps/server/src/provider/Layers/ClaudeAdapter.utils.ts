@@ -3,7 +3,12 @@
  *
  * @module ClaudeAdapter.utils
  */
-import type { SDKResultMessage, SettingSource } from "@anthropic-ai/claude-agent-sdk";
+import type {
+  ModelUsage,
+  NonNullableUsage,
+  SDKResultMessage,
+  SettingSource,
+} from "@anthropic-ai/claude-agent-sdk";
 import {
   type CanonicalItemType,
   type CanonicalRequestType,
@@ -116,24 +121,14 @@ export function isInterruptedResult(result: SDKResultMessage): boolean {
   );
 }
 
-export function maxClaudeContextWindowFromModelUsage(modelUsage: unknown): number | undefined {
-  if (!modelUsage || typeof modelUsage !== "object") {
-    return undefined;
-  }
+export function maxClaudeContextWindowFromModelUsage(
+  modelUsage: Record<string, ModelUsage> | undefined,
+): number | undefined {
+  if (!modelUsage) return undefined;
 
   let maxContextWindow: number | undefined;
-  for (const value of Object.values(modelUsage as Record<string, unknown>)) {
-    if (!value || typeof value !== "object") {
-      continue;
-    }
-    const contextWindow = (value as { contextWindow?: unknown }).contextWindow;
-    if (
-      typeof contextWindow !== "number" ||
-      !Number.isFinite(contextWindow) ||
-      contextWindow <= 0
-    ) {
-      continue;
-    }
+  for (const value of Object.values(modelUsage)) {
+    const contextWindow = value.contextWindow;
     maxContextWindow = Math.max(maxContextWindow ?? 0, contextWindow);
   }
 
@@ -141,62 +136,58 @@ export function maxClaudeContextWindowFromModelUsage(modelUsage: unknown): numbe
 }
 
 export function normalizeClaudeTokenUsage(
-  usage: unknown,
+  value: NonNullableUsage | Record<string, unknown> | undefined,
   contextWindow?: number,
 ): ThreadTokenUsageSnapshot | undefined {
-  if (!usage || typeof usage !== "object") {
+  if (!value || typeof value !== "object") {
     return undefined;
   }
 
-  const record = usage as Record<string, unknown>;
-  const directUsedTokens =
-    typeof record.total_tokens === "number" && Number.isFinite(record.total_tokens)
-      ? record.total_tokens
-      : undefined;
+  const usage = value as Record<string, unknown>;
   const inputTokens =
-    (typeof record.input_tokens === "number" && Number.isFinite(record.input_tokens)
-      ? record.input_tokens
+    (typeof usage.input_tokens === "number" && Number.isFinite(usage.input_tokens)
+      ? usage.input_tokens
       : 0) +
-    (typeof record.cache_creation_input_tokens === "number" &&
-    Number.isFinite(record.cache_creation_input_tokens)
-      ? record.cache_creation_input_tokens
+    (typeof usage.cache_creation_input_tokens === "number" &&
+    Number.isFinite(usage.cache_creation_input_tokens)
+      ? usage.cache_creation_input_tokens
       : 0) +
-    (typeof record.cache_read_input_tokens === "number" &&
-    Number.isFinite(record.cache_read_input_tokens)
-      ? record.cache_read_input_tokens
+    (typeof usage.cache_read_input_tokens === "number" &&
+    Number.isFinite(usage.cache_read_input_tokens)
+      ? usage.cache_read_input_tokens
       : 0);
   const outputTokens =
-    typeof record.output_tokens === "number" && Number.isFinite(record.output_tokens)
-      ? record.output_tokens
+    typeof usage.output_tokens === "number" && Number.isFinite(usage.output_tokens)
+      ? usage.output_tokens
       : 0;
-  const derivedUsedTokens = inputTokens + outputTokens;
-  const totalProcessedTokens = directUsedTokens;
-  const usedTokens = directUsedTokens ?? (derivedUsedTokens > 0 ? derivedUsedTokens : undefined);
-  if (usedTokens === undefined || usedTokens <= 0) {
+  const derivedTotalProcessedTokens = inputTokens + outputTokens;
+  const totalProcessedTokens =
+    (typeof usage.total_tokens === "number" && Number.isFinite(usage.total_tokens)
+      ? usage.total_tokens
+      : undefined) ?? (derivedTotalProcessedTokens > 0 ? derivedTotalProcessedTokens : undefined);
+  if (totalProcessedTokens === undefined || totalProcessedTokens <= 0) {
     return undefined;
   }
 
-  const hasContextWindow =
-    typeof contextWindow === "number" && Number.isFinite(contextWindow) && contextWindow > 0;
-  const clampedUsedTokens =
-    hasContextWindow && usedTokens > contextWindow ? contextWindow : usedTokens;
-  const shouldIncludeTotalProcessed =
-    totalProcessedTokens !== undefined &&
-    totalProcessedTokens > 0 &&
-    totalProcessedTokens !== clampedUsedTokens;
+  const maxTokens =
+    typeof contextWindow === "number" && Number.isFinite(contextWindow) && contextWindow > 0
+      ? contextWindow
+      : undefined;
+  const usedTokens =
+    maxTokens !== undefined ? Math.min(totalProcessedTokens, maxTokens) : totalProcessedTokens;
 
   return {
-    usedTokens: clampedUsedTokens,
-    lastUsedTokens: clampedUsedTokens,
+    usedTokens,
+    lastUsedTokens: usedTokens,
+    ...(totalProcessedTokens > usedTokens ? { totalProcessedTokens } : {}),
     ...(inputTokens > 0 ? { inputTokens } : {}),
     ...(outputTokens > 0 ? { outputTokens } : {}),
-    ...(hasContextWindow ? { maxTokens: contextWindow } : {}),
-    ...(shouldIncludeTotalProcessed ? { totalProcessedTokens } : {}),
-    ...(typeof record.tool_uses === "number" && Number.isFinite(record.tool_uses)
-      ? { toolUses: record.tool_uses }
+    ...(maxTokens !== undefined ? { maxTokens } : {}),
+    ...(typeof usage.tool_uses === "number" && Number.isFinite(usage.tool_uses)
+      ? { toolUses: usage.tool_uses }
       : {}),
-    ...(typeof record.duration_ms === "number" && Number.isFinite(record.duration_ms)
-      ? { durationMs: record.duration_ms }
+    ...(typeof usage.duration_ms === "number" && Number.isFinite(usage.duration_ms)
+      ? { durationMs: usage.duration_ms }
       : {}),
   };
 }
@@ -313,13 +304,17 @@ export function extractPlanStepsFromTodoInput(
   const todos = Array.isArray(input.todos) ? input.todos : [];
   return todos
     .filter((t): t is Record<string, unknown> => !!t && typeof t === "object")
-    .map((t) => ({
-      step:
-        typeof t.content === "string" && t.content.trim().length > 0 ? t.content.trim() : "Task",
-      status: (RUNTIME_PLAN_STEP_STATUSES as readonly string[]).includes(t.status as string)
-        ? (t.status as RuntimePlanStepStatus)
-        : ("pending" as RuntimePlanStepStatus),
-    }));
+    .map((t) => {
+      // Claude SDK uses snake_case "in_progress"; normalize to camelCase before validating
+      const rawStatus = t.status === "in_progress" ? "inProgress" : t.status;
+      return {
+        step:
+          typeof t.content === "string" && t.content.trim().length > 0 ? t.content.trim() : "Task",
+        status: (RUNTIME_PLAN_STEP_STATUSES as readonly string[]).includes(rawStatus as string)
+          ? (rawStatus as RuntimePlanStepStatus)
+          : ("pending" as RuntimePlanStepStatus),
+      };
+    });
 }
 
 export function classifyRequestType(toolName: string): CanonicalRequestType {

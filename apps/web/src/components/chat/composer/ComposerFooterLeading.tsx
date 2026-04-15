@@ -50,6 +50,7 @@ interface ComposerFooterLeadingProps {
   activePlan: boolean;
   sidebarProposedPlan: boolean;
   planSidebarOpen: boolean;
+  planSidebarLabel: string;
   interactionMode: ProviderInteractionMode;
   runtimeMode: RuntimeMode;
   providerTraitsPicker: React.ReactNode;
@@ -75,6 +76,7 @@ export const ComposerFooterLeading = forwardRef<HTMLDivElement, ComposerFooterLe
       activePlan,
       sidebarProposedPlan,
       planSidebarOpen,
+      planSidebarLabel,
       interactionMode,
       runtimeMode,
       providerTraitsPicker,
@@ -94,7 +96,7 @@ export const ComposerFooterLeading = forwardRef<HTMLDivElement, ComposerFooterLe
       <div
         ref={ref}
         className={cn(
-          "flex min-w-0 flex-1 items-center",
+          "-m-1 flex min-w-0 flex-1 items-center p-1",
           isComposerFooterCompact
             ? "gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             : "gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:min-w-max sm:overflow-visible",
@@ -120,6 +122,7 @@ export const ComposerFooterLeading = forwardRef<HTMLDivElement, ComposerFooterLe
             activePlan={Boolean(activePlan || sidebarProposedPlan || planSidebarOpen)}
             interactionMode={interactionMode}
             planSidebarOpen={planSidebarOpen}
+            planSidebarLabel={planSidebarLabel}
             runtimeMode={runtimeMode}
             traitsMenuContent={providerTraitsMenuContent}
             onToggleInteractionMode={onToggleInteractionMode}
@@ -187,10 +190,14 @@ export const ComposerFooterLeading = forwardRef<HTMLDivElement, ComposerFooterLe
                   size="sm"
                   type="button"
                   onClick={onTogglePlanSidebar}
-                  title={planSidebarOpen ? "Hide plan sidebar" : "Show plan sidebar"}
+                  title={
+                    planSidebarOpen
+                      ? `Hide ${planSidebarLabel.toLowerCase()} sidebar`
+                      : `Show ${planSidebarLabel.toLowerCase()} sidebar`
+                  }
                 >
                   <ListTodoIcon />
-                  <span className="sr-only sm:not-sr-only">Plan</span>
+                  <span className="sr-only sm:not-sr-only">{planSidebarLabel}</span>
                 </Button>
               </>
             ) : null}

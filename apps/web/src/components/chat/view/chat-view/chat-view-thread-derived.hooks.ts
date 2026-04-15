@@ -193,6 +193,11 @@ export function useChatViewThreadDerivedState(base: ChatViewBaseState) {
     latestTurnSettled &&
     hasActionableProposedPlan(activeProposedPlan);
 
+  // Show "Tasks" when the sidebar is displaying TodoWrite-driven step tracking
+  // (no proposed plan markdown, not in plan-drafting mode). Show "Plan" when
+  // there is a proposed plan or the thread is in plan interaction mode.
+  const planSidebarLabel = sidebarProposedPlan || interactionMode === "plan" ? "Plan" : "Tasks";
+
   const activePendingApproval = pendingApprovals[0] ?? null;
 
   const phase = derivePhase(activeThread?.session ?? null);
@@ -264,6 +269,7 @@ export function useChatViewThreadDerivedState(base: ChatViewBaseState) {
     activeProposedPlan,
     sidebarProposedPlan,
     activePlan,
+    planSidebarLabel,
     showPlanFollowUpPrompt,
     activePendingApproval,
     phase,
