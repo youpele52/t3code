@@ -130,7 +130,6 @@ export function useChatViewEffects({ base, composer, thread, runtime }: ChatView
     setPlanSidebarOpen,
     setProviderUnlocked,
   ]);
-
   useEffect(() => {
     if (!composerMenuOpen) {
       setComposerHighlightedItemId(null);

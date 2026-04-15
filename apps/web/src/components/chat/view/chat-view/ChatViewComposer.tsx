@@ -167,6 +167,7 @@ export function ChatViewComposer({
                 activePlan={Boolean(thread.activePlan)}
                 sidebarProposedPlan={Boolean(thread.sidebarProposedPlan)}
                 planSidebarOpen={base.planSidebarOpen}
+                planSidebarLabel={thread.planSidebarLabel}
                 interactionMode={base.interactionMode}
                 runtimeMode={base.runtimeMode}
                 providerTraitsPicker={interactions.providerTraitsPicker}

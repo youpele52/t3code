@@ -108,7 +108,8 @@ export function useHandleNewThread() {
       if (
         latestActiveDraftThread &&
         routeThreadId &&
-        latestActiveDraftThread.projectId === projectId
+        latestActiveDraftThread.projectId === projectId &&
+        !useStore.getState().threads.find((t) => t.id === routeThreadId)
       ) {
         if (hasBranchOption || hasWorktreePathOption || hasEnvModeOption) {
           setDraftThreadContext(routeThreadId, {
