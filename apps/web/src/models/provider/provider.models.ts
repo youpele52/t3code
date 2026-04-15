@@ -1,5 +1,7 @@
 import {
   DEFAULT_MODEL_BY_PROVIDER,
+  PROVIDER_KINDS,
+  type ModelSelection,
   type ModelCapabilities,
   type ProviderKind,
   type ServerProvider,
@@ -40,11 +42,13 @@ export function resolveSelectableProvider(
   providers: ReadonlyArray<ServerProvider>,
   provider: ProviderKind | null | undefined,
 ): ProviderKind {
-  const requested = provider ?? "codex";
-  if (isProviderEnabled(providers, requested)) {
-    return requested;
+  if (provider && isProviderEnabled(providers, provider)) {
+    return provider;
   }
-  return providers.find((candidate) => candidate.enabled)?.provider ?? requested;
+  // Fall back to the first enabled provider in snapshot order, then PROVIDER_KINDS order.
+  const fromSnapshot = providers.find((candidate) => candidate.enabled)?.provider;
+  if (fromSnapshot) return fromSnapshot;
+  return provider ?? PROVIDER_KINDS[0];
 }
 
 export function getProviderModelCapabilities(
@@ -66,4 +70,38 @@ export function getDefaultServerModel(
     models[0]?.slug ??
     DEFAULT_MODEL_BY_PROVIDER[provider]
   );
+}
+
+/**
+ * Returns the first provider snapshot that is enabled and has status "ready",
+ * or `undefined` if no provider has completed probing successfully yet.
+ */
+export function getFirstReadyProvider(
+  providers: ReadonlyArray<ServerProvider>,
+): ServerProvider | undefined {
+  return providers.find((p) => p.enabled && p.status === "ready");
+}
+
+/**
+ * Returns a default `ModelSelection` based on the first ready provider.
+ * If no provider is ready yet, falls back to the first enabled provider
+ * in snapshot order, then to the first entry in PROVIDER_KINDS.
+ *
+ * This is used when creating new projects/threads before the user has
+ * made an explicit model choice.
+ */
+export function getDefaultModelSelection(providers: ReadonlyArray<ServerProvider>): ModelSelection {
+  const ready = getFirstReadyProvider(providers);
+  if (ready) {
+    const model = ready.models[0]?.slug ?? DEFAULT_MODEL_BY_PROVIDER[ready.provider];
+    return { provider: ready.provider, model };
+  }
+  const firstEnabled = providers.find((p) => p.enabled);
+  if (firstEnabled) {
+    const model = firstEnabled.models[0]?.slug ?? DEFAULT_MODEL_BY_PROVIDER[firstEnabled.provider];
+    return { provider: firstEnabled.provider, model };
+  }
+  // No providers in snapshot yet — use first PROVIDER_KIND as last resort.
+  const fallbackProvider = PROVIDER_KINDS[0];
+  return { provider: fallbackProvider, model: DEFAULT_MODEL_BY_PROVIDER[fallbackProvider] };
 }
