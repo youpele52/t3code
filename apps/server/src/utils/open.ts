@@ -75,6 +75,15 @@ function resolveCommandEditorArgs(
   }
 }
 
+function resolveEditorArgs(
+  editor: (typeof EDITORS)[number],
+  target: string,
+): ReadonlyArray<string> {
+  const baseArgs: ReadonlyArray<string> =
+    "baseArgs" in editor && Array.isArray(editor.baseArgs) ? editor.baseArgs : [];
+  return [...baseArgs, ...resolveCommandEditorArgs(editor, target)];
+}
+
 function resolveAvailableCommand(
   commands: ReadonlyArray<string>,
   options: CommandAvailabilityOptions = {},
@@ -273,7 +282,7 @@ export const resolveEditorLaunch = Effect.fn("resolveEditorLaunch")(function* (
       resolveAvailableCommand(editorDef.commands, { platform, env }) ?? editorDef.commands[0];
     return {
       command,
-      args: resolveCommandEditorArgs(editorDef, input.cwd),
+      args: resolveEditorArgs(editorDef, input.cwd),
     };
   }
 
