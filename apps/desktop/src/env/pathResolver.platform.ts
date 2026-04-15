@@ -68,6 +68,14 @@ export interface BackendModulesLinkPlan {
   readonly linkType: ModuleLinkType;
 }
 
+export interface PackagedOpencodeBinaryPlan {
+  readonly serverDir: string;
+  readonly opencodeDir: string;
+  readonly binDir: string;
+  readonly binaryName: string;
+  readonly binaryPath: string;
+}
+
 // ---------------------------------------------------------------------------
 // Pure resolver (no I/O, fully testable)
 // ---------------------------------------------------------------------------
@@ -105,5 +113,23 @@ export function resolveBackendModulesLinkPlan(
     nodeModulesPath,
     linkTarget: "_modules",
     linkType: "dir",
+  };
+}
+
+export function resolvePackagedOpencodeBinaryPlan(
+  platform: string,
+  resourcesPath: string,
+): PackagedOpencodeBinaryPlan {
+  const serverDir = Path.join(resourcesPath, "server");
+  const opencodeDir = Path.join(serverDir, "opencode");
+  const binDir = Path.join(opencodeDir, "bin");
+  const binaryName = platform === "win32" ? "opencode.exe" : "opencode";
+
+  return {
+    serverDir,
+    opencodeDir,
+    binDir,
+    binaryName,
+    binaryPath: Path.join(binDir, binaryName),
   };
 }
