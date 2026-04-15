@@ -8,12 +8,7 @@ import {
 } from "react";
 import type React from "react";
 import { type DragCancelEvent, type DragStartEvent, type DragEndEvent } from "@dnd-kit/core";
-import {
-  DEFAULT_MODEL_BY_PROVIDER,
-  ThreadId,
-  type ProjectId,
-  type ThreadId as ThreadIdType,
-} from "@bigcode/contracts";
+import { ThreadId, type ProjectId, type ThreadId as ThreadIdType } from "@bigcode/contracts";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { isNonEmpty as isNonEmptyString } from "effect/String";
 import { isMacPlatform, newCommandId, newProjectId } from "../../lib/utils";
@@ -29,6 +24,8 @@ import { useSettings } from "../../hooks/useSettings";
 import { getFallbackThreadIdAfterDelete, isContextMenuPointerDown } from "./Sidebar.logic";
 import type { Project } from "../../models/types";
 import type { SidebarProjectSnapshot } from "./Sidebar.types";
+import { useServerProviders } from "../../rpc/serverState";
+import { getDefaultModelSelection } from "../../models/provider/provider.models";
 
 export interface SidebarProjectActionsInput {
   /** Projects list from the main store. */
@@ -147,6 +144,7 @@ export function useSidebarProjectActions({
     select: (params) => (params.threadId ? ThreadId.makeUnsafe(params.threadId) : null),
   });
   const navigate = useNavigate();
+  const serverProviders = useServerProviders();
 
   const [renamingProjectId, setRenamingProjectId] = useState<ProjectId | null>(null);
   const [renamingProjectTitle, setRenamingProjectTitle] = useState("");
@@ -381,10 +379,7 @@ export function useSidebarProjectActions({
           projectId,
           title,
           workspaceRoot: cwd,
-          defaultModelSelection: {
-            provider: "codex",
-            model: DEFAULT_MODEL_BY_PROVIDER.codex,
-          },
+          defaultModelSelection: getDefaultModelSelection(serverProviders),
           createdAt,
         });
         await handleNewThread(projectId, {
@@ -412,6 +407,7 @@ export function useSidebarProjectActions({
       handleNewThread,
       isAddingProject,
       projects,
+      serverProviders,
       shouldBrowseForProjectImmediately,
       appSettings.defaultThreadEnvMode,
       setIsAddingProject,

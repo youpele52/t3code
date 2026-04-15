@@ -52,6 +52,7 @@ import {
   makeOrderedOrchestrationDomainEventStream,
   makeServerConfigUpdateStream,
 } from "./wsStreams";
+import { resolveTextGenByProbeStatus } from "./wsSettingsResolver";
 
 const WsRpcLayer = WsRpcGroup.toLayer(
   Effect.gen(function* () {
@@ -157,7 +158,8 @@ const WsRpcLayer = WsRpcGroup.toLayer(
       const keybindingsConfig = yield* keybindings.loadConfigState;
       const providers = yield* providerRegistry.getProviders;
       const discovery = yield* discoveryRegistry.getCatalog;
-      const settings = yield* serverSettings.getSettings;
+      const rawSettings = yield* serverSettings.getSettings;
+      const settings = resolveTextGenByProbeStatus(rawSettings, providers);
 
       return {
         cwd: config.cwd,
@@ -296,9 +298,17 @@ const WsRpcLayer = WsRpcGroup.toLayer(
           { "rpc.aggregate": "server" },
         ),
       [WS_METHODS.serverGetSettings]: (_input) =>
-        observeRpcEffect(WS_METHODS.serverGetSettings, serverSettings.getSettings, {
-          "rpc.aggregate": "server",
-        }),
+        observeRpcEffect(
+          WS_METHODS.serverGetSettings,
+          Effect.gen(function* () {
+            const providers = yield* providerRegistry.getProviders;
+            const rawSettings = yield* serverSettings.getSettings;
+            return resolveTextGenByProbeStatus(rawSettings, providers);
+          }),
+          {
+            "rpc.aggregate": "server",
+          },
+        ),
       [WS_METHODS.serverUpdateSettings]: ({ patch }) =>
         observeRpcEffect(WS_METHODS.serverUpdateSettings, serverSettings.updateSettings(patch), {
           "rpc.aggregate": "server",

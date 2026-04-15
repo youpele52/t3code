@@ -1,7 +1,9 @@
 import {
   CommandId,
+  DEFAULT_MODEL_BY_PROVIDER,
   DEFAULT_PROVIDER_INTERACTION_MODE,
   type ModelSelection,
+  PROVIDER_KINDS,
   ProjectId,
   ThreadId,
 } from "@bigcode/contracts";
@@ -28,6 +30,7 @@ import { OrchestrationReactor } from "../orchestration/Services/OrchestrationRea
 import { ServerLifecycleEvents } from "./serverLifecycleEvents";
 import { ServerSettingsService } from "../ws/serverSettings";
 import { AnalyticsService } from "../telemetry/Services/AnalyticsService";
+import { ProviderRegistry } from "../provider/Services/ProviderRegistry";
 
 const isWildcardHost = (host: string | undefined): boolean =>
   host === "0.0.0.0" || host === "::" || host === "[::]";
@@ -148,6 +151,30 @@ export const launchStartupHeartbeat = recordStartupHeartbeat.pipe(
   Effect.asVoid,
 );
 
+/**
+ * Resolve the default model selection for a newly bootstrapped project.
+ *
+ * Uses the first provider that becomes ready within the startup window.
+ * Falls back to the first provider in PROVIDER_KINDS with its static default
+ * model if no probe completes in time — so the app always opens, but the
+ * user may need to configure a provider in settings.
+ */
+const resolveBootstrapModelSelection = Effect.gen(function* () {
+  const providerRegistry = yield* ProviderRegistry;
+  const maybeProvider = yield* providerRegistry.awaitFirstReadyProvider;
+  if (Option.isSome(maybeProvider)) {
+    const provider = maybeProvider.value;
+    const model = provider.models[0]?.slug ?? DEFAULT_MODEL_BY_PROVIDER[provider.provider];
+    return { provider: provider.provider, model } satisfies ModelSelection;
+  }
+  // No provider ready — fall back to static default for first provider kind.
+  const fallbackProvider = PROVIDER_KINDS[0];
+  return {
+    provider: fallbackProvider,
+    model: DEFAULT_MODEL_BY_PROVIDER[fallbackProvider],
+  } satisfies ModelSelection;
+});
+
 const autoBootstrapWelcome = Effect.gen(function* () {
   const serverConfig = yield* ServerConfig;
   const projectionReadModelQuery = yield* ProjectionSnapshotQuery;
@@ -169,10 +196,7 @@ const autoBootstrapWelcome = Effect.gen(function* () {
         const createdAt = new Date().toISOString();
         nextProjectId = ProjectId.makeUnsafe(crypto.randomUUID());
         const bootstrapProjectTitle = path.basename(serverConfig.cwd) || "project";
-        nextProjectDefaultModelSelection = {
-          provider: "codex",
-          model: "gpt-5-codex",
-        };
+        nextProjectDefaultModelSelection = yield* resolveBootstrapModelSelection;
         yield* orchestrationEngine.dispatch({
           type: "project.create",
           commandId: CommandId.makeUnsafe(crypto.randomUUID()),
@@ -184,10 +208,10 @@ const autoBootstrapWelcome = Effect.gen(function* () {
         });
       } else {
         nextProjectId = existingProject.value.id;
-        nextProjectDefaultModelSelection = existingProject.value.defaultModelSelection ?? {
-          provider: "codex",
-          model: "gpt-5-codex",
-        };
+        // Existing project — preserve its stored selection; only resolve a
+        // dynamic default if no selection was ever persisted.
+        nextProjectDefaultModelSelection =
+          existingProject.value.defaultModelSelection ?? (yield* resolveBootstrapModelSelection);
       }
 
       const existingThreadId =
