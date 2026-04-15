@@ -24,6 +24,7 @@ import {
   validateBundledClientAssets,
 } from "./resources.ts";
 import { resolveCatalogDependencies } from "../resolve-catalog.ts";
+import { isWindowsBuildPlatform, shellOptionForPlatform } from "./platform.ts";
 
 // Packages that are NOT inlined by tsdown and must be installed at runtime.
 // Must be kept in sync with EXTERNAL_PACKAGES in apps/server/tsdown.config.ts.
@@ -110,7 +111,7 @@ export const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* 
       ChildProcess.make({
         cwd: repoRoot,
         ...commandOutputOptions(options.verbose),
-        shell: process.platform === "win32",
+        shell: shellOptionForPlatform(options.platform),
       })`bun run build:desktop`,
     );
   }
@@ -194,7 +195,7 @@ export const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* 
     ChildProcess.make({
       cwd: stageAppDir,
       ...commandOutputOptions(options.verbose),
-      shell: process.platform === "win32",
+      shell: shellOptionForPlatform(options.platform),
     })`bun install --production`,
   );
   // Use npm (not bun) for the server directory so node_modules follows the
@@ -204,7 +205,7 @@ export const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* 
     ChildProcess.make({
       cwd: stageServerDir,
       ...commandOutputOptions(options.verbose),
-      shell: process.platform === "win32",
+      shell: shellOptionForPlatform(options.platform),
     })`npm install --production --no-optional`,
   );
 
@@ -233,7 +234,7 @@ export const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* 
     delete buildEnv.APPLE_API_ISSUER;
   }
 
-  if (process.platform === "win32") {
+  if (isWindowsBuildPlatform(options.platform)) {
     const python = resolvePythonForNodeGyp();
     if (python) {
       buildEnv.PYTHON = python;
@@ -251,7 +252,7 @@ export const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* 
       cwd: stageAppDir,
       env: buildEnv,
       ...commandOutputOptions(options.verbose),
-      shell: process.platform === "win32",
+      shell: shellOptionForPlatform(options.platform),
     })`bunx electron-builder ${platformConfig.cliFlag} --${options.arch} --publish never`,
   );
 
