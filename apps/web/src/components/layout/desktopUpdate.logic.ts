@@ -1,10 +1,17 @@
 import type { DesktopUpdateActionResult, DesktopUpdateState } from "@bigcode/contracts";
 
-export type DesktopUpdateButtonAction = "download" | "install" | "none";
+/**
+ * "open-download" is returned for Linux non-AppImage builds where in-app install
+ * is not available. The UI should open the releases page in a browser instead.
+ */
+export type DesktopUpdateButtonAction = "download" | "install" | "open-download" | "none";
 
 export function resolveDesktopUpdateButtonAction(
   state: DesktopUpdateState,
 ): DesktopUpdateButtonAction {
+  if (state.status === "installing") {
+    return "none";
+  }
   if (state.downloadedVersion) {
     return "install";
   }
@@ -16,14 +23,25 @@ export function resolveDesktopUpdateButtonAction(
       return "download";
     }
   }
+  // Disabled updater on Linux non-AppImage: surface a fallback CTA.
+  if (!state.enabled && state.status === "disabled") {
+    return "open-download";
+  }
   return "none";
 }
 
 export function shouldShowDesktopUpdateButton(state: DesktopUpdateState | null): boolean {
-  if (!state || !state.enabled) {
+  if (!state) {
     return false;
   }
-  if (state.status === "downloading") {
+  // Show the button for Linux non-AppImage fallback even when updater is disabled.
+  if (!state.enabled && resolveDesktopUpdateButtonAction(state) === "open-download") {
+    return true;
+  }
+  if (!state.enabled) {
+    return false;
+  }
+  if (state.status === "downloading" || state.status === "installing") {
     return true;
   }
   return resolveDesktopUpdateButtonAction(state) !== "none";
@@ -34,7 +52,7 @@ export function shouldShowArm64IntelBuildWarning(state: DesktopUpdateState | nul
 }
 
 export function isDesktopUpdateButtonDisabled(state: DesktopUpdateState | null): boolean {
-  return state?.status === "downloading";
+  return state?.status === "downloading" || state?.status === "installing";
 }
 
 export function getArm64IntelBuildWarningDescription(state: DesktopUpdateState): string {
@@ -64,6 +82,9 @@ export function getDesktopUpdateButtonTooltip(state: DesktopUpdateState): string
   if (state.status === "downloaded") {
     return `Update ${state.downloadedVersion ?? state.availableVersion ?? "ready"} downloaded. Click to restart and install.`;
   }
+  if (state.status === "installing") {
+    return "Installing update and restarting…";
+  }
   if (state.status === "error") {
     if (state.errorContext === "download" && state.availableVersion) {
       return `Download failed for ${state.availableVersion}. Click to retry.`;
@@ -72,6 +93,9 @@ export function getDesktopUpdateButtonTooltip(state: DesktopUpdateState): string
       return `Install failed for ${state.downloadedVersion}. Click to retry.`;
     }
     return state.message ?? "Update failed";
+  }
+  if (state.status === "disabled") {
+    return "Open latest release";
   }
   return "Up to date";
 }
@@ -105,6 +129,7 @@ export function canCheckForUpdate(state: DesktopUpdateState | null): boolean {
     state.status !== "checking" &&
     state.status !== "downloading" &&
     state.status !== "downloaded" &&
+    state.status !== "installing" &&
     state.status !== "disabled"
   );
 }

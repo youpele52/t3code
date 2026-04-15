@@ -68,6 +68,7 @@ export type DesktopUpdateStatus =
   | "available"
   | "downloading"
   | "downloaded"
+  | "installing"
   | "error";
 
 export type DesktopRuntimeArch = "arm64" | "x64" | "other";

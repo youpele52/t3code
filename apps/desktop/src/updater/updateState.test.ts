@@ -98,6 +98,42 @@ describe("getAutoUpdateDisabledReason", () => {
       }),
     ).toContain("AppImage");
   });
+
+  it("allows linux AppImage builds", () => {
+    expect(
+      getAutoUpdateDisabledReason({
+        isDevelopment: false,
+        isPackaged: true,
+        platform: "linux",
+        appImage: "/path/to/app.AppImage",
+        disabledByEnv: false,
+      }),
+    ).toBeNull();
+  });
+
+  it("allows macOS packaged builds", () => {
+    expect(
+      getAutoUpdateDisabledReason({
+        isDevelopment: false,
+        isPackaged: true,
+        platform: "darwin",
+        appImage: undefined,
+        disabledByEnv: false,
+      }),
+    ).toBeNull();
+  });
+
+  it("allows windows packaged builds", () => {
+    expect(
+      getAutoUpdateDisabledReason({
+        isDevelopment: false,
+        isPackaged: true,
+        platform: "win32",
+        appImage: undefined,
+        disabledByEnv: false,
+      }),
+    ).toBeNull();
+  });
 });
 
 describe("nextStatusAfterDownloadFailure", () => {

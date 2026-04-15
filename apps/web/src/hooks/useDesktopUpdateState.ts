@@ -10,6 +10,9 @@ import {
   shouldToastDesktopUpdateActionResult,
 } from "../components/layout/desktopUpdate.logic";
 
+/** Latest releases page — opened for Linux non-AppImage builds as an install fallback. */
+const RELEASES_URL = "https://github.com/pingdotgg/t3code/releases/latest";
+
 export interface UseDesktopUpdateStateResult {
   desktopUpdateState: DesktopUpdateState | null;
   desktopUpdateButtonDisabled: boolean;
@@ -63,6 +66,11 @@ export function useDesktopUpdateState(): UseDesktopUpdateStateResult {
     const bridge = window.desktopBridge;
     if (!bridge || !desktopUpdateState) return;
     if (desktopUpdateButtonDisabled || desktopUpdateButtonAction === "none") return;
+
+    if (desktopUpdateButtonAction === "open-download") {
+      void bridge.openExternal(RELEASES_URL).catch(() => undefined);
+      return;
+    }
 
     if (desktopUpdateButtonAction === "download") {
       void bridge
