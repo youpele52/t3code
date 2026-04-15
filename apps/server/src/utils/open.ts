@@ -75,6 +75,15 @@ function resolveCommandEditorArgs(
   }
 }
 
+function resolveEditorArgs(
+  editor: (typeof EDITORS)[number],
+  target: string,
+): ReadonlyArray<string> {
+  const baseArgs: ReadonlyArray<string> =
+    "baseArgs" in editor && Array.isArray(editor.baseArgs) ? editor.baseArgs : [];
+  return [...baseArgs, ...resolveCommandEditorArgs(editor, target)];
+}
+
 function resolveAvailableCommand(
   commands: ReadonlyArray<string>,
   options: CommandAvailabilityOptions = {},
@@ -273,7 +282,7 @@ export const resolveEditorLaunch = Effect.fn("resolveEditorLaunch")(function* (
       resolveAvailableCommand(editorDef.commands, { platform, env }) ?? editorDef.commands[0];
     return {
       command,
-      args: resolveCommandEditorArgs(editorDef, input.cwd),
+      args: resolveEditorArgs(editorDef, input.cwd),
     };
   }
 
@@ -293,11 +302,16 @@ export const launchDetached = (launch: EditorLaunch) =>
     yield* Effect.callback<void, OpenError>((resume) => {
       let child;
       try {
-        child = spawn(launch.command, [...launch.args], {
-          detached: true,
-          stdio: "ignore",
-          shell: process.platform === "win32",
-        });
+        const isWin32 = process.platform === "win32";
+        child = spawn(
+          launch.command,
+          isWin32 ? launch.args.map((a) => `"${a}"`) : [...launch.args],
+          {
+            detached: true,
+            stdio: "ignore",
+            shell: isWin32,
+          },
+        );
       } catch (error) {
         return resume(
           Effect.fail(new OpenError({ message: "failed to spawn detached process", cause: error })),

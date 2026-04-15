@@ -14,6 +14,7 @@ import {
 import { Cache, Cause, Duration, Effect, FileSystem, Option, Scope } from "effect";
 
 import { GitCore } from "../../git/Services/GitCore.ts";
+import { GitStatusBroadcaster } from "../../git/Services/GitStatusBroadcaster.ts";
 import { increment, orchestrationEventsProcessedTotal } from "../../observability/Metrics.ts";
 import { ProviderService } from "../../provider/Services/ProviderService.ts";
 import { DiscoveryRegistry } from "../../provider/Services/DiscoveryRegistry.ts";
@@ -67,6 +68,7 @@ export const makeProviderCommandHandlers = Effect.gen(function* () {
   const providerService = yield* ProviderService;
   const discoveryRegistry = yield* DiscoveryRegistry;
   const git = yield* GitCore;
+  const gitStatusBroadcaster = yield* GitStatusBroadcaster;
   const textGeneration = yield* TextGeneration;
   const serverSettingsService = yield* ServerSettingsService;
   const workspacePaths = yield* WorkspacePaths;
@@ -143,6 +145,7 @@ export const makeProviderCommandHandlers = Effect.gen(function* () {
     orchestrationEngine,
     providerService,
     git,
+    gitStatusBroadcaster,
     textGeneration,
     serverSettingsService,
     threadModelSelections,

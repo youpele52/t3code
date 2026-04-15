@@ -291,10 +291,8 @@ export function useChatViewRuntime({ base, thread, composer, timeline }: ChatVie
   const togglePlanSidebar = useCallback(() => {
     base.setPlanSidebarOpen((open) => {
       if (open) {
-        const turnKey = thread.activePlan?.turnId ?? thread.sidebarProposedPlan?.turnId ?? null;
-        if (turnKey) {
-          base.planSidebarDismissedForTurnRef.current = turnKey;
-        }
+        base.planSidebarDismissedForTurnRef.current =
+          thread.activePlan?.turnId ?? thread.sidebarProposedPlan?.turnId ?? "__dismissed__";
       } else {
         base.planSidebarDismissedForTurnRef.current = null;
       }

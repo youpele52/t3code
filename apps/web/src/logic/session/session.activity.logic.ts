@@ -253,16 +253,15 @@ export function deriveActivePlanState(
   latestTurnId: TurnId | undefined,
 ): ActivePlanState | null {
   const ordered = [...activities].toSorted(compareActivitiesByOrder);
-  const candidates = ordered.filter((activity) => {
-    if (activity.kind !== "turn.plan.updated") {
-      return false;
-    }
-    if (!latestTurnId) {
-      return true;
-    }
-    return activity.turnId === latestTurnId;
-  });
-  const latest = candidates.at(-1);
+  const allPlanActivities = ordered.filter((activity) => activity.kind === "turn.plan.updated");
+  // Prefer plan activities from the latest turn; fall back to the most recent plan
+  // from any turn so the sidebar stays populated between turns.
+  const latest =
+    (latestTurnId
+      ? allPlanActivities.findLast((activity) => activity.turnId === latestTurnId)
+      : undefined) ??
+    allPlanActivities.at(-1) ??
+    null;
   if (!latest) {
     return null;
   }

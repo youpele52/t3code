@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, autoUpdater as electronAutoUpdater, BrowserWindow } from "electron";
 import type { DesktopUpdateState } from "@bigcode/contracts";
 import { autoUpdater } from "electron-updater";
 
@@ -15,6 +15,7 @@ import {
   reduceDesktopUpdateStateOnDownloadProgress,
   reduceDesktopUpdateStateOnDownloadStart,
   reduceDesktopUpdateStateOnInstallFailure,
+  reduceDesktopUpdateStateOnInstallStart,
   reduceDesktopUpdateStateOnNoUpdate,
   reduceDesktopUpdateStateOnUpdateAvailable,
 } from "./updateMachine";
@@ -182,16 +183,22 @@ export async function installDownloadedUpdate(): Promise<{
   _setIsQuitting(true);
   updateInstallInFlight = true;
   clearUpdatePollTimer();
+  // Transition to "installing" so the UI can show a "Restarting…" state immediately.
+  setUpdateState(reduceDesktopUpdateStateOnInstallStart(_updateState));
   try {
     await _stopBackendAndWaitForExit();
-    // Destroy all windows before launching the NSIS installer to avoid the installer finding live windows it needs to close.
-    for (const win of BrowserWindow.getAllWindows()) {
-      win.destroy();
+    // Hand off to the platform updater.
+    // - Windows (NSIS): quitAndInstall(isSilent, isForceRunAfter) — suppress UI and re-launch.
+    // - macOS (Squirrel.Mac) / Linux (AppImage): quitAndInstall() — no arguments needed.
+    // Do NOT manually destroy windows here: Electron's before-quit-for-update event fires
+    // after quitAndInstall() is called and handles window teardown in the normal lifecycle.
+    if (process.platform === "win32") {
+      autoUpdater.quitAndInstall(true, true);
+    } else {
+      autoUpdater.quitAndInstall();
     }
-    // `quitAndInstall()` only starts the handoff to the updater. The actual
-    // install may still fail asynchronously, so keep the action incomplete
-    // until we either quit or receive an updater error.
-    autoUpdater.quitAndInstall(true, true);
+    // The process should quit from here. Return accepted=true, completed=false because the
+    // actual install completion is verified by the process exiting (or an updater error event).
     return { accepted: true, completed: false };
   } catch (error: unknown) {
     const message = formatErrorMessage(error);
@@ -215,6 +222,12 @@ export interface AutoUpdaterDeps {
   readonly getIsQuitting: () => boolean;
   readonly setIsQuitting: (v: boolean) => void;
   readonly stopBackendAndWaitForExit: () => Promise<void>;
+  /**
+   * Called when `before-quit-for-update` fires on the Electron built-in
+   * autoUpdater. Used by main.ts to run the same backend-stop / timer-clear
+   * path as `before-quit`, since the two events are mutually exclusive.
+   */
+  readonly onBeforeQuitForUpdate: () => void;
 }
 
 export function configureAutoUpdater(deps: AutoUpdaterDeps): void {
@@ -224,6 +237,11 @@ export function configureAutoUpdater(deps: AutoUpdaterDeps): void {
   _getIsQuitting = deps.getIsQuitting;
   _setIsQuitting = deps.setIsQuitting;
   _stopBackendAndWaitForExit = deps.stopBackendAndWaitForExit;
+
+  // Register cleanup on the Electron built-in autoUpdater. electron-updater's
+  // quitAndInstall emits this event via require("electron").autoUpdater; it is
+  // NOT emitted on app, so it must be wired here.
+  electronAutoUpdater.on("before-quit-for-update", deps.onBeforeQuitForUpdate);
 
   // Initialise the state now that app.getVersion() is available.
   _updateState = createInitialDesktopUpdateState(app.getVersion(), deps.runtimeInfo);

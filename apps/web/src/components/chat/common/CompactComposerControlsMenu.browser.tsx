@@ -117,6 +117,7 @@ async function mountMenu(props?: { modelSelection?: ModelSelection; prompt?: str
       activePlan={false}
       interactionMode="default"
       planSidebarOpen={false}
+      planSidebarLabel="Plan"
       runtimeMode="approval-required"
       traitsMenuContent={
         <TraitsMenuContent

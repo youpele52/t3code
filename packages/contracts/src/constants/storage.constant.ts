@@ -3,7 +3,12 @@
  *
  * Includes version suffix to allow for future migration strategies.
  */
-export const COMPOSER_DRAFT_STORAGE_KEY = "t3code:composer-drafts:v1";
+export const COMPOSER_DRAFT_STORAGE_KEY = "bigcode:composer-drafts:v1";
+
+/**
+ * Legacy localStorage keys for composer drafts (migrated on first read).
+ */
+export const COMPOSER_DRAFT_LEGACY_STORAGE_KEYS = ["t3code:composer-drafts:v1"] as const;
 
 /**
  * Current version of the composer draft storage schema.

@@ -352,12 +352,22 @@ async function bootstrap(): Promise<void> {
 // App event handlers
 // ---------------------------------------------------------------------------
 
-app.on("before-quit", () => {
+/**
+ * Shared teardown path called from both `before-quit` and `before-quit-for-update`.
+ * Stops the backend process, clears update poll timers, and restores stdio capture.
+ * Idempotent — safe to call multiple times.
+ */
+function prepareForAppQuit(reason: string): void {
+  if (isQuitting) return;
   isQuitting = true;
-  logHeader("before-quit received");
+  logHeader(`${reason} received`);
   clearUpdatePollTimer();
   stopBackend();
   restoreStdIoCapture?.();
+}
+
+app.on("before-quit", () => {
+  prepareForAppQuit("before-quit");
 });
 
 app
@@ -396,6 +406,9 @@ app
         isQuitting = v;
       },
       stopBackendAndWaitForExit,
+      onBeforeQuitForUpdate: () => {
+        prepareForAppQuit("before-quit-for-update");
+      },
     });
     void bootstrap().catch((error) => {
       handleFatalStartupError("bootstrap", error);
@@ -419,22 +432,12 @@ app.on("window-all-closed", () => {
 
 if (process.platform !== "win32") {
   process.on("SIGINT", () => {
-    if (isQuitting) return;
-    isQuitting = true;
-    logHeader("SIGINT received");
-    clearUpdatePollTimer();
-    stopBackend();
-    restoreStdIoCapture?.();
+    prepareForAppQuit("SIGINT");
     app.quit();
   });
 
   process.on("SIGTERM", () => {
-    if (isQuitting) return;
-    isQuitting = true;
-    logHeader("SIGTERM received");
-    clearUpdatePollTimer();
-    stopBackend();
-    restoreStdIoCapture?.();
+    prepareForAppQuit("SIGTERM");
     app.quit();
   });
 }

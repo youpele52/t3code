@@ -17,6 +17,8 @@ If a tradeoff is required, choose correctness and robustness over short-term con
 
 Long term maintainability is a core priority. Before adding new functionality, check for shared logic that can be extracted to a separate module. Duplicate logic across multiple files is a code smell. Don't be afraid to change existing code. Don't take shortcuts by just adding local logic to solve a problem.
 
+**File length limit:** Non-`.md` source files must not exceed **500 lines**. If a file approaches or exceeds this limit, split it by concern using dot-notation (`Foo.ts`, `Foo.logic.ts`, `Foo.utils.ts`, etc.) rather than adding more code inline.
+
 ## Package Roles
 
 - `apps/server`: Named `"t3"` in package.json (not `@bigcode/server`). Node.js/Bun WebSocket server. Starts provider sub-processes, serves the React web app, manages provider sessions. Use `--filter=t3` in turbo commands.
@@ -94,8 +96,32 @@ Key server files:
 - Complex server modules are split by concern with dot-notation: `FooAdapter.ts`, `FooAdapter.session.ts`, `FooAdapter.stream.ts`, `FooAdapter.stream.mapEvent.ts`, etc.
 - New packages must use explicit subpath exports only — no barrel index.
 
+## Keybindings
+
+Default keybindings (defined in `apps/server/src/keybindings/keybindings.ts`):
+
+| Shortcut                      | Action                                                                 |
+| ----------------------------- | ---------------------------------------------------------------------- |
+| `mod+shift+g`                 | Toggle diff bar (when terminal is not focused)                         |
+| `mod+shift+g`                 | Split terminal (when terminal is focused)                              |
+| `mod+j`                       | Toggle terminal                                                        |
+| `mod+b`                       | Toggle sidebar                                                         |
+| `mod+k`                       | Toggle command palette                                                 |
+| `mod+n`                       | New chat (when terminal not focused) / new terminal tab (when focused) |
+| `mod+shift+n`                 | New local chat                                                         |
+| `mod+o`                       | Open in favorite editor                                                |
+| `mod+shift+[` / `mod+shift+]` | Navigate previous/next thread                                          |
+
+`mod` resolves to `Cmd` on macOS and `Ctrl` on Windows/Linux.
+
 ## Reference Repos
 
 - Open-source Codex repo: https://github.com/openai/codex
 - Codex-Monitor (Tauri, feature-complete reference): https://github.com/Dimillian/CodexMonitor
 - Codex App Server docs: https://developers.openai.com/codex/sdk/#app-server
+
+## Upstream Sync (t3code fork)
+
+bigCode is a purposeful fork of https://github.com/pingdotgg/t3code that has **intentionally diverged** — it has its own conventions, patterns, and features not present upstream. Changes from t3code cannot be copied directly; they must be read, understood, and adapted.
+
+For any task involving upstream t3code changes, use [`@fork-upstream-adapter`](.opencode/agents/fork-upstream-adapter.md) — it enforces the read → understand → adapt → verify workflow and prevents direct copy-paste transplants.

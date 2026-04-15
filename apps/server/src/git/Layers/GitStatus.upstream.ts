@@ -11,7 +11,7 @@ import {
   parseUpstreamRefWithRemoteNames,
   parseUpstreamRefByFirstSeparator,
 } from "./GitCoreUtils.ts";
-import { StatusUpstreamRefreshCacheKey, type GitHelpers } from "./GitCoreExecutor.ts";
+import { StatusRemoteRefreshCacheKey, type GitHelpers } from "./GitCoreExecutor.ts";
 import { type RemoteOps } from "./GitStatus.remotes.ts";
 
 const DEFAULT_BASE_BRANCH_CANDIDATES = ["main", "master"] as const;
@@ -57,17 +57,16 @@ export const makeUpstreamOps = Effect.fn("makeUpstreamOps")(function* (
     );
   });
 
-  const fetchUpstreamRefForStatus = (
+  const fetchRemoteForStatus = (
     gitCommonDir: string,
-    upstream: { upstreamRef: string; remoteName: string; upstreamBranch: string },
+    remoteName: string,
   ): Effect.Effect<void, GitCommandError> => {
-    const refspec = `+refs/heads/${upstream.upstreamBranch}:refs/remotes/${upstream.upstreamRef}`;
     const fetchCwd =
       path.basename(gitCommonDir) === ".git" ? path.dirname(gitCommonDir) : gitCommonDir;
     return executeGit(
-      "GitCore.fetchUpstreamRefForStatus",
+      "GitCore.fetchRemoteForStatus",
       fetchCwd,
-      ["--git-dir", gitCommonDir, "fetch", "--quiet", "--no-tags", upstream.remoteName, refspec],
+      ["--git-dir", gitCommonDir, "fetch", "--quiet", "--no-tags", remoteName],
       {
         allowNonZeroExit: true,
         timeoutMs: Duration.toMillis(STATUS_UPSTREAM_REFRESH_TIMEOUT),
@@ -75,21 +74,16 @@ export const makeUpstreamOps = Effect.fn("makeUpstreamOps")(function* (
     ).pipe(Effect.asVoid);
   };
 
-  const refreshStatusUpstreamCacheEntry = Effect.fn("refreshStatusUpstreamCacheEntry")(function* (
-    cacheKey: StatusUpstreamRefreshCacheKey,
+  const refreshStatusRemoteCacheEntry = Effect.fn("refreshStatusRemoteCacheEntry")(function* (
+    cacheKey: StatusRemoteRefreshCacheKey,
   ) {
-    yield* fetchUpstreamRefForStatus(cacheKey.gitCommonDir, {
-      upstreamRef: cacheKey.upstreamRef,
-      remoteName: cacheKey.remoteName,
-      upstreamBranch: cacheKey.upstreamBranch,
-    });
+    yield* fetchRemoteForStatus(cacheKey.gitCommonDir, cacheKey.remoteName);
     return true as const;
   });
 
-  const statusUpstreamRefreshCache = yield* Cache.makeWith({
+  const statusRemoteRefreshCache = yield* Cache.makeWith({
     capacity: STATUS_UPSTREAM_REFRESH_CACHE_CAPACITY,
-    lookup: refreshStatusUpstreamCacheEntry,
-    // Keep successful refreshes warm and briefly back off failed refreshes to avoid retry storms.
+    lookup: refreshStatusRemoteCacheEntry,
     timeToLive: (exit) =>
       Exit.isSuccess(exit)
         ? STATUS_UPSTREAM_REFRESH_INTERVAL
@@ -103,12 +97,10 @@ export const makeUpstreamOps = Effect.fn("makeUpstreamOps")(function* (
     if (!upstream) return;
     const gitCommonDir = yield* resolveGitCommonDir(cwd);
     yield* Cache.get(
-      statusUpstreamRefreshCache,
-      new StatusUpstreamRefreshCacheKey({
+      statusRemoteRefreshCache,
+      new StatusRemoteRefreshCacheKey({
         gitCommonDir,
-        upstreamRef: upstream.upstreamRef,
         remoteName: upstream.remoteName,
-        upstreamBranch: upstream.upstreamBranch,
       }),
     );
   });

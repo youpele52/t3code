@@ -198,8 +198,6 @@ export const makeTurnHandlers = (deps: TurnHandlerDeps) => {
     errorMessage?: string,
     result?: SDKResultMessage,
   ) {
-    const resultUsage =
-      result?.usage && typeof result.usage === "object" ? { ...result.usage } : undefined;
     const resultContextWindow = maxClaudeContextWindowFromModelUsage(result?.modelUsage);
     if (resultContextWindow !== undefined) {
       context.lastKnownContextWindow = resultContextWindow;
@@ -211,9 +209,11 @@ export const makeTurnHandlers = (deps: TurnHandlerDeps) => {
     // Instead, use the last known context-window-accurate usage from task_progress
     // events and treat the accumulated total as totalProcessedTokens.
     const accumulatedSnapshot = normalizeClaudeTokenUsage(
-      resultUsage,
+      result?.usage,
       resultContextWindow ?? context.lastKnownContextWindow,
     );
+    const accumulatedTotalProcessedTokens =
+      accumulatedSnapshot?.totalProcessedTokens ?? accumulatedSnapshot?.usedTokens;
     const lastGoodUsage = context.lastKnownTokenUsage;
     const maxTokens = resultContextWindow ?? context.lastKnownContextWindow;
     const usageSnapshot =
@@ -223,8 +223,10 @@ export const makeTurnHandlers = (deps: TurnHandlerDeps) => {
             ...(typeof maxTokens === "number" && Number.isFinite(maxTokens) && maxTokens > 0
               ? { maxTokens }
               : {}),
-            ...(accumulatedSnapshot && accumulatedSnapshot.usedTokens > lastGoodUsage.usedTokens
-              ? { totalProcessedTokens: accumulatedSnapshot.usedTokens }
+            ...(typeof accumulatedTotalProcessedTokens === "number" &&
+            Number.isFinite(accumulatedTotalProcessedTokens) &&
+            accumulatedTotalProcessedTokens > lastGoodUsage.usedTokens
+              ? { totalProcessedTokens: accumulatedTotalProcessedTokens }
               : {}),
           }
         : accumulatedSnapshot;

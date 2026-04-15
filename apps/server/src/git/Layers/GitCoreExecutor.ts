@@ -38,14 +38,12 @@ type TraceTailState = {
   remainder: string;
 };
 
-class StatusUpstreamRefreshCacheKey extends Data.Class<{
+class StatusRemoteRefreshCacheKey extends Data.Class<{
   gitCommonDir: string;
-  upstreamRef: string;
   remoteName: string;
-  upstreamBranch: string;
 }> {}
 
-export { StatusUpstreamRefreshCacheKey };
+export { StatusRemoteRefreshCacheKey };
 
 const nowUnixNano = (): bigint => BigInt(Date.now()) * 1_000_000n;
 

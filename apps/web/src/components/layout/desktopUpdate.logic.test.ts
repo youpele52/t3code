@@ -289,3 +289,38 @@ describe("getDesktopUpdateButtonTooltip", () => {
     );
   });
 });
+
+describe("installing state", () => {
+  it("shows the button while installing", () => {
+    const state: DesktopUpdateState = {
+      ...baseState,
+      status: "installing",
+      downloadedVersion: "1.1.0",
+      availableVersion: "1.1.0",
+      downloadPercent: 100,
+    };
+    expect(shouldShowDesktopUpdateButton(state)).toBe(true);
+    expect(isDesktopUpdateButtonDisabled(state)).toBe(true);
+    expect(resolveDesktopUpdateButtonAction(state)).toBe("none");
+    expect(getDesktopUpdateButtonTooltip(state)).toContain("Installing");
+  });
+});
+
+describe("Linux non-AppImage fallback", () => {
+  const disabledState: DesktopUpdateState = {
+    ...baseState,
+    enabled: false,
+    status: "disabled",
+  };
+
+  it("shows the button with open-download action for disabled updater", () => {
+    expect(shouldShowDesktopUpdateButton(disabledState)).toBe(true);
+    expect(resolveDesktopUpdateButtonAction(disabledState)).toBe("open-download");
+    expect(isDesktopUpdateButtonDisabled(disabledState)).toBe(false);
+    expect(getDesktopUpdateButtonTooltip(disabledState)).toContain("Open latest release");
+  });
+
+  it("does not show the button for null state", () => {
+    expect(shouldShowDesktopUpdateButton(null)).toBe(false);
+  });
+});

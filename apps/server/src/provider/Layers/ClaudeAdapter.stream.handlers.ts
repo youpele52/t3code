@@ -8,6 +8,8 @@ import {
   asRuntimeItemId,
   classifyToolItemType,
   extractExitPlanModePlan,
+  extractPlanStepsFromTodoInput,
+  isTodoTool,
   nativeProviderRefs,
   streamKindFromDeltaType,
   summarizeToolRequest,
@@ -169,6 +171,27 @@ export const makeMessageHandlers = (deps: MessageHandlerDeps) => {
             payload: message,
           },
         });
+
+        if (isTodoTool(nextTool.toolName) && parsedInput) {
+          const planSteps = extractPlanStepsFromTodoInput(parsedInput);
+          if (planSteps.length > 0 && context.turnState) {
+            const planStamp = yield* makeEventStamp();
+            yield* offerRuntimeEvent({
+              type: "turn.plan.updated",
+              eventId: planStamp.eventId,
+              provider: PROVIDER,
+              createdAt: planStamp.createdAt,
+              threadId: context.session.threadId,
+              turnId: context.turnState.turnId,
+              payload: {
+                plan: planSteps,
+              },
+              providerRefs: nativeProviderRefs(context, {
+                providerItemId: nextTool.itemId,
+              }),
+            });
+          }
+        }
       }
       return;
     }
@@ -255,6 +278,25 @@ export const makeMessageHandlers = (deps: MessageHandlerDeps) => {
       const tool = context.inFlightTools.get(index);
       if (!tool) {
         return;
+      }
+
+      if (isTodoTool(tool.toolName) && tool.input && typeof tool.input === "object") {
+        const planSteps = extractPlanStepsFromTodoInput(tool.input as Record<string, unknown>);
+        if (planSteps.length > 0 && context.turnState) {
+          const planStamp = yield* makeEventStamp();
+          yield* offerRuntimeEvent({
+            type: "turn.plan.updated",
+            eventId: planStamp.eventId,
+            provider: PROVIDER,
+            createdAt: planStamp.createdAt,
+            threadId: context.session.threadId,
+            turnId: context.turnState.turnId,
+            payload: {
+              plan: planSteps,
+            },
+            providerRefs: nativeProviderRefs(context, { providerItemId: tool.itemId }),
+          });
+        }
       }
     }
   });

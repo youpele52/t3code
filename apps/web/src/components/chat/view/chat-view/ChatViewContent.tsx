@@ -69,6 +69,28 @@ export function ChatViewContent({
   // directory when a thread is running in a worktree rather than project root.
   const workspaceRoot = base.activeThread?.worktreePath ?? base.activeProject?.cwd ?? undefined;
 
+  // Auto-open the plan sidebar when plan/todo steps arrive for the current turn.
+  // Don't auto-open for plans carried over from a previous turn (the user can open manually).
+  const { planSidebarOpen, planSidebarDismissedForTurnRef, setPlanSidebarOpen, activeLatestTurn } =
+    base;
+  useEffect(() => {
+    if (!thread.activePlan) return;
+    if (planSidebarOpen) return;
+    const latestTurnId = activeLatestTurn?.turnId ?? null;
+    if (latestTurnId && thread.activePlan.turnId !== latestTurnId) return;
+    const turnKey =
+      thread.activePlan.turnId ?? thread.sidebarProposedPlan?.turnId ?? "__dismissed__";
+    if (planSidebarDismissedForTurnRef.current === turnKey) return;
+    setPlanSidebarOpen(true);
+  }, [
+    thread.activePlan,
+    activeLatestTurn?.turnId,
+    planSidebarOpen,
+    thread.sidebarProposedPlan?.turnId,
+    planSidebarDismissedForTurnRef,
+    setPlanSidebarOpen,
+  ]);
+
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden bg-background">
       <header
@@ -145,7 +167,6 @@ export function ChatViewContent({
               ) : null}
               <MessagesTimeline
                 key={base.activeThread!.id}
-                hasMessages={timeline.timelineEntries.length > 0}
                 isWorking={thread.isWorking}
                 activeTurnInProgress={interactions.activeTurnInProgress}
                 activeTurnStartedAt={thread.activeWorkStartedAt}
@@ -276,16 +297,15 @@ export function ChatViewContent({
           <PlanSidebar
             activePlan={thread.activePlan}
             activeProposedPlan={thread.sidebarProposedPlan}
+            label={thread.planSidebarLabel}
             markdownCwd={composer.gitCwd ?? undefined}
             workspaceRoot={workspaceRoot}
             timestampFormat={base.timestampFormat}
             onClose={() => {
               base.setPlanSidebarOpen(false);
-              const turnKey =
-                thread.activePlan?.turnId ?? thread.sidebarProposedPlan?.turnId ?? null;
-              if (turnKey) {
-                base.planSidebarDismissedForTurnRef.current = turnKey;
-              }
+              // Track that the user explicitly dismissed for this turn so auto-open won't fight them.
+              base.planSidebarDismissedForTurnRef.current =
+                thread.activePlan?.turnId ?? thread.sidebarProposedPlan?.turnId ?? "__dismissed__";
             }}
           />
         ) : null}

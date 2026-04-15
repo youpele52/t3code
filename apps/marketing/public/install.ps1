@@ -132,13 +132,12 @@ function Install-WindowsRelease {
     Write-Info "Downloading Windows installer..."
     Download-File -Uri $asset.browser_download_url -OutFile $installerPath
 
-    $arguments = @()
-    if ($env:BIGCODE_INSTALL_SILENT -eq "1") {
-      $arguments += "/S"
-    }
-
     Write-Info "Launching installer..."
-    $process = Start-Process -FilePath $installerPath -ArgumentList $arguments -Wait -PassThru
+    if ($env:BIGCODE_INSTALL_SILENT -eq "1") {
+      $process = Start-Process -FilePath $installerPath -ArgumentList "/S" -Wait -PassThru
+    } else {
+      $process = Start-Process -FilePath $installerPath -Wait -PassThru
+    }
     if ($process.ExitCode -ne 0) {
       throw "Installer exited with code $($process.ExitCode)."
     }

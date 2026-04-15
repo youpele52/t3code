@@ -6,9 +6,44 @@ import {
   captureBackendOutput,
   writeBackendSessionBoundary,
 } from "../logging/logging";
-import { resolveBackendCwd, resolveBackendEntry } from "../env/pathResolver";
+import {
+  ensureBackendModulesPath,
+  resolveBackendCwd,
+  resolveBackendEntry,
+} from "../env/pathResolver";
 import type { RotatingFileSink } from "@bigcode/shared/logging";
 import { readPersistedBackendObservabilitySettings } from "../logging/logging";
+
+// ---------------------------------------------------------------------------
+// Windows-safe process termination
+// ---------------------------------------------------------------------------
+
+/**
+ * Kills a child process in a platform-safe way.
+ *
+ * On Windows, `child.kill()` only terminates the top-level process — it does
+ * NOT kill the process tree.  If the child was spawned with `shell: true` it
+ * also leaves the real process running behind a `cmd.exe` wrapper.
+ * `taskkill /T /F` terminates the entire tree reliably on all Windows versions.
+ *
+ * On POSIX we fall back to standard signal delivery.
+ */
+function killBackendProcess(
+  child: ChildProcess.ChildProcess,
+  signal: NodeJS.Signals = "SIGTERM",
+): void {
+  if (process.platform === "win32" && child.pid !== undefined) {
+    try {
+      ChildProcess.spawnSync("taskkill", ["/pid", String(child.pid), "/T", "/F"], {
+        stdio: "ignore",
+      });
+      return;
+    } catch {
+      // taskkill unavailable — fall through to direct kill.
+    }
+  }
+  child.kill(signal);
+}
 
 // ---------------------------------------------------------------------------
 // Module-level state
@@ -102,6 +137,13 @@ export function startBackend(): void {
 
   const backendLogSink = _deps.getBackendLogSink();
   const captureBackendLogs = backendLogSink !== null;
+
+  // Ensure _modules → node_modules link exists for ESM resolution of
+  // external native packages (e.g. @github/copilot-sdk, node-pty).
+  ensureBackendModulesPath();
+
+  // Always pipe stderr so we can capture crash output for diagnostics,
+  // regardless of whether a log sink is configured.
   const child = ChildProcess.spawn(process.execPath, [backendEntry, "--bootstrap-fd", "3"], {
     cwd: resolveBackendCwd(_deps.rootDir),
     // In Electron main, process.execPath points to the Electron binary.
@@ -112,8 +154,25 @@ export function startBackend(): void {
     },
     stdio: captureBackendLogs
       ? ["ignore", "pipe", "pipe", "pipe"]
-      : ["ignore", "inherit", "inherit", "pipe"],
+      : ["ignore", "inherit", "pipe", "pipe"],
   });
+
+  // Buffer the last 2 KB of stderr for crash diagnostics.
+  const stderrTail: string[] = [];
+  const MAX_STDERR_TAIL = 2048;
+  let stderrTailLength = 0;
+  if (child.stderr) {
+    child.stderr.setEncoding("utf8");
+    child.stderr.on("data", (chunk: string) => {
+      stderrTail.push(chunk);
+      stderrTailLength += chunk.length;
+      // Trim oldest chunks when buffer exceeds limit.
+      while (stderrTailLength > MAX_STDERR_TAIL && stderrTail.length > 1) {
+        const removed = stderrTail.shift();
+        stderrTailLength -= removed?.length ?? 0;
+      }
+    });
+  }
   const bootstrapStream = child.stdio[3];
   if (bootstrapStream && "write" in bootstrapStream) {
     bootstrapStream.write(
@@ -133,7 +192,7 @@ export function startBackend(): void {
     );
     bootstrapStream.end();
   } else {
-    child.kill("SIGTERM");
+    killBackendProcess(child);
     scheduleBackendRestart("missing desktop bootstrap pipe");
     return;
   }
@@ -175,7 +234,8 @@ export function startBackend(): void {
       `pid=${child.pid ?? "unknown"} code=${code ?? "null"} signal=${signal ?? "null"}`,
     );
     if (_deps?.getIsQuitting() || wasExpected) return;
-    const reason = `code=${code ?? "null"} signal=${signal ?? "null"}`;
+    const crashDetail = stderrTail.join("").trim().slice(-512).replace(/\n/g, " ↵ ");
+    const reason = `code=${code ?? "null"} signal=${signal ?? "null"}${crashDetail ? ` stderr=${crashDetail}` : ""}`;
     scheduleBackendRestart(reason);
   });
 }
@@ -192,10 +252,10 @@ export function stopBackend(): void {
 
   if (child.exitCode === null && child.signalCode === null) {
     expectedBackendExitChildren.add(child);
-    child.kill("SIGTERM");
+    killBackendProcess(child);
     setTimeout(() => {
       if (child.exitCode === null && child.signalCode === null) {
-        child.kill("SIGKILL");
+        killBackendProcess(child, "SIGKILL");
       }
     }, 2_000).unref();
   }
@@ -237,11 +297,11 @@ export async function stopBackendAndWaitForExit(timeoutMs = 5_000): Promise<void
     }
 
     backendChild.once("exit", onExit);
-    backendChild.kill("SIGTERM");
+    killBackendProcess(backendChild);
 
     forceKillTimer = setTimeout(() => {
       if (backendChild.exitCode === null && backendChild.signalCode === null) {
-        backendChild.kill("SIGKILL");
+        killBackendProcess(backendChild, "SIGKILL");
       }
     }, 2_000);
     forceKillTimer.unref();

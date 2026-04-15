@@ -1,10 +1,11 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { createDebouncedStorage, createMemoryStorage } from "../../lib/storage";
+import { createDebouncedStorage, createMemoryStorage, resolveStorage } from "../../lib/storage";
 
 // ── Re-exports from sub-modules ───────────────────────────────────────
 
 export {
+  COMPOSER_DRAFT_LEGACY_STORAGE_KEYS,
   COMPOSER_DRAFT_STORAGE_KEY,
   COMPOSER_DRAFT_STORAGE_VERSION,
   DraftThreadEnvModeSchema,
@@ -72,6 +73,7 @@ export { migratePersistedComposerDraftStoreState } from "./migration.store";
 export { useComposerThreadDraft, useEffectiveComposerModelState } from "./selectors.store";
 
 import {
+  COMPOSER_DRAFT_LEGACY_STORAGE_KEYS,
   COMPOSER_DRAFT_STORAGE_KEY,
   COMPOSER_DRAFT_STORAGE_VERSION,
   type ComposerDraftStoreState,
@@ -89,7 +91,11 @@ import { createComposerDraftActions } from "./actions.store";
 const COMPOSER_PERSIST_DEBOUNCE_MS = 300;
 
 const composerDebouncedStorage = createDebouncedStorage(
-  typeof localStorage !== "undefined" ? localStorage : createMemoryStorage(),
+  resolveStorage(typeof localStorage !== "undefined" ? localStorage : createMemoryStorage(), {
+    legacyKeysByName: {
+      [COMPOSER_DRAFT_STORAGE_KEY]: COMPOSER_DRAFT_LEGACY_STORAGE_KEYS,
+    },
+  }),
   COMPOSER_PERSIST_DEBOUNCE_MS,
 );
 

@@ -149,7 +149,7 @@ describe("ChatView editor picker integration", () => {
   });
 
   it("falls back to the first installed editor when the stored favorite is unavailable", async () => {
-    localStorage.setItem("t3code:last-editor", JSON.stringify("vscodium"));
+    localStorage.setItem("bigcode:last-editor", JSON.stringify("vscodium"));
     setDraftThreadWithoutWorktree();
     const mounted = await ctx.mountChatView({
       viewport: DEFAULT_VIEWPORT,

@@ -15,7 +15,7 @@ import { SidebarRenderedProjectItem, type RenderedProjectData } from "./SidebarR
 import type { RenderedProjectEntry, SharedProjectItemProps } from "./Sidebar.types";
 
 interface DesktopUpdateButtonProps {
-  action: "download" | "install" | "none";
+  action: "download" | "install" | "open-download" | "none";
   disabled: boolean;
   onClick: () => void;
 }

@@ -1020,6 +1020,15 @@ describe("resolveLiveThreadBranchUpdate", () => {
 
     assert.equal(update, null);
   });
+
+  it("does not regress a semantic thread branch back to a temporary worktree branch", () => {
+    const update = resolveLiveThreadBranchUpdate({
+      threadBranch: "bigcode/github-query-rate-limit",
+      gitStatus: status({ branch: "bigcode/bda76797" }),
+    });
+
+    assert.equal(update, null);
+  });
 });
 
 describe("resolveAutoFeatureBranchName", () => {

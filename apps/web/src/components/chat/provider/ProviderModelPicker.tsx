@@ -45,10 +45,10 @@ const UNAVAILABLE_PROVIDER_OPTIONS = PROVIDER_OPTIONS.filter((option) => !option
 const COMING_SOON_PROVIDER_OPTIONS = [{ id: "gemini", label: "Gemini", icon: Gemini }] as const;
 
 function providerIconClassName(
-  provider: ProviderKind | ProviderPickerKind,
+  _provider: ProviderKind | ProviderPickerKind,
   fallbackClassName: string,
 ): string {
-  return provider === "claudeAgent" ? "text-warning-foreground" : fallbackClassName;
+  return fallbackClassName;
 }
 
 // exactOptionalPropertyTypes: group/subProviderID must be `string | undefined` so callers can
