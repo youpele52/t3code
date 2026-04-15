@@ -9,6 +9,7 @@ import {
   reduceDesktopUpdateStateOnDownloadProgress,
   reduceDesktopUpdateStateOnDownloadStart,
   reduceDesktopUpdateStateOnInstallFailure,
+  reduceDesktopUpdateStateOnInstallStart,
   reduceDesktopUpdateStateOnNoUpdate,
   reduceDesktopUpdateStateOnUpdateAvailable,
 } from "./updateMachine";
@@ -135,5 +136,46 @@ describe("updateMachine", () => {
     expect(downloading.downloadPercent).toBe(0);
     expect(progress.downloadPercent).toBe(55.5);
     expect(progress.errorContext).toBeNull();
+  });
+
+  it("transitions to installing from downloaded and clears error state", () => {
+    const downloaded = reduceDesktopUpdateStateOnDownloadComplete(
+      {
+        ...createInitialDesktopUpdateState("1.0.0", runtimeInfo),
+        enabled: true,
+        status: "downloading",
+        availableVersion: "1.1.0",
+      },
+      "1.1.0",
+    );
+    // Simulate a prior install failure that left an error message.
+    const withError = reduceDesktopUpdateStateOnInstallFailure(downloaded, "previous failure");
+    const installing = reduceDesktopUpdateStateOnInstallStart(withError);
+
+    expect(installing.status).toBe("installing");
+    expect(installing.message).toBeNull();
+    expect(installing.errorContext).toBeNull();
+    expect(installing.canRetry).toBe(false);
+    // Downloaded version should be preserved during handoff.
+    expect(installing.downloadedVersion).toBe("1.1.0");
+  });
+
+  it("recovers from installing back to downloaded when install fails asynchronously", () => {
+    const installing = reduceDesktopUpdateStateOnInstallStart({
+      ...createInitialDesktopUpdateState("1.0.0", runtimeInfo),
+      enabled: true,
+      status: "downloaded",
+      downloadedVersion: "1.1.0",
+      availableVersion: "1.1.0",
+      downloadPercent: 100,
+      canRetry: true,
+    });
+    const failed = reduceDesktopUpdateStateOnInstallFailure(installing, "updater handoff error");
+
+    expect(installing.status).toBe("installing");
+    expect(failed.status).toBe("downloaded");
+    expect(failed.errorContext).toBe("install");
+    expect(failed.message).toBe("updater handoff error");
+    expect(failed.canRetry).toBe(true);
   });
 });

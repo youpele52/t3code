@@ -7,12 +7,43 @@ import {
   writeBackendSessionBoundary,
 } from "../logging/logging";
 import {
-  ensureBackendModulesSymlink,
+  ensureBackendModulesPath,
   resolveBackendCwd,
   resolveBackendEntry,
 } from "../env/pathResolver";
 import type { RotatingFileSink } from "@bigcode/shared/logging";
 import { readPersistedBackendObservabilitySettings } from "../logging/logging";
+
+// ---------------------------------------------------------------------------
+// Windows-safe process termination
+// ---------------------------------------------------------------------------
+
+/**
+ * Kills a child process in a platform-safe way.
+ *
+ * On Windows, `child.kill()` only terminates the top-level process — it does
+ * NOT kill the process tree.  If the child was spawned with `shell: true` it
+ * also leaves the real process running behind a `cmd.exe` wrapper.
+ * `taskkill /T /F` terminates the entire tree reliably on all Windows versions.
+ *
+ * On POSIX we fall back to standard signal delivery.
+ */
+function killBackendProcess(
+  child: ChildProcess.ChildProcess,
+  signal: NodeJS.Signals = "SIGTERM",
+): void {
+  if (process.platform === "win32" && child.pid !== undefined) {
+    try {
+      ChildProcess.spawnSync("taskkill", ["/pid", String(child.pid), "/T", "/F"], {
+        stdio: "ignore",
+      });
+      return;
+    } catch {
+      // taskkill unavailable — fall through to direct kill.
+    }
+  }
+  child.kill(signal);
+}
 
 // ---------------------------------------------------------------------------
 // Module-level state
@@ -107,9 +138,9 @@ export function startBackend(): void {
   const backendLogSink = _deps.getBackendLogSink();
   const captureBackendLogs = backendLogSink !== null;
 
-  // Ensure _modules → node_modules symlink exists for ESM resolution of
+  // Ensure _modules → node_modules link exists for ESM resolution of
   // external native packages (e.g. @github/copilot-sdk, node-pty).
-  ensureBackendModulesSymlink();
+  ensureBackendModulesPath();
 
   // Always pipe stderr so we can capture crash output for diagnostics,
   // regardless of whether a log sink is configured.
@@ -161,7 +192,7 @@ export function startBackend(): void {
     );
     bootstrapStream.end();
   } else {
-    child.kill("SIGTERM");
+    killBackendProcess(child);
     scheduleBackendRestart("missing desktop bootstrap pipe");
     return;
   }
@@ -221,10 +252,10 @@ export function stopBackend(): void {
 
   if (child.exitCode === null && child.signalCode === null) {
     expectedBackendExitChildren.add(child);
-    child.kill("SIGTERM");
+    killBackendProcess(child);
     setTimeout(() => {
       if (child.exitCode === null && child.signalCode === null) {
-        child.kill("SIGKILL");
+        killBackendProcess(child, "SIGKILL");
       }
     }, 2_000).unref();
   }
@@ -266,11 +297,11 @@ export async function stopBackendAndWaitForExit(timeoutMs = 5_000): Promise<void
     }
 
     backendChild.once("exit", onExit);
-    backendChild.kill("SIGTERM");
+    killBackendProcess(backendChild);
 
     forceKillTimer = setTimeout(() => {
       if (backendChild.exitCode === null && backendChild.signalCode === null) {
-        backendChild.kill("SIGKILL");
+        killBackendProcess(backendChild, "SIGKILL");
       }
     }, 2_000);
     forceKillTimer.unref();
