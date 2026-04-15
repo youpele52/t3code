@@ -304,13 +304,17 @@ export function extractPlanStepsFromTodoInput(
   const todos = Array.isArray(input.todos) ? input.todos : [];
   return todos
     .filter((t): t is Record<string, unknown> => !!t && typeof t === "object")
-    .map((t) => ({
-      step:
-        typeof t.content === "string" && t.content.trim().length > 0 ? t.content.trim() : "Task",
-      status: (RUNTIME_PLAN_STEP_STATUSES as readonly string[]).includes(t.status as string)
-        ? (t.status as RuntimePlanStepStatus)
-        : ("pending" as RuntimePlanStepStatus),
-    }));
+    .map((t) => {
+      // Claude SDK uses snake_case "in_progress"; normalize to camelCase before validating
+      const rawStatus = t.status === "in_progress" ? "inProgress" : t.status;
+      return {
+        step:
+          typeof t.content === "string" && t.content.trim().length > 0 ? t.content.trim() : "Task",
+        status: (RUNTIME_PLAN_STEP_STATUSES as readonly string[]).includes(rawStatus as string)
+          ? (rawStatus as RuntimePlanStepStatus)
+          : ("pending" as RuntimePlanStepStatus),
+      };
+    });
 }
 
 export function classifyRequestType(toolName: string): CanonicalRequestType {
