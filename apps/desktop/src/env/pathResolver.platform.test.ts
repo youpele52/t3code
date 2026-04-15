@@ -2,7 +2,10 @@ import * as Path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { resolveBackendModulesLinkPlan } from "./pathResolver.platform";
+import {
+  resolveBackendModulesLinkPlan,
+  resolvePackagedOpencodeBinaryPlan,
+} from "./pathResolver.platform";
 
 describe("resolveBackendModulesLinkPlan", () => {
   const resourcesPath = "/Applications/bigCode.app/Contents/Resources";
@@ -76,5 +79,26 @@ describe("resolveBackendModulesLinkPlan", () => {
       expect(plan.linkTarget).toBe(plan.modulesDir);
       expect(plan.modulesDir).toBe(Path.join(winResourcesPath, "server", "_modules"));
     });
+  });
+});
+
+describe("resolvePackagedOpencodeBinaryPlan", () => {
+  const resourcesPath = "/Applications/bigCode.app/Contents/Resources";
+
+  it("uses opencode.exe on Windows", () => {
+    const plan = resolvePackagedOpencodeBinaryPlan("win32", resourcesPath);
+    expect(plan.serverDir).toBe(Path.join(resourcesPath, "server"));
+    expect(plan.opencodeDir).toBe(Path.join(resourcesPath, "server", "opencode"));
+    expect(plan.binDir).toBe(Path.join(resourcesPath, "server", "opencode", "bin"));
+    expect(plan.binaryName).toBe("opencode.exe");
+    expect(plan.binaryPath).toBe(
+      Path.join(resourcesPath, "server", "opencode", "bin", "opencode.exe"),
+    );
+  });
+
+  it("uses opencode on POSIX", () => {
+    const plan = resolvePackagedOpencodeBinaryPlan("darwin", resourcesPath);
+    expect(plan.binaryName).toBe("opencode");
+    expect(plan.binaryPath).toBe(Path.join(resourcesPath, "server", "opencode", "bin", "opencode"));
   });
 });

@@ -10,6 +10,7 @@ import {
   ensureBackendModulesPath,
   resolveBackendCwd,
   resolveBackendEntry,
+  resolvePackagedOpencodeBinaryDir,
 } from "../env/pathResolver";
 import type { RotatingFileSink } from "@bigcode/shared/logging";
 import { readPersistedBackendObservabilitySettings } from "../logging/logging";
@@ -137,6 +138,7 @@ export function startBackend(): void {
 
   const backendLogSink = _deps.getBackendLogSink();
   const captureBackendLogs = backendLogSink !== null;
+  const packagedOpencodeBinDir = resolvePackagedOpencodeBinaryDir();
 
   // Ensure _modules → node_modules link exists for ESM resolution of
   // external native packages (e.g. @github/copilot-sdk, node-pty).
@@ -150,6 +152,13 @@ export function startBackend(): void {
     // Run the child in Node mode so this backend process does not become a GUI app instance.
     env: {
       ...backendChildEnv(),
+      ...(packagedOpencodeBinDir
+        ? {
+            PATH: [packagedOpencodeBinDir, process.env.PATH]
+              .filter((entry): entry is string => Boolean(entry && entry.length > 0))
+              .join(process.platform === "win32" ? ";" : ":"),
+          }
+        : {}),
       ELECTRON_RUN_AS_NODE: "1",
     },
     stdio: captureBackendLogs

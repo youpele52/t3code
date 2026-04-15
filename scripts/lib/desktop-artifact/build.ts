@@ -7,6 +7,7 @@ import { ChildProcess } from "effect/unstable/process";
 
 import {
   BuildScriptError,
+  BuildArch,
   PLATFORM_CONFIG,
   RepoRoot,
   commandOutputOptions,
@@ -42,6 +43,52 @@ function pickExternalDependencies(dependencies: Record<string, unknown>): Record
   }
   return result;
 }
+
+function resolveOpencodeWindowsPackageName(arch: typeof BuildArch.Type): string {
+  switch (arch) {
+    case "x64":
+      return "opencode-windows-x64";
+    case "arm64":
+      return "opencode-windows-arm64";
+    default:
+      return "opencode-windows-x64";
+  }
+}
+
+const stagePackagedOpencodeWindowsBinary = Effect.fn("stagePackagedOpencodeWindowsBinary")(
+  function* (input: {
+    readonly stageRoot: string;
+    readonly stageServerDir: string;
+    readonly arch: typeof BuildArch.Type;
+    readonly verbose: boolean;
+  }) {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const packageName = resolveOpencodeWindowsPackageName(input.arch);
+    const installDir = path.join(input.stageRoot, "opencode-binary-install");
+
+    yield* fs.makeDirectory(installDir, { recursive: true });
+    yield* runCommand(
+      ChildProcess.make({
+        cwd: installDir,
+        ...commandOutputOptions(input.verbose),
+        shell: true,
+      })`npm install --no-save --ignore-scripts --platform=win32 --arch=${input.arch} ${packageName}`,
+    );
+
+    const packageDir = path.join(installDir, "node_modules", packageName);
+    const binaryPath = path.join(packageDir, "bin", "opencode.exe");
+    if (!(yield* fs.exists(binaryPath))) {
+      return yield* new BuildScriptError({
+        message: `Expected packaged OpenCode binary at ${binaryPath}`,
+      });
+    }
+
+    const targetDir = path.join(input.stageServerDir, "opencode", "bin");
+    yield* fs.makeDirectory(targetDir, { recursive: true });
+    yield* fs.copyFile(binaryPath, path.join(targetDir, "opencode.exe"));
+  },
+);
 
 export const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
   options: ResolvedBuildOptions,
@@ -140,6 +187,15 @@ export const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* 
   yield* fs.copy(distDirs.serverDist, path.join(stageServerDir, "dist"));
   yield* assertPlatformBuildResources(options.platform, stageResourcesDir, options.verbose);
   yield* fs.copy(stageResourcesDir, path.join(stageAppDir, "apps/desktop/prod-resources"));
+
+  if (isWindowsBuildPlatform(options.platform)) {
+    yield* stagePackagedOpencodeWindowsBinary({
+      stageRoot,
+      stageServerDir,
+      arch: options.arch,
+      verbose: options.verbose,
+    });
+  }
 
   // The server bundle is self-contained (all JS dependencies inlined by tsdown).
   // Only packages that cannot be bundled (native addons, runtime require.resolve)
