@@ -154,16 +154,15 @@ export const launchStartupHeartbeat = recordStartupHeartbeat.pipe(
 /**
  * Resolve the default model selection for a newly bootstrapped project.
  *
- * Uses the first provider that becomes ready within the startup window.
- * Falls back to the first provider in PROVIDER_KINDS with its static default
- * model if no probe completes in time — so the app always opens, but the
- * user may need to configure a provider in settings.
+ * Uses the first provider that is already ready in the current snapshot.
+ * Falls back immediately to the first provider in PROVIDER_KINDS with its
+ * static default model so startup never waits on optional provider probes.
  */
 const resolveBootstrapModelSelection = Effect.gen(function* () {
   const providerRegistry = yield* ProviderRegistry;
-  const maybeProvider = yield* providerRegistry.awaitFirstReadyProvider;
-  if (Option.isSome(maybeProvider)) {
-    const provider = maybeProvider.value;
+  const providers = yield* providerRegistry.getProviders;
+  const provider = providers.find((candidate) => candidate.enabled && candidate.status === "ready");
+  if (provider) {
     const model = provider.models[0]?.slug ?? DEFAULT_MODEL_BY_PROVIDER[provider.provider];
     return { provider: provider.provider, model } satisfies ModelSelection;
   }

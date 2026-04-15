@@ -134,6 +134,46 @@ const withOpencodeServer = <A>(
     );
   });
 
+function makeInitialOpencodeSnapshot(settings: OpencodeSettings) {
+  const checkedAt = new Date().toISOString();
+  const builtInModels = providerModelsFromSettings(
+    BUILT_IN_MODELS,
+    PROVIDER,
+    settings.customModels,
+    EMPTY_MODEL_CAPABILITIES,
+  );
+
+  if (!settings.enabled) {
+    return buildServerProvider({
+      provider: PROVIDER,
+      enabled: false,
+      checkedAt,
+      models: builtInModels,
+      probe: {
+        installed: false,
+        version: null,
+        status: "warning",
+        auth: { status: "unknown" },
+        message: "OpenCode is disabled in bigCode settings.",
+      },
+    });
+  }
+
+  return buildServerProvider({
+    provider: PROVIDER,
+    enabled: true,
+    checkedAt,
+    models: builtInModels,
+    probe: {
+      installed: false,
+      version: null,
+      status: "warning",
+      auth: { status: "unknown" },
+      message: "Checking OpenCode availability...",
+    },
+  });
+}
+
 export const checkOpencodeProviderStatus = Effect.fn("checkOpencodeProviderStatus")(function* () {
   const opencodeSettings = yield* Effect.service(ServerSettingsService).pipe(
     Effect.flatMap((service) => service.getSettings),
@@ -251,6 +291,9 @@ export const OpencodeProviderLive = Layer.effect(
   Effect.gen(function* () {
     const serverSettings = yield* ServerSettingsService;
     const serverManager = yield* OpencodeServerManager;
+    const initialSettings = yield* serverSettings.getSettings.pipe(
+      Effect.map((settings) => settings.providers.opencode),
+    );
     const snapshotCache = yield* Cache.make({
       capacity: 1,
       timeToLive: Duration.minutes(1),
@@ -276,6 +319,7 @@ export const OpencodeProviderLive = Layer.effect(
       ),
       haveSettingsChanged: (previous, next) => !Equal.equals(previous, next),
       checkProvider,
+      initialSnapshot: makeInitialOpencodeSnapshot(initialSettings),
     });
   }),
 );
