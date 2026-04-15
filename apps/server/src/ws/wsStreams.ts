@@ -10,6 +10,7 @@ import {
   type ServerConfigIssue,
 } from "@bigcode/contracts";
 import type { OrchestrationEventStoreError } from "../persistence/Errors";
+import { resolveTextGenByProbeStatus } from "./wsSettingsResolver";
 
 export function makeOrderedOrchestrationDomainEventStream(input: {
   readonly orchestrationEngine: {
@@ -83,6 +84,7 @@ export function makeServerConfigUpdateStream(input: {
   };
   readonly providerRegistry: {
     streamChanges: Stream.Stream<ReadonlyArray<ServerProvider>>;
+    getProviders: Effect.Effect<ReadonlyArray<ServerProvider>>;
   };
   readonly discoveryRegistry: {
     streamChanges: Stream.Stream<ServerDiscoveryCatalog>;
@@ -107,11 +109,16 @@ export function makeServerConfigUpdateStream(input: {
       })),
     );
     const settingsUpdates = input.serverSettings.streamChanges.pipe(
-      Stream.map((settings) => ({
-        version: 1 as const,
-        type: "settingsUpdated" as const,
-        payload: { settings },
-      })),
+      Stream.mapEffect((rawSettings) =>
+        input.providerRegistry.getProviders.pipe(
+          Effect.map((providers) => resolveTextGenByProbeStatus(rawSettings, providers)),
+          Effect.map((settings) => ({
+            version: 1 as const,
+            type: "settingsUpdated" as const,
+            payload: { settings },
+          })),
+        ),
+      ),
     );
     const discoveryUpdates = input.discoveryRegistry.streamChanges.pipe(
       Stream.map((discovery) => ({
