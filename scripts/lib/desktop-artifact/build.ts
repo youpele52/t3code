@@ -68,12 +68,14 @@ const stagePackagedOpencodeWindowsBinary = Effect.fn("stagePackagedOpencodeWindo
     const installDir = path.join(input.stageRoot, "opencode-binary-install");
 
     yield* fs.makeDirectory(installDir, { recursive: true });
+    // npm enforces host os/cpu checks for these platform packages, so force the
+    // install by exact package name when staging a Windows binary from any host.
     yield* runCommand(
       ChildProcess.make({
         cwd: installDir,
         ...commandOutputOptions(input.verbose),
         shell: true,
-      })`npm install --no-save --ignore-scripts --platform=win32 --arch=${input.arch} ${packageName}`,
+      })`npm install --no-save --ignore-scripts --force ${packageName}`,
     );
 
     const packageDir = path.join(installDir, "node_modules", packageName);
