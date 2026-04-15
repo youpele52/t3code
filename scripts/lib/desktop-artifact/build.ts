@@ -152,8 +152,8 @@ export const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* 
     buildVersion: appVersion,
     bigcodeCommitHash: commitHash,
     private: true,
-    description: "bigCode desktop build",
-    author: "T3 Tools",
+    description: "bigCode desktop app",
+    author: "Youpele",
     main: "apps/desktop/dist-electron/main.js",
     build: yield* createBuildConfig(
       options.platform,
