@@ -3,14 +3,8 @@ import { Terminal } from "@xterm/xterm";
 import { type ThreadId } from "@bigcode/contracts";
 import { useEffect, useEffectEvent, useRef } from "react";
 import { type TerminalContextSelection } from "~/lib/terminalContext";
-import { openInPreferredEditor } from "../../models/editor";
-import {
-  extractWrappedTerminalLinkSegments,
-  isTerminalLinkActivation,
-  resolvePathLinkTarget,
-} from "../../utils/terminal";
-import { isTerminalClearShortcut, terminalNavigationShortcutData } from "../../models/keybindings";
 import { readNativeApi } from "../../rpc/nativeApi";
+import { makeTerminalLinkProvider } from "./TerminalViewport.links";
 import { selectTerminalEventEntries } from "../../stores/terminal";
 import { useTerminalStateStore } from "../../stores/terminal";
 import { useSettings } from "../../hooks/useSettings";
@@ -26,6 +20,7 @@ import {
   writeTerminalSnapshot,
 } from "./ThreadTerminalDrawer.logic";
 import { applyPendingTerminalEvents, makeApplyTerminalEvent } from "./TerminalViewport.events";
+import { useTerminalKeybindings } from "./TerminalViewport.keybindings";
 
 export interface TerminalViewportProps {
   threadId: ThreadId;
@@ -87,6 +82,12 @@ export function TerminalViewport({
   // Keep refs in sync without triggering effects
   autoFocusRef.current = autoFocus;
   worktreePathRef.current = worktreePath;
+
+  useTerminalKeybindings({
+    terminalRef,
+    threadId,
+    terminalId,
+  });
 
   useEffect(() => {
     const mount = containerRef.current;
@@ -187,119 +188,9 @@ export function TerminalViewport({
       }
     };
 
-    const sendTerminalInput = async (data: string, fallbackError: string) => {
-      const activeTerminal = terminalRef.current;
-      if (!activeTerminal) return;
-      try {
-        await api.terminal.write({ threadId, terminalId, data });
-      } catch (error) {
-        writeSystemMessage(activeTerminal, error instanceof Error ? error.message : fallbackError);
-      }
-    };
-
-    terminal.attachCustomKeyEventHandler((event) => {
-      const navigationData = terminalNavigationShortcutData(event);
-      if (navigationData !== null) {
-        event.preventDefault();
-        event.stopPropagation();
-        void sendTerminalInput(navigationData, "Failed to move cursor");
-        return false;
-      }
-
-      if (!isTerminalClearShortcut(event)) return true;
-      event.preventDefault();
-      event.stopPropagation();
-      void sendTerminalInput("\u000c", "Failed to clear terminal");
-      return false;
-    });
-
-    const terminalLinksDisposable = terminal.registerLinkProvider({
-      provideLinks: (bufferLineNumber, callback) => {
-        const activeTerminal = terminalRef.current;
-        if (!activeTerminal) {
-          callback(undefined);
-          return;
-        }
-
-        const line = activeTerminal.buffer.active.getLine(bufferLineNumber - 1);
-        if (!line) {
-          callback(undefined);
-          return;
-        }
-
-        let logicalStartLineNumber = bufferLineNumber;
-        while (logicalStartLineNumber > 1) {
-          const previousLine = activeTerminal.buffer.active.getLine(logicalStartLineNumber - 2) as
-            | { isWrapped?: boolean }
-            | undefined;
-          if (!previousLine?.isWrapped) {
-            break;
-          }
-          logicalStartLineNumber -= 1;
-        }
-
-        const fragments: Array<{ lineNumber: number; text: string }> = [];
-        let currentLineNumber = logicalStartLineNumber;
-        while (true) {
-          const currentLine = activeTerminal.buffer.active.getLine(currentLineNumber - 1) as
-            | { isWrapped?: boolean; translateToString(trimRight?: boolean): string }
-            | undefined;
-          if (!currentLine) {
-            break;
-          }
-          fragments.push({
-            lineNumber: currentLineNumber,
-            text: currentLine.translateToString(true),
-          });
-          const nextLine = activeTerminal.buffer.active.getLine(currentLineNumber) as
-            | { isWrapped?: boolean }
-            | undefined;
-          if (!nextLine?.isWrapped) {
-            break;
-          }
-          currentLineNumber += 1;
-        }
-
-        const matches = extractWrappedTerminalLinkSegments(fragments).filter(
-          (match) => match.range.start.y === bufferLineNumber,
-        );
-        if (matches.length === 0) {
-          callback(undefined);
-          return;
-        }
-
-        callback(
-          matches.map((match) => ({
-            text: match.text,
-            range: match.range,
-            activate: (event: MouseEvent) => {
-              if (!isTerminalLinkActivation(event)) return;
-
-              const latestTerminal = terminalRef.current;
-              if (!latestTerminal) return;
-
-              if (match.kind === "url") {
-                void api.shell.openExternal(match.text).catch((error) => {
-                  writeSystemMessage(
-                    latestTerminal,
-                    error instanceof Error ? error.message : "Unable to open link",
-                  );
-                });
-                return;
-              }
-
-              const target = resolvePathLinkTarget(match.text, cwd);
-              void openInPreferredEditor(api, target).catch((error) => {
-                writeSystemMessage(
-                  latestTerminal,
-                  error instanceof Error ? error.message : "Unable to open path",
-                );
-              });
-            },
-          })),
-        );
-      },
-    });
+    const terminalLinksDisposable = terminal.registerLinkProvider(
+      makeTerminalLinkProvider({ terminalRef, cwd, api }),
+    );
 
     const inputDisposable = terminal.onData((data) => {
       void api.terminal

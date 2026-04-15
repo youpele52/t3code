@@ -51,7 +51,6 @@ describe("MessagesTimeline", () => {
     const { MessagesTimeline } = await import("./MessagesTimeline");
     const markup = renderToStaticMarkup(
       <MessagesTimeline
-        hasMessages
         isWorking={false}
         activeTurnInProgress={false}
         activeTurnStartedAt={null}
@@ -107,7 +106,6 @@ describe("MessagesTimeline", () => {
     const { MessagesTimeline } = await import("./MessagesTimeline");
     const markup = renderToStaticMarkup(
       <MessagesTimeline
-        hasMessages
         isWorking={false}
         activeTurnInProgress={false}
         activeTurnStartedAt={null}
@@ -156,7 +154,6 @@ describe("MessagesTimeline", () => {
     const { MessagesTimeline } = await import("./MessagesTimeline");
     const markup = renderToStaticMarkup(
       <MessagesTimeline
-        hasMessages
         isWorking={false}
         activeTurnInProgress={false}
         activeTurnStartedAt={null}
@@ -204,7 +201,6 @@ describe("MessagesTimeline", () => {
     const { MessagesTimeline } = await import("./MessagesTimeline");
     const markup = renderToStaticMarkup(
       <MessagesTimeline
-        hasMessages
         isWorking={false}
         activeTurnInProgress={false}
         activeTurnStartedAt={null}
@@ -252,7 +248,6 @@ describe("MessagesTimeline", () => {
     const turnId = TurnId.makeUnsafe("turn-diff-1");
     const markup = renderToStaticMarkup(
       <MessagesTimeline
-        hasMessages
         isWorking={false}
         activeTurnInProgress={false}
         activeTurnStartedAt={null}
@@ -312,7 +307,6 @@ describe("MessagesTimeline", () => {
     const { MessagesTimeline } = await import("./MessagesTimeline");
     const markup = renderToStaticMarkup(
       <MessagesTimeline
-        hasMessages
         isWorking={false}
         activeTurnInProgress={false}
         activeTurnStartedAt={null}
