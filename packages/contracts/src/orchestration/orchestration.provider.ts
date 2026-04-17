@@ -4,6 +4,7 @@ import {
   CodexModelOptions,
   CopilotModelOptions,
   OpencodeModelOptions,
+  PiModelOptions,
 } from "../core/model";
 import { CommandId, TrimmedNonEmptyString } from "../core/baseSchemas";
 import { DEFAULT_PROVIDER_KIND, PROVIDER_KINDS } from "../constants/provider.constant";
@@ -62,11 +63,21 @@ export const OpencodeModelSelection = Schema.Struct({
 });
 export type OpencodeModelSelection = typeof OpencodeModelSelection.Type;
 
+export const PiModelSelection = Schema.Struct({
+  provider: Schema.Literal("pi"),
+  model: TrimmedNonEmptyString,
+  options: Schema.optionalKey(PiModelOptions),
+  /** Upstream Pi provider ID for routing (e.g. "anthropic", "openai"). */
+  subProviderID: Schema.optionalKey(TrimmedNonEmptyString),
+});
+export type PiModelSelection = typeof PiModelSelection.Type;
+
 export const ModelSelection = Schema.Union([
   CodexModelSelection,
   ClaudeModelSelection,
   CopilotModelSelection,
   OpencodeModelSelection,
+  PiModelSelection,
 ]);
 export type ModelSelection = typeof ModelSelection.Type;
 

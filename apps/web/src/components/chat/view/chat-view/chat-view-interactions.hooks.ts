@@ -17,6 +17,7 @@ import { useChatKeybindings } from "../ChatView.keybindings.logic";
 import { usePlanHandlers } from "../ChatView.planHandlers.logic";
 import { useOnSend } from "../ChatView.sendTurn.logic";
 import { waitForThreadToExist } from "../ChatView.logic";
+import { providerSupportsSubProviderID } from "../ChatView.modelSelection.logic";
 import {
   renderProviderTraitsMenuContent,
   renderProviderTraitsPicker,
@@ -45,13 +46,18 @@ interface PendingProviderSwitchConfirmation {
 }
 
 function providerSwitchTargetLabel(provider: ProviderKind): string {
-  return provider === "claudeAgent"
-    ? "Claude"
-    : provider === "copilot"
-      ? "Copilot"
-      : provider === "opencode"
-        ? "OpenCode"
-        : "Codex";
+  switch (provider) {
+    case "claudeAgent":
+      return "Claude";
+    case "copilot":
+      return "Copilot";
+    case "opencode":
+      return "OpenCode";
+    case "pi":
+      return "Pi";
+    default:
+      return "Codex";
+  }
 }
 
 export function useChatViewInteractions({
@@ -235,12 +241,13 @@ export function useChatViewInteractions({
       const matchedServerModel = composer.modelOptionsByProvider[resolvedProvider]?.find(
         (entry) =>
           entry.slug === resolvedModel &&
-          (resolvedProvider !== "opencode" || entry.subProviderID === subProviderID),
+          (!providerSupportsSubProviderID(resolvedProvider) ||
+            entry.subProviderID === subProviderID),
       );
       const nextModelSelection: ModelSelection = {
         provider: resolvedProvider,
         model: resolvedModel,
-        ...(resolvedProvider === "opencode" && matchedServerModel?.subProviderID
+        ...(providerSupportsSubProviderID(resolvedProvider) && matchedServerModel?.subProviderID
           ? { subProviderID: matchedServerModel.subProviderID }
           : {}),
       };

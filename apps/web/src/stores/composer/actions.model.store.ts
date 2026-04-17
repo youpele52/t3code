@@ -26,6 +26,45 @@ function isRuntimeMode(value: unknown): value is RuntimeMode {
   return value === "approval-required" || value === "auto-accept-edits" || value === "full-access";
 }
 
+function upsertModelSelectionWithOptions(
+  provider: ProviderKind,
+  current: ModelSelection | undefined,
+  options: ProviderModelOptions[ProviderKind],
+): ModelSelection {
+  switch (provider) {
+    case "codex": {
+      const codexOptions = options as NonNullable<ProviderModelOptions["codex"]>;
+      return current?.provider === "codex"
+        ? cloneModelSelection(current, { options: codexOptions })
+        : createModelSelection("codex", DEFAULT_MODEL_BY_PROVIDER.codex, codexOptions);
+    }
+    case "claudeAgent": {
+      const claudeOptions = options as NonNullable<ProviderModelOptions["claudeAgent"]>;
+      return current?.provider === "claudeAgent"
+        ? cloneModelSelection(current, { options: claudeOptions })
+        : createModelSelection("claudeAgent", DEFAULT_MODEL_BY_PROVIDER.claudeAgent, claudeOptions);
+    }
+    case "copilot": {
+      const copilotOptions = options as NonNullable<ProviderModelOptions["copilot"]>;
+      return current?.provider === "copilot"
+        ? cloneModelSelection(current, { options: copilotOptions })
+        : createModelSelection("copilot", DEFAULT_MODEL_BY_PROVIDER.copilot, copilotOptions);
+    }
+    case "opencode": {
+      const opencodeOptions = options as NonNullable<ProviderModelOptions["opencode"]>;
+      return current?.provider === "opencode"
+        ? cloneModelSelection(current, { options: opencodeOptions })
+        : createModelSelection("opencode", DEFAULT_MODEL_BY_PROVIDER.opencode, opencodeOptions);
+    }
+    case "pi": {
+      const piOptions = options as NonNullable<ProviderModelOptions["pi"]>;
+      return current?.provider === "pi"
+        ? cloneModelSelection(current, { options: piOptions })
+        : createModelSelection("pi", DEFAULT_MODEL_BY_PROVIDER.pi, piOptions);
+    }
+  }
+}
+
 /** Model selection and sticky-state actions for the composer draft store. */
 export function createModelActions(set: SetFn, _get: GetFn) {
   return {
@@ -161,9 +200,7 @@ export function createModelActions(set: SetFn, _get: GetFn) {
           const opts = normalizedOpts[provider];
           const current = nextMap[provider];
           if (opts) {
-            nextMap[provider] = current
-              ? cloneModelSelection(current, { options: opts })
-              : createModelSelection(provider, DEFAULT_MODEL_BY_PROVIDER[provider], opts);
+            nextMap[provider] = upsertModelSelectionWithOptions(provider, current, opts);
           } else if (current?.options) {
             // Remove options but keep the selection
             const { options: _, ...rest } = current;
@@ -210,9 +247,11 @@ export function createModelActions(set: SetFn, _get: GetFn) {
         const nextMap = { ...base.modelSelectionByProvider };
         const currentForProvider = nextMap[provider];
         if (providerOpts) {
-          nextMap[provider] = currentForProvider
-            ? cloneModelSelection(currentForProvider, { options: providerOpts })
-            : createModelSelection(provider, DEFAULT_MODEL_BY_PROVIDER[provider], providerOpts);
+          nextMap[provider] = upsertModelSelectionWithOptions(
+            provider,
+            currentForProvider,
+            providerOpts,
+          );
         } else if (currentForProvider?.options) {
           const { options: _, ...rest } = currentForProvider;
           nextMap[provider] = rest as ModelSelection;
@@ -228,9 +267,11 @@ export function createModelActions(set: SetFn, _get: GetFn) {
             base.modelSelectionByProvider[provider] ??
             createModelSelection(provider, DEFAULT_MODEL_BY_PROVIDER[provider]);
           if (providerOpts) {
-            nextStickyMap[provider] = cloneModelSelection(stickyBase, {
-              options: providerOpts,
-            });
+            nextStickyMap[provider] = upsertModelSelectionWithOptions(
+              provider,
+              stickyBase,
+              providerOpts,
+            );
           } else if (stickyBase.options) {
             const { options: _, ...rest } = stickyBase;
             nextStickyMap[provider] = rest as ModelSelection;

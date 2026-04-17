@@ -136,6 +136,7 @@ describe("WsRpcAtomClient", () => {
         },
         copilot: DEFAULT_SERVER_SETTINGS.providers.copilot,
         opencode: DEFAULT_SERVER_SETTINGS.providers.opencode,
+        pi: DEFAULT_SERVER_SETTINGS.providers.pi,
       },
     };
     const requestPromise = runRpc((client) => client(WS_METHODS.serverGetSettings, {}));
@@ -188,6 +189,7 @@ describe("WsRpcAtomClient", () => {
         },
         copilot: DEFAULT_SERVER_SETTINGS.providers.copilot,
         opencode: DEFAULT_SERVER_SETTINGS.providers.opencode,
+        pi: DEFAULT_SERVER_SETTINGS.providers.pi,
       },
     };
     const registry = AtomRegistry.make();

@@ -8,6 +8,7 @@ import {
   type ModelCapabilities,
   type ModelSelection,
   type OpencodeModelOptions,
+  type PiModelOptions,
   type ProviderKind,
 } from "@bigcode/contracts";
 
@@ -143,6 +144,14 @@ export function normalizeOpencodeModelOptionsWithCapabilities(
         reasoningEffort: reasoningEffort as OpencodeModelOptions["reasoningEffort"],
       }
     : undefined;
+}
+
+export function normalizePiModelOptionsWithCapabilities(
+  _caps: ModelCapabilities,
+  modelOptions: PiModelOptions | null | undefined,
+): PiModelOptions | undefined {
+  const thinkingLevel = trimOrNull(modelOptions?.thinkingLevel);
+  return thinkingLevel ? { thinkingLevel } : undefined;
 }
 
 export function isClaudeUltrathinkPrompt(text: string | null | undefined): boolean {

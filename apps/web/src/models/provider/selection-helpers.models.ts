@@ -4,49 +4,105 @@ import {
   type ProviderModelOptions,
 } from "@bigcode/contracts";
 
-export function getProviderModelOptions<P extends ProviderKind>(
-  provider: P,
+export function getProviderModelOptions(
+  provider: "codex",
   options: ProviderModelOptions | null | undefined,
-): ProviderModelOptions[P] | undefined {
-  if (provider === "codex") {
-    return options?.codex as ProviderModelOptions[P] | undefined;
+): ProviderModelOptions["codex"] | undefined;
+export function getProviderModelOptions(
+  provider: "claudeAgent",
+  options: ProviderModelOptions | null | undefined,
+): ProviderModelOptions["claudeAgent"] | undefined;
+export function getProviderModelOptions(
+  provider: "copilot",
+  options: ProviderModelOptions | null | undefined,
+): ProviderModelOptions["copilot"] | undefined;
+export function getProviderModelOptions(
+  provider: "opencode",
+  options: ProviderModelOptions | null | undefined,
+): ProviderModelOptions["opencode"] | undefined;
+export function getProviderModelOptions(
+  provider: "pi",
+  options: ProviderModelOptions | null | undefined,
+): ProviderModelOptions["pi"] | undefined;
+export function getProviderModelOptions(
+  provider: ProviderKind,
+  options: ProviderModelOptions | null | undefined,
+): ProviderModelOptions[ProviderKind] | undefined;
+export function getProviderModelOptions(
+  provider: ProviderKind,
+  options: ProviderModelOptions | null | undefined,
+): ProviderModelOptions[ProviderKind] | undefined {
+  switch (provider) {
+    case "codex":
+      return options?.codex;
+    case "claudeAgent":
+      return options?.claudeAgent;
+    case "copilot":
+      return options?.copilot;
+    case "opencode":
+      return options?.opencode;
+    case "pi":
+      return options?.pi;
   }
-  if (provider === "claudeAgent") {
-    return options?.claudeAgent as ProviderModelOptions[P] | undefined;
-  }
-  if (provider === "opencode") {
-    return options?.opencode as ProviderModelOptions[P] | undefined;
-  }
-  return options?.copilot as ProviderModelOptions[P] | undefined;
 }
 
-export function createModelSelection<P extends ProviderKind>(
-  provider: P,
+export function createModelSelection(
+  provider: "codex",
   model: string,
-  options?: ProviderModelOptions[P],
-): Extract<ModelSelection, { provider: P }> {
-  if (provider === "codex") {
-    return (options ? { provider, model, options } : { provider, model }) as Extract<
-      ModelSelection,
-      { provider: P }
-    >;
+  options?: ProviderModelOptions["codex"],
+): Extract<ModelSelection, { provider: "codex" }>;
+export function createModelSelection(
+  provider: "claudeAgent",
+  model: string,
+  options?: ProviderModelOptions["claudeAgent"],
+): Extract<ModelSelection, { provider: "claudeAgent" }>;
+export function createModelSelection(
+  provider: "copilot",
+  model: string,
+  options?: ProviderModelOptions["copilot"],
+): Extract<ModelSelection, { provider: "copilot" }>;
+export function createModelSelection(
+  provider: "opencode",
+  model: string,
+  options?: ProviderModelOptions["opencode"],
+): Extract<ModelSelection, { provider: "opencode" }>;
+export function createModelSelection(
+  provider: "pi",
+  model: string,
+  options?: ProviderModelOptions["pi"],
+): Extract<ModelSelection, { provider: "pi" }>;
+export function createModelSelection(
+  provider: ProviderKind,
+  model: string,
+  options?: ProviderModelOptions[ProviderKind],
+): ModelSelection;
+export function createModelSelection(
+  provider: ProviderKind,
+  model: string,
+  options?: ProviderModelOptions[ProviderKind],
+): ModelSelection {
+  switch (provider) {
+    case "codex": {
+      const codexOptions = options as ProviderModelOptions["codex"] | undefined;
+      return codexOptions ? { provider, model, options: codexOptions } : { provider, model };
+    }
+    case "claudeAgent": {
+      const claudeOptions = options as ProviderModelOptions["claudeAgent"] | undefined;
+      return claudeOptions ? { provider, model, options: claudeOptions } : { provider, model };
+    }
+    case "copilot": {
+      const copilotOptions = options as ProviderModelOptions["copilot"] | undefined;
+      return copilotOptions ? { provider, model, options: copilotOptions } : { provider, model };
+    }
+    case "opencode": {
+      const opencodeOptions = options as ProviderModelOptions["opencode"] | undefined;
+      return opencodeOptions ? { provider, model, options: opencodeOptions } : { provider, model };
+    }
+    case "pi": {
+      const piOptions = options as ProviderModelOptions["pi"] | undefined;
+      return piOptions ? { provider, model, options: piOptions } : { provider, model };
+    }
   }
-  if (provider === "claudeAgent") {
-    return (options ? { provider, model, options } : { provider, model }) as Extract<
-      ModelSelection,
-      { provider: P }
-    >;
-  }
-  if (provider === "opencode") {
-    return (options ? { provider, model, options } : { provider, model }) as Extract<
-      ModelSelection,
-      { provider: P }
-    >;
-  }
-  return (options ? { provider, model, options } : { provider, model }) as Extract<
-    ModelSelection,
-    { provider: P }
-  >;
 }
 
 export function cloneModelSelection<T extends ModelSelection>(

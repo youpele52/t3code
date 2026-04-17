@@ -1,13 +1,18 @@
-import { type ModelSelection, type ThreadId } from "@bigcode/contracts";
+import { type ModelSelection, type ProviderKind, type ThreadId } from "@bigcode/contracts";
 import { useMemo } from "react";
 import { LRUCache } from "../../../lib/lruCache";
 import { useStore } from "../../../stores/main";
 import type { Thread } from "../../../models/types";
 
+export function providerSupportsSubProviderID(provider: ProviderKind): boolean {
+  return provider === "opencode" || provider === "pi";
+}
+
 export function getModelSelectionSubProviderID(
   selection: ModelSelection | null | undefined,
 ): string | null {
-  return selection?.provider === "opencode" && typeof selection.subProviderID === "string"
+  return (selection?.provider === "opencode" || selection?.provider === "pi") &&
+    typeof selection.subProviderID === "string"
     ? selection.subProviderID
     : null;
 }
