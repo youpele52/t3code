@@ -1,9 +1,11 @@
 import {
   DEFAULT_MODEL_BY_PROVIDER,
+  PI_THINKING_LEVEL_OPTIONS,
   PROVIDER_KINDS,
   type ClaudeCodeEffort,
   type CodexReasoningEffort,
   type ModelSelection,
+  type PiThinkingLevel,
   type ProviderKind,
   type ProviderModelOptions,
   type ServerProvider,
@@ -119,8 +121,8 @@ export function shouldRemoveDraft(draft: ComposerThreadDraftState): boolean {
 // ── Provider / model option normalization ─────────────────────────────
 
 export function normalizeProviderKind(value: unknown): ProviderKind | null {
-  return value === "codex" || value === "claudeAgent" || value === "copilot" || value === "opencode"
-    ? value
+  return typeof value === "string" && PROVIDER_KINDS.includes(value as ProviderKind)
+    ? (value as ProviderKind)
     : null;
 }
 
@@ -236,7 +238,18 @@ export function normalizeProviderModelOptions(
       ? { reasoningEffort: opencodeReasoningEffort }
       : undefined;
 
-  if (!codex && !claude && !copilot && !opencode) {
+  const piCandidate =
+    candidate?.pi && typeof candidate.pi === "object"
+      ? (candidate.pi as Record<string, unknown>)
+      : null;
+  const piThinkingLevel: PiThinkingLevel | undefined =
+    typeof piCandidate?.thinkingLevel === "string" &&
+    PI_THINKING_LEVEL_OPTIONS.includes(piCandidate.thinkingLevel as PiThinkingLevel)
+      ? (piCandidate.thinkingLevel as PiThinkingLevel)
+      : undefined;
+  const pi = piThinkingLevel !== undefined ? { thinkingLevel: piThinkingLevel } : undefined;
+
+  if (!codex && !claude && !copilot && !opencode && !pi) {
     return null;
   }
   return {
@@ -244,6 +257,7 @@ export function normalizeProviderModelOptions(
     ...(claude ? { claudeAgent: claude } : {}),
     ...(copilot ? { copilot } : {}),
     ...(opencode ? { opencode } : {}),
+    ...(pi ? { pi } : {}),
   };
 }
 
@@ -281,10 +295,12 @@ export function normalizeModelSelection(
         ? modelOptions?.claudeAgent
         : provider === "opencode"
           ? modelOptions?.opencode
-          : modelOptions?.copilot;
+          : provider === "pi"
+            ? modelOptions?.pi
+            : modelOptions?.copilot;
   const baseSelection = createModelSelection(provider, model, options);
   const rawSubProviderID = candidate?.subProviderID;
-  return provider === "opencode" &&
+  return (provider === "opencode" || provider === "pi") &&
     typeof rawSubProviderID === "string" &&
     rawSubProviderID.length > 0
     ? ({ ...baseSelection, subProviderID: rawSubProviderID } as ModelSelection)

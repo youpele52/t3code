@@ -3,6 +3,7 @@ import {
   type CopilotModelOptions,
   type CodexModelOptions,
   type OpencodeModelOptions,
+  type PiModelOptions,
   type ProviderKind,
   type ProviderModelOptions,
   type ServerProviderModel,
@@ -73,6 +74,10 @@ function getRawContextWindow(
   return null;
 }
 
+function getRawThinkingLevel(modelOptions: ProviderOptions | null | undefined): string | null {
+  return trimOrNull((modelOptions as PiModelOptions | undefined)?.thinkingLevel);
+}
+
 function buildNextOptions(
   provider: ProviderKind,
   modelOptions: ProviderOptions | null | undefined,
@@ -114,6 +119,7 @@ function getSelectedTraits(
   // Resolve effort from options (provider-specific key)
   const rawEffort = getRawEffort(provider, modelOptions);
   const effort = resolveEffort(caps, rawEffort) ?? null;
+  const thinkingLevel = provider === "pi" ? getRawThinkingLevel(modelOptions) : null;
 
   // Thinking toggle (only for models that support it)
   const thinkingEnabled = caps.supportsThinkingToggle
@@ -147,6 +153,7 @@ function getSelectedTraits(
   return {
     caps,
     effort,
+    thinkingLevel,
     effortLevels,
     thinkingEnabled,
     fastModeEnabled,
@@ -181,19 +188,26 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
   ...persistence
 }: TraitsMenuContentProps & TraitsPersistence) {
   const setProviderModelOptions = useComposerDraftStore((store) => store.setProviderModelOptions);
+  const persistenceThreadId = "threadId" in persistence ? persistence.threadId : undefined;
+  const persistenceModelOptionsChange =
+    "onModelOptionsChange" in persistence ? persistence.onModelOptionsChange : undefined;
   const updateModelOptions = useCallback(
     (nextOptions: ProviderOptions | undefined) => {
-      if ("onModelOptionsChange" in persistence) {
-        persistence.onModelOptionsChange(nextOptions);
+      if (persistenceModelOptionsChange) {
+        persistenceModelOptionsChange(nextOptions);
         return;
       }
-      setProviderModelOptions(persistence.threadId, provider, nextOptions, { persistSticky: true });
+      if (!persistenceThreadId) {
+        return;
+      }
+      setProviderModelOptions(persistenceThreadId, provider, nextOptions, { persistSticky: true });
     },
-    [persistence, provider, setProviderModelOptions],
+    [persistenceModelOptionsChange, persistenceThreadId, provider, setProviderModelOptions],
   );
   const {
     caps,
     effort,
+    thinkingLevel,
     effortLevels,
     thinkingEnabled,
     fastModeEnabled,
@@ -241,13 +255,37 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
     ],
   );
 
-  if (effort === null && thinkingEnabled === null && contextWindowOptions.length <= 1) {
+  if (
+    effort === null &&
+    thinkingLevel === null &&
+    thinkingEnabled === null &&
+    contextWindowOptions.length <= 1
+  ) {
     return null;
   }
 
   return (
     <>
-      {effort ? (
+      {provider === "pi" ? (
+        <MenuGroup>
+          <div className="px-2 py-1.5 font-medium text-muted-foreground text-xs">Thinking</div>
+          <MenuRadioGroup
+            value={thinkingLevel ?? "medium"}
+            onValueChange={(value) => {
+              updateModelOptions(
+                buildNextOptions(provider, modelOptions, { thinkingLevel: value }),
+              );
+            }}
+          >
+            <MenuRadioItem value="off">Off</MenuRadioItem>
+            <MenuRadioItem value="minimal">Minimal</MenuRadioItem>
+            <MenuRadioItem value="low">Low</MenuRadioItem>
+            <MenuRadioItem value="medium">Medium</MenuRadioItem>
+            <MenuRadioItem value="high">High</MenuRadioItem>
+            <MenuRadioItem value="xhigh">Extra High</MenuRadioItem>
+          </MenuRadioGroup>
+        </MenuGroup>
+      ) : effort ? (
         <>
           <MenuGroup>
             <div className="px-2 pt-1.5 pb-1 font-medium text-muted-foreground text-xs">Effort</div>
@@ -355,6 +393,7 @@ export const TraitsPicker = memo(function TraitsPicker({
   const {
     caps,
     effort,
+    thinkingLevel,
     effortLevels,
     thinkingEnabled,
     fastModeEnabled,
@@ -367,11 +406,23 @@ export const TraitsPicker = memo(function TraitsPicker({
   const effortLabel = effort
     ? (effortLevels.find((l) => l.value === effort)?.label ?? effort)
     : null;
+  const thinkingLevelLabel =
+    provider === "pi" && thinkingLevel
+      ? {
+          off: "Thinking Off",
+          minimal: "Minimal",
+          low: "Low",
+          medium: "Medium",
+          high: "High",
+          xhigh: "Extra High",
+        }[thinkingLevel]
+      : null;
   const contextWindowLabel =
     contextWindowOptions.length > 1 && contextWindow !== defaultContextWindow
       ? (contextWindowOptions.find((o) => o.value === contextWindow)?.label ?? null)
       : null;
   const triggerLabel = [
+    provider === "pi" ? thinkingLevelLabel : null,
     ultrathinkPromptControlled
       ? "Ultrathink"
       : effortLabel

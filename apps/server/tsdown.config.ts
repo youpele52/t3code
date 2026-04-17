@@ -6,6 +6,8 @@ import { defineConfig } from "tsdown";
 // - @github/copilot-sdk, @github/copilot: CopilotAdapter.types.ts uses
 //   require.resolve("@github/copilot-sdk") at runtime to locate the sibling
 //   @github/copilot CLI entry point on disk.
+// - @mariozechner/pi-coding-agent: PiCli.ts uses createRequire().resolve(...) at
+//   runtime to locate Pi's bundled CLI entry point on disk.
 // - @effect/sql-sqlite-bun, @effect/platform-bun: Bun-only; wrap bun:sqlite
 //   and Bun built-in APIs. Never loaded in an Electron/Node context.
 //
@@ -18,6 +20,7 @@ const EXTERNAL_PACKAGES = [
   "node-pty",
   "@github/copilot-sdk",
   "@github/copilot",
+  "@mariozechner/pi-coding-agent",
   "@effect/sql-sqlite-bun",
   "@effect/platform-bun",
 ];

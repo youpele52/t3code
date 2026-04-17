@@ -64,6 +64,13 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     placeholder: "your-opencode-model-slug",
     example: "claude-sonnet-4-6",
   },
+  pi: {
+    provider: "pi",
+    title: "Pi",
+    description: "Save additional Pi model slugs for the picker and `/model` command.",
+    placeholder: "your-pi-model-slug",
+    example: "anthropic/claude-sonnet-4-20250514",
+  },
 };
 
 export const MODEL_PROVIDER_SETTINGS = Object.values(PROVIDER_CUSTOM_MODEL_CONFIG);
@@ -205,6 +212,12 @@ export function getCustomModelOptionsByProvider(
       "opencode",
       selectedProvider === "opencode" ? selectedModel : undefined,
     ),
+    pi: getAppModelOptions(
+      settings,
+      providers,
+      "pi",
+      selectedProvider === "pi" ? selectedModel : undefined,
+    ),
   };
 }
 
@@ -234,7 +247,9 @@ export function resolveAppModelSelectionState(
 
   if (provider === selection.provider) {
     const baseSelection = createModelSelection(provider, model, modelOptionsForDispatch);
-    return provider === "opencode" && "subProviderID" in selection && selection.subProviderID
+    return (provider === "opencode" || provider === "pi") &&
+      "subProviderID" in selection &&
+      selection.subProviderID
       ? cloneModelSelection(baseSelection, {
           subProviderID: selection.subProviderID,
         } as Partial<ModelSelection>)

@@ -30,16 +30,37 @@ import {
   readCodexConfigModelProvider,
 } from "./CodexProvider";
 import { checkClaudeProviderStatus, parseClaudeAuthStatusFromOutput } from "./ClaudeProvider";
-import { haveProvidersChanged, ProviderRegistryLive } from "./ProviderRegistry";
+import { haveProvidersChanged, makeProviderRegistryLive } from "./ProviderRegistry";
 import { OpencodeServerManager } from "../Services/OpencodeServerManager";
+import { PiProvider } from "../Services/PiProvider";
 import { ServerSettingsService, type ServerSettingsShape } from "../../ws/serverSettings";
 import { ProviderRegistry } from "../Services/ProviderRegistry";
+
+const fakePiSnapshot = {
+  provider: "pi",
+  enabled: true,
+  installed: false,
+  version: null,
+  status: "error",
+  auth: { status: "unknown" },
+  checkedAt: "2026-03-25T00:00:00.000Z",
+  message: "Pi CLI (`pi`) is not installed or not on PATH.",
+  models: [],
+  slashCommands: [],
+  skills: [],
+} as const satisfies ServerProvider;
 
 // ── Test helpers ────────────────────────────────────────────────────
 
 /** Stub OpencodeServerManager — the ProviderRegistry tests don't exercise OpenCode sessions. */
 const mockOpencodeServerManagerLayer = Layer.succeed(OpencodeServerManager, {
   acquire: () => Promise.reject(new Error("OpencodeServerManager.acquire not available in tests")),
+});
+
+const fakePiProviderLayer = Layer.succeed(PiProvider, {
+  getSnapshot: Effect.succeed(fakePiSnapshot),
+  refresh: Effect.succeed(fakePiSnapshot),
+  streamChanges: Stream.empty,
 });
 
 const encoder = new TextEncoder();
@@ -572,7 +593,9 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsService.layerTest()))(
           const serverSettings = yield* makeMutableServerSettingsService();
           const scope = yield* Scope.make();
           yield* Effect.addFinalizer(() => Scope.close(scope, Exit.void));
-          const providerRegistryLayer = ProviderRegistryLive.pipe(
+          const providerRegistryLayer = makeProviderRegistryLive({
+            piProviderLayer: fakePiProviderLayer,
+          }).pipe(
             Layer.provideMerge(Layer.succeed(ServerSettingsService, serverSettings)),
             Layer.provideMerge(mockOpencodeServerManagerLayer),
             Layer.provideMerge(
@@ -644,7 +667,9 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsService.layerTest()))(
           const serverSettings = yield* makeMutableServerSettingsService();
           const scope = yield* Scope.make();
           yield* Effect.addFinalizer(() => Scope.close(scope, Exit.void));
-          const providerRegistryLayer = ProviderRegistryLive.pipe(
+          const providerRegistryLayer = makeProviderRegistryLive({
+            piProviderLayer: fakePiProviderLayer,
+          }).pipe(
             Layer.provideMerge(Layer.succeed(ServerSettingsService, serverSettings)),
             Layer.provideMerge(
               Layer.succeed(OpencodeServerManager, {

@@ -20,7 +20,16 @@ import {
   MenuTrigger,
 } from "../../ui/menu";
 import { Searchbar } from "../../ui/Searchbar";
-import { ClaudeAI, CursorIcon, Gemini, GitHubIcon, Icon, OpenAI, OpenCodeIcon } from "../../Icons";
+import {
+  ClaudeAI,
+  CursorIcon,
+  Gemini,
+  GitHubIcon,
+  Icon,
+  OpenAI,
+  OpenCodeIcon,
+  PiIcon,
+} from "../../Icons";
 import { cn } from "~/lib/utils";
 import { getProviderSnapshot } from "../../../models/provider";
 
@@ -37,6 +46,7 @@ const PROVIDER_ICON_BY_PROVIDER: Record<ProviderPickerKind, Icon> = {
   claudeAgent: ClaudeAI,
   copilot: GitHubIcon,
   opencode: OpenCodeIcon,
+  pi: PiIcon,
   cursor: CursorIcon,
 };
 
@@ -67,6 +77,32 @@ function modelOptionValue(option: ModelOption): string {
 type GroupedSection =
   | { kind: "named"; group: string; models: ModelOption[] }
   | { kind: "ungrouped"; models: ModelOption[] };
+
+/** Maps raw Pi sub-provider IDs to user-friendly display names for the group header. */
+const PI_SUBPROVIDER_DISPLAY_NAMES: Record<string, string> = {
+  "github-copilot": "GitHub Copilot",
+  anthropic: "Anthropic",
+  openai: "OpenAI",
+  google: "Google",
+  gemini: "Google",
+  groq: "Groq",
+  openrouter: "OpenRouter",
+  xai: "xAI",
+  "x.ai": "xAI",
+  deepseek: "DeepSeek",
+  cohere: "Cohere",
+  ai21: "AI21",
+  perplexity: "Perplexity",
+  mistral: "Mistral",
+};
+
+function formatGroupLabel(provider: ProviderKind, group: string): string {
+  // Only apply mapping for Pi provider sub-provider groups
+  if (provider === "pi") {
+    return PI_SUBPROVIDER_DISPLAY_NAMES[group] ?? group;
+  }
+  return group;
+}
 
 /** Groups a flat model list by their `group` field. Returns ordered sections. */
 function groupModelOptions(options: ReadonlyArray<ModelOption>): GroupedSection[] {
@@ -154,7 +190,9 @@ function ModelList({
         ) : hasNamedGroups ? (
           grouped.map((section) => (
             <MenuGroup key={section.kind === "named" ? section.group : "__ungrouped"}>
-              {section.kind === "named" && <MenuGroupLabel>{section.group}</MenuGroupLabel>}
+              {section.kind === "named" && (
+                <MenuGroupLabel>{formatGroupLabel(provider, section.group)}</MenuGroupLabel>
+              )}
               {section.models.map((modelOption) => (
                 <MenuRadioItem
                   key={`${provider}:${modelOptionValue(modelOption)}`}
@@ -316,7 +354,11 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
                       ? "Not installed"
                       : "Unavailable";
                   return (
-                    <MenuItem key={option.value} disabled>
+                    <MenuItem
+                      key={option.value}
+                      disabled
+                      title={liveProvider.message ?? unavailableLabel}
+                    >
                       <OptionIcon
                         aria-hidden="true"
                         className={cn(
@@ -325,7 +367,7 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
                         )}
                       />
                       <span>{option.label}</span>
-                      <span className="ms-auto text-[11px] text-muted-foreground/80 uppercase tracking-[0.08em]">
+                      <span className="ms-auto shrink-0 text-[11px] text-muted-foreground/80 uppercase tracking-[0.08em]">
                         {unavailableLabel}
                       </span>
                     </MenuItem>

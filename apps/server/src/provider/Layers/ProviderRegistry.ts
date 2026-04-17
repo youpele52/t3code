@@ -15,6 +15,7 @@ import { ClaudeProviderLive } from "./ClaudeProvider";
 import { CopilotProviderLive } from "./CopilotProvider";
 import { CodexProviderLive } from "./CodexProvider";
 import { OpencodeProviderLive } from "./OpencodeProvider";
+import { PiProviderLive } from "./PiProvider";
 import type { ClaudeProviderShape } from "../Services/ClaudeProvider";
 import { ClaudeProvider } from "../Services/ClaudeProvider";
 import type { CopilotProviderShape } from "../Services/CopilotProvider";
@@ -23,6 +24,8 @@ import type { CodexProviderShape } from "../Services/CodexProvider";
 import { CodexProvider } from "../Services/CodexProvider";
 import type { OpencodeProviderShape } from "../Services/OpencodeProvider";
 import { OpencodeProvider } from "../Services/OpencodeProvider";
+import type { PiProviderShape } from "../Services/PiProvider";
+import { PiProvider } from "../Services/PiProvider";
 import { ProviderRegistry, type ProviderRegistryShape } from "../Services/ProviderRegistry";
 
 const loadProviders = (
@@ -30,13 +33,17 @@ const loadProviders = (
   claudeProvider: ClaudeProviderShape,
   copilotProvider: CopilotProviderShape,
   opencodeProvider: OpencodeProviderShape,
-): Effect.Effect<readonly [ServerProvider, ServerProvider, ServerProvider, ServerProvider]> =>
+  piProvider: PiProviderShape,
+): Effect.Effect<
+  readonly [ServerProvider, ServerProvider, ServerProvider, ServerProvider, ServerProvider]
+> =>
   Effect.all(
     [
       codexProvider.getSnapshot,
       claudeProvider.getSnapshot,
       copilotProvider.getSnapshot,
       opencodeProvider.getSnapshot,
+      piProvider.getSnapshot,
     ],
     {
       concurrency: "unbounded",
@@ -56,13 +63,14 @@ const findFirstReadyProvider = (
   return found ? Option.some(found) : Option.none();
 };
 
-export const ProviderRegistryLive = Layer.effect(
+const makeProviderRegistryLayer = Layer.effect(
   ProviderRegistry,
   Effect.gen(function* () {
     const codexProvider = yield* CodexProvider;
     const claudeProvider = yield* ClaudeProvider;
     const copilotProvider = yield* CopilotProvider;
     const opencodeProvider = yield* OpencodeProvider;
+    const piProvider = yield* PiProvider;
     const changesPubSub = yield* Effect.acquireRelease(
       PubSub.unbounded<ReadonlyArray<ServerProvider>>(),
       PubSub.shutdown,
@@ -84,6 +92,7 @@ export const ProviderRegistryLive = Layer.effect(
         claudeProvider,
         copilotProvider,
         opencodeProvider,
+        piProvider,
       );
       yield* Ref.set(providersRef, providers);
 
@@ -120,6 +129,9 @@ export const ProviderRegistryLive = Layer.effect(
     yield* Stream.runForEach(opencodeProvider.streamChanges, () => syncProviders()).pipe(
       Effect.forkScoped,
     );
+    yield* Stream.runForEach(piProvider.streamChanges, () => syncProviders()).pipe(
+      Effect.forkScoped,
+    );
 
     const refresh = Effect.fn("refresh")(function* (provider?: ProviderKind) {
       switch (provider) {
@@ -135,6 +147,9 @@ export const ProviderRegistryLive = Layer.effect(
         case "opencode":
           yield* opencodeProvider.refresh;
           break;
+        case "pi":
+          yield* piProvider.refresh;
+          break;
         default:
           yield* Effect.all(
             [
@@ -142,6 +157,7 @@ export const ProviderRegistryLive = Layer.effect(
               claudeProvider.refresh,
               copilotProvider.refresh,
               opencodeProvider.refresh,
+              piProvider.refresh,
             ],
             {
               concurrency: "unbounded",
@@ -170,9 +186,24 @@ export const ProviderRegistryLive = Layer.effect(
       ),
     } satisfies ProviderRegistryShape;
   }),
-).pipe(
+);
+
+export const ProviderRegistryLive = makeProviderRegistryLayer.pipe(
   Layer.provideMerge(CodexProviderLive),
   Layer.provideMerge(ClaudeProviderLive),
   Layer.provideMerge(CopilotProviderLive),
   Layer.provideMerge(OpencodeProviderLive),
+  Layer.provideMerge(PiProviderLive),
 );
+
+export function makeProviderRegistryLive(options?: {
+  readonly piProviderLayer?: Layer.Layer<PiProvider>;
+}) {
+  return makeProviderRegistryLayer.pipe(
+    Layer.provideMerge(CodexProviderLive),
+    Layer.provideMerge(ClaudeProviderLive),
+    Layer.provideMerge(CopilotProviderLive),
+    Layer.provideMerge(OpencodeProviderLive),
+    Layer.provideMerge(options?.piProviderLayer ?? PiProviderLive),
+  );
+}

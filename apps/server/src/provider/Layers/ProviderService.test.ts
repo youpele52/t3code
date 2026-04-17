@@ -250,6 +250,7 @@ function makeProviderServiceLayer() {
   const claude = makeFakeCodexAdapter("claudeAgent");
   const copilot = makeFakeCodexAdapter("copilot");
   const opencode = makeFakeCodexAdapter("opencode");
+  const pi = makeFakeCodexAdapter("pi");
   const registry: typeof ProviderAdapterRegistry.Service = {
     getByProvider: (provider) =>
       provider === "codex"
@@ -260,8 +261,10 @@ function makeProviderServiceLayer() {
             ? Effect.succeed(copilot.adapter)
             : provider === "opencode"
               ? Effect.succeed(opencode.adapter)
-              : Effect.fail(new ProviderUnsupportedError({ provider })),
-    listProviders: () => Effect.succeed(["codex", "claudeAgent", "copilot", "opencode"]),
+              : provider === "pi"
+                ? Effect.succeed(pi.adapter)
+                : Effect.fail(new ProviderUnsupportedError({ provider })),
+    listProviders: () => Effect.succeed(["codex", "claudeAgent", "copilot", "opencode", "pi"]),
   };
 
   const providerAdapterLayer = Layer.succeed(ProviderAdapterRegistry, registry);
@@ -290,6 +293,7 @@ function makeProviderServiceLayer() {
     claude,
     copilot,
     opencode,
+    pi,
     layer,
   };
 }

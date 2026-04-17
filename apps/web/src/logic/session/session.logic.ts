@@ -46,6 +46,7 @@ export const PROVIDER_OPTIONS: Array<{
   { value: "claudeAgent", label: "Claude", available: true },
   { value: "copilot", label: "Copilot", available: true },
   { value: "opencode", label: "OpenCode", available: true },
+  { value: "pi", label: "Pi", available: true },
   { value: "cursor", label: "Cursor", available: false },
 ];
 

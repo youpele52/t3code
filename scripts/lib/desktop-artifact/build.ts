@@ -31,7 +31,11 @@ import { isWindowsBuildPlatform, shellOptionForPlatform } from "./platform.ts";
 // Must be kept in sync with EXTERNAL_PACKAGES in apps/server/tsdown.config.ts.
 // Bun-only externals (@effect/sql-sqlite-bun, @effect/platform-bun) are excluded
 // because they are never loaded in the Electron/Node.js desktop runtime.
-const SERVER_RUNTIME_EXTERNAL_PACKAGES = new Set(["node-pty", "@github/copilot-sdk"]);
+const SERVER_RUNTIME_EXTERNAL_PACKAGES = new Set([
+  "node-pty",
+  "@github/copilot-sdk",
+  "@mariozechner/pi-coding-agent",
+]);
 
 /** Filter a dependency map to only include packages that are external at runtime. */
 function pickExternalDependencies(dependencies: Record<string, unknown>): Record<string, unknown> {
