@@ -93,15 +93,29 @@ export function getFirstReadyProvider(
 export function getDefaultModelSelection(providers: ReadonlyArray<ServerProvider>): ModelSelection {
   const ready = getFirstReadyProvider(providers);
   if (ready) {
-    const model = ready.models[0]?.slug ?? DEFAULT_MODEL_BY_PROVIDER[ready.provider];
-    return { provider: ready.provider, model };
+    const firstModel = ready.models[0];
+    const model = firstModel?.slug ?? DEFAULT_MODEL_BY_PROVIDER[ready.provider];
+    return buildModelSelection(ready.provider, model, firstModel?.subProviderID);
   }
   const firstEnabled = providers.find((p) => p.enabled);
   if (firstEnabled) {
-    const model = firstEnabled.models[0]?.slug ?? DEFAULT_MODEL_BY_PROVIDER[firstEnabled.provider];
-    return { provider: firstEnabled.provider, model };
+    const firstModel = firstEnabled.models[0];
+    const model = firstModel?.slug ?? DEFAULT_MODEL_BY_PROVIDER[firstEnabled.provider];
+    return buildModelSelection(firstEnabled.provider, model, firstModel?.subProviderID);
   }
   // No providers in snapshot yet — use first PROVIDER_KIND as last resort.
   const fallbackProvider = PROVIDER_KINDS[0];
   return { provider: fallbackProvider, model: DEFAULT_MODEL_BY_PROVIDER[fallbackProvider] };
+}
+
+function buildModelSelection(
+  provider: ProviderKind,
+  model: string,
+  subProviderID: string | undefined,
+): ModelSelection {
+  // Include subProviderID for providers that support it (pi, opencode)
+  if ((provider === "pi" || provider === "opencode") && subProviderID) {
+    return { provider, model, subProviderID } as ModelSelection;
+  }
+  return { provider, model };
 }

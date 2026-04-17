@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 
-import { EventId, type ProviderRuntimeEvent, type UserInputQuestion } from "@bigcode/contracts";
+import {
+  EventId,
+  ThreadId,
+  type ProviderRuntimeEvent,
+  type UserInputQuestion,
+} from "@bigcode/contracts";
 import { FULL_ACCESS_AUTO_APPROVE_AFTER_MS } from "@bigcode/shared/approvals";
 import { Effect } from "effect";
 
@@ -99,7 +104,7 @@ function autoResolveConfirm(deps: {
   readonly emit: PiEmitEvents;
   readonly makeSyntheticEvent: PiSyntheticEventFn;
   readonly runPromise: PiRunPromise;
-  readonly sessions: Map<import("@bigcode/contracts").ThreadId, ActivePiSession>;
+  readonly sessions: Map<ThreadId, ActivePiSession>;
 }) {
   return Effect.gen(function* () {
     yield* Effect.sleep(FULL_ACCESS_AUTO_APPROVE_AFTER_MS);
@@ -360,7 +365,7 @@ export const handleExtensionUiRequest = Effect.fn("handleExtensionUiRequest")(fu
   readonly makeSyntheticEvent: PiSyntheticEventFn;
   readonly runPromise: PiRunPromise;
   readonly session: ActivePiSession;
-  readonly sessions: Map<import("@bigcode/contracts").ThreadId, ActivePiSession>;
+  readonly sessions: Map<ThreadId, ActivePiSession>;
   readonly message: PiRpcExtensionUIRequest;
 }) {
   if (
@@ -401,7 +406,7 @@ export const handleExtensionUiRequest = Effect.fn("handleExtensionUiRequest")(fu
   yield* emitWithTurnAppend({ emit: deps.emit, session: deps.session, events: [opened, waiting] });
 
   if (deps.session.runtimeMode === "full-access" && deps.message.method === "confirm") {
-    autoResolveConfirm({
+    void autoResolveConfirm({
       session: deps.session,
       requestId: deps.message.id,
       emit: deps.emit,

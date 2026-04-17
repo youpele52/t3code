@@ -1,8 +1,7 @@
 import { PROVIDER_DISPLAY_NAMES, type ServerProvider } from "@bigcode/contracts";
-import { XIcon } from "lucide-react";
+import { CircleAlertIcon, XIcon } from "lucide-react";
 import { memo, useEffect, useRef, useState } from "react";
-import { Alert, AlertDescription, AlertTitle } from "../../ui/alert";
-import { CircleAlertIcon } from "lucide-react";
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "../../ui/alert";
 
 export const ProviderStatusBanner = memo(function ProviderStatusBanner({
   status,
@@ -31,25 +30,30 @@ export const ProviderStatusBanner = memo(function ProviderStatusBanner({
       ? `${providerLabel} provider is unavailable.`
       : `${providerLabel} provider has limited availability.`;
   const title = `${providerLabel} provider status`;
+  const variant = status.status === "error" ? "error" : "warning";
+  const dismissButtonClass =
+    variant === "error"
+      ? "inline-flex size-6 items-center justify-center rounded-md text-destructive/60 transition-colors hover:text-destructive"
+      : "inline-flex size-6 items-center justify-center rounded-md text-warning/60 transition-colors hover:text-warning";
 
   return (
     <div className="pt-3 mx-auto max-w-3xl">
-      <Alert variant={status.status === "error" ? "error" : "warning"}>
+      <Alert variant={variant}>
         <CircleAlertIcon />
-        <AlertTitle className="flex items-center justify-between gap-2">
-          {title}
-          <button
-            type="button"
-            aria-label="Dismiss"
-            onClick={() => setDismissed(true)}
-            className="shrink-0 rounded p-0.5 opacity-70 hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-current transition-opacity"
-          >
-            <XIcon className="size-3.5" />
-          </button>
-        </AlertTitle>
+        <AlertTitle>{title}</AlertTitle>
         <AlertDescription className="line-clamp-3" title={status.message ?? defaultMessage}>
           {status.message ?? defaultMessage}
         </AlertDescription>
+        <AlertAction>
+          <button
+            type="button"
+            aria-label="Dismiss"
+            className={dismissButtonClass}
+            onClick={() => setDismissed(true)}
+          >
+            <XIcon className="size-3.5" />
+          </button>
+        </AlertAction>
       </Alert>
     </div>
   );

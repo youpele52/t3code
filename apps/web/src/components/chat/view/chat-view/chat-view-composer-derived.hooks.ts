@@ -118,6 +118,12 @@ export function useChatViewComposerDerivedState(base: ChatViewBaseState) {
       if (matched?.subProviderID) {
         return { ...baseSelection, subProviderID: matched.subProviderID } as ModelSelection;
       }
+      // Fallback: if no server model matched (e.g. models not yet loaded) but the
+      // draft/thread selection already carries a subProviderID, preserve it so the
+      // picker label stays correct instead of reverting to the raw slug.
+      if (currentSubProviderID !== null) {
+        return { ...baseSelection, subProviderID: currentSubProviderID } as ModelSelection;
+      }
     }
     return baseSelection;
   }, [

@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
 
-import { EventId, type ProviderRuntimeEvent } from "@bigcode/contracts";
+import { EventId, ThreadId, type ProviderRuntimeEvent } from "@bigcode/contracts";
 import { Effect } from "effect";
 
 import type {
   ActivePiSession,
   PiEmitEvents,
+  PiMakeEventStamp,
   PiProcessExitHandler,
   PiRunPromise,
   PiStdoutEventHandler,
@@ -33,7 +34,7 @@ import {
 export function makeHandleProcessExit(deps: {
   readonly emit: PiEmitEvents;
   readonly makeSyntheticEvent: PiSyntheticEventFn;
-  readonly sessions: Map<import("@bigcode/contracts").ThreadId, ActivePiSession>;
+  readonly sessions: Map<ThreadId, ActivePiSession>;
 }): PiProcessExitHandler {
   return Effect.fn("handleProcessExit")(function* (session, detail) {
     if (!deps.sessions.has(session.threadId)) {
@@ -65,10 +66,10 @@ export function makeHandleProcessExit(deps: {
 
 export function makeHandleStdoutEvent(deps: {
   readonly emit: PiEmitEvents;
-  readonly makeEventStamp: import("./PiAdapter.types.ts").PiMakeEventStamp;
+  readonly makeEventStamp: PiMakeEventStamp;
   readonly makeSyntheticEvent: PiSyntheticEventFn;
   readonly runPromise: PiRunPromise;
-  readonly sessions: Map<import("@bigcode/contracts").ThreadId, ActivePiSession>;
+  readonly sessions: Map<ThreadId, ActivePiSession>;
   readonly writeNativeEvent: PiWriteNativeEvent;
 }): PiStdoutEventHandler {
   return Effect.fn("handleStdoutEvent")(function* (session, message: PiRpcStdoutMessage) {
@@ -203,10 +204,10 @@ export function makeHandleStdoutEvent(deps: {
             type: "item.completed",
             payload: {
               itemType: "assistant_message",
-              status:
-                message.message.stopReason === "error" || message.message.stopReason === "aborted"
-                  ? "failed"
-                  : "completed",
+              status: (() => {
+                const stopReason = normalizeString(message.message.stopReason);
+                return stopReason === "error" || stopReason === "aborted" ? "failed" : "completed";
+              })(),
               title: "Assistant message",
               ...(detail ? { detail } : {}),
               data: message.message,

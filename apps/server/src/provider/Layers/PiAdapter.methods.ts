@@ -66,87 +66,91 @@ export function makePiAdapterMethods(deps: {
       : Effect.fail(new ProviderAdapterSessionNotFoundError({ provider: PROVIDER, threadId }));
   };
 
-  const startSession: PiAdapterShape["startSession"] = (input) =>
-    Effect.gen(function* () {
-      const piSettings = yield* deps.serverSettings.getSettings.pipe(
-        Effect.map((settings) => settings.providers.pi),
-        Effect.mapError(
-          (cause) =>
-            new ProviderAdapterProcessError({
-              provider: PROVIDER,
-              threadId: input.threadId,
-              detail: toMessage(cause, "Failed to read Pi settings."),
-              cause,
-            }),
-        ),
-      );
-
-      const resumeCursor = readResumeCursor(input.resumeCursor);
-      const createdAt = new Date().toISOString();
-      const rpcProcess = yield* Effect.tryPromise({
-        try: () =>
-          createPiRpcProcess({
-            binaryPath: piSettings.binaryPath,
-            ...(input.cwd ? { cwd: input.cwd } : {}),
-            ...(resumeCursor?.sessionFile ? { sessionFile: resumeCursor.sessionFile } : {}),
-            env: process.env,
-          }),
-        catch: (cause) =>
+  const startSession: PiAdapterShape["startSession"] = Effect.fn("startSession")(function* (input) {
+    const piSettings = yield* deps.serverSettings.getSettings.pipe(
+      Effect.map((settings) => settings.providers.pi),
+      Effect.mapError(
+        (cause) =>
           new ProviderAdapterProcessError({
             provider: PROVIDER,
             threadId: input.threadId,
-            detail: toMessage(cause, "Failed to start Pi RPC process."),
+            detail: toMessage(cause, "Failed to read Pi settings."),
             cause,
           }),
-      }).pipe(
-        Effect.tapError((error) =>
-          Effect.logError("Pi RPC process failed to start", {
-            threadId: input.threadId,
-            detail: error.detail,
-          }),
-        ),
-      );
+      ),
+    );
 
-      const session: ActivePiSession = {
-        process: rpcProcess,
-        threadId: input.threadId,
-        createdAt,
-        runtimeMode: input.runtimeMode,
-        pendingUserInputs: new Map(),
-        turns: [],
-        unsubscribe: () => undefined,
-        cwd: input.cwd,
-        model: undefined,
-        providerID: undefined,
-        thinkingLevel: undefined,
-        updatedAt: createdAt,
-        lastError: undefined,
-        activeTurnId: undefined,
-        lastUsage: undefined,
-        sessionId: resumeCursor?.sessionId,
-        sessionFile: resumeCursor?.sessionFile,
-        currentAssistantMessageId: undefined,
-        currentToolOutputById: new Map(),
-        currentToolInfoById: new Map(),
-      };
+    const resumeCursor = readResumeCursor(input.resumeCursor);
+    const createdAt = new Date().toISOString();
+    const rpcProcess = yield* Effect.tryPromise({
+      try: () =>
+        createPiRpcProcess({
+          binaryPath: piSettings.binaryPath,
+          ...(input.cwd ? { cwd: input.cwd } : {}),
+          ...(resumeCursor?.sessionFile ? { sessionFile: resumeCursor.sessionFile } : {}),
+          env: process.env,
+        }),
+      catch: (cause) =>
+        new ProviderAdapterProcessError({
+          provider: PROVIDER,
+          threadId: input.threadId,
+          detail: toMessage(cause, "Failed to start Pi RPC process."),
+          cause,
+        }),
+    }).pipe(
+      Effect.tapError((error) =>
+        Effect.logError("Pi RPC process failed to start", {
+          threadId: input.threadId,
+          detail: error.detail,
+        }),
+      ),
+    );
 
-      const onExit = () => {
-        const detail = normalizeString(session.process.stderrTail()) ?? "Pi RPC process exited.";
-        void deps
-          .handleProcessExit(session, detail)
-          .pipe(deps.runPromise)
-          .catch(() => undefined);
-      };
+    const session: ActivePiSession = {
+      process: rpcProcess,
+      threadId: input.threadId,
+      createdAt,
+      runtimeMode: input.runtimeMode,
+      pendingUserInputs: new Map(),
+      turns: [],
+      unsubscribe: () => undefined,
+      cwd: input.cwd,
+      model: undefined,
+      providerID: undefined,
+      thinkingLevel: undefined,
+      updatedAt: createdAt,
+      lastError: undefined,
+      activeTurnId: undefined,
+      lastUsage: undefined,
+      sessionId: resumeCursor?.sessionId,
+      sessionFile: resumeCursor?.sessionFile,
+      currentAssistantMessageId: undefined,
+      currentToolOutputById: new Map(),
+      currentToolInfoById: new Map(),
+    };
 
-      session.unsubscribe = session.process.subscribe((message) => {
-        void deps
-          .handleStdoutEvent(session, message)
-          .pipe(deps.runPromise)
-          .catch(() => undefined);
-      });
-      session.process.child.once("exit", onExit);
+    const onExit = () => {
+      const detail = normalizeString(session.process.stderrTail()) ?? "Pi RPC process exited.";
+      void deps
+        .handleProcessExit(session, detail)
+        .pipe(deps.runPromise)
+        .catch(() => undefined);
+    };
 
-      yield* refreshSessionState(session);
+    // Register in sessions map BEFORE subscribing so that onExit can find the session
+    // if the process exits during setup, and so cleanup in Effect.onError works correctly.
+    deps.sessions.set(input.threadId, session);
+
+    session.unsubscribe = session.process.subscribe((message) => {
+      void deps
+        .handleStdoutEvent(session, message)
+        .pipe(deps.runPromise)
+        .catch(() => undefined);
+    });
+    session.process.child.once("exit", onExit);
+
+    yield* Effect.gen(function* () {
+      yield* refreshSessionState(session).pipe(Effect.orElseSucceed(() => undefined));
       if (input.modelSelection) {
         yield* applyModelSelection({ session, modelSelection: input.modelSelection }).pipe(
           Effect.tapError((error) =>
@@ -158,124 +162,131 @@ export function makePiAdapterMethods(deps: {
         );
         yield* refreshSessionState(session).pipe(Effect.orElseSucceed(() => undefined));
       }
-
-      deps.sessions.set(input.threadId, session);
-      yield* deps.emit([
-        yield* deps.makeSyntheticEvent(
-          input.threadId,
-          "session.started",
-          input.resumeCursor !== undefined ? { resume: input.resumeCursor } : {},
-        ),
-        yield* deps.makeSyntheticEvent(
-          input.threadId,
-          "thread.started",
-          session.sessionId ? { providerThreadId: session.sessionId } : {},
-        ),
-        yield* deps.makeSyntheticEvent(input.threadId, "session.state.changed", {
-          state: "ready",
-          reason: "session.started",
+    }).pipe(
+      Effect.onError(() =>
+        Effect.sync(() => {
+          session.unsubscribe();
+          deps.sessions.delete(input.threadId);
+          void session.process.stop().catch(() => undefined);
         }),
-      ]);
+      ),
+    );
 
-      return {
-        provider: PROVIDER,
-        status: "ready",
-        runtimeMode: input.runtimeMode,
-        threadId: input.threadId,
-        ...(input.cwd ? { cwd: input.cwd } : {}),
-        ...(session.model ? { model: session.model } : {}),
-        resumeCursor: buildResumeCursor(session),
-        createdAt,
-        updatedAt: session.updatedAt,
-      } satisfies ProviderSession;
-    });
-
-  const sendTurn: PiAdapterShape["sendTurn"] = (input) =>
-    Effect.gen(function* () {
-      const session = yield* requireSession(input.threadId);
-      if (session.activeTurnId) {
-        return yield* new ProviderAdapterValidationError({
-          provider: PROVIDER,
-          operation: "sendTurn",
-          issue: "Pi session is already processing a turn.",
-        });
-      }
-
-      if ((!input.input || input.input.trim().length === 0) && !input.attachments?.length) {
-        return yield* new ProviderAdapterValidationError({
-          provider: PROVIDER,
-          operation: "sendTurn",
-          issue: "Pi turns require input text or at least one image attachment.",
-        });
-      }
-
-      if (input.modelSelection) {
-        yield* applyModelSelection({ session, modelSelection: input.modelSelection });
-      }
-
-      const turnId = TurnId.makeUnsafe(`pi-turn-${randomUUID()}`);
-      session.activeTurnId = turnId;
-      session.updatedAt = new Date().toISOString();
-      session.turns.push({ id: turnId, items: [] });
-
-      const images = yield* resolveImages(input.attachments ?? []);
-      const startedEvent = yield* deps.makeSyntheticEvent(
+    yield* deps.emit([
+      yield* deps.makeSyntheticEvent(
         input.threadId,
-        "turn.started",
-        {
-          ...(session.model ? { model: session.model } : {}),
-          ...(session.thinkingLevel ? { effort: session.thinkingLevel } : {}),
-        },
-        { turnId },
-      );
-      const runningEvent = yield* deps.makeSyntheticEvent(input.threadId, "session.state.changed", {
-        state: "running",
-        reason: "turn.started",
+        "session.started",
+        input.resumeCursor !== undefined ? { resume: input.resumeCursor } : {},
+      ),
+      yield* deps.makeSyntheticEvent(
+        input.threadId,
+        "thread.started",
+        session.sessionId ? { providerThreadId: session.sessionId } : {},
+      ),
+      yield* deps.makeSyntheticEvent(input.threadId, "session.state.changed", {
+        state: "ready",
+        reason: "session.started",
+      }),
+    ]);
+
+    return {
+      provider: PROVIDER,
+      status: "ready",
+      runtimeMode: input.runtimeMode,
+      threadId: input.threadId,
+      ...(input.cwd ? { cwd: input.cwd } : {}),
+      ...(session.model ? { model: session.model } : {}),
+      resumeCursor: buildResumeCursor(session),
+      createdAt,
+      updatedAt: session.updatedAt,
+    } satisfies ProviderSession;
+  });
+
+  const sendTurn: PiAdapterShape["sendTurn"] = Effect.fn("sendTurn")(function* (input) {
+    const session = yield* requireSession(input.threadId);
+    if (session.activeTurnId) {
+      return yield* new ProviderAdapterValidationError({
+        provider: PROVIDER,
+        operation: "sendTurn",
+        issue: "Pi session is already processing a turn.",
       });
-      yield* deps.emit([startedEvent, runningEvent]);
-      appendTurnItems(session, [startedEvent, runningEvent]);
+    }
 
-      const state = yield* refreshSessionState(session).pipe(Effect.orElseSucceed(() => undefined));
-      const isStreaming = state?.isStreaming === true;
-      yield* Effect.tryPromise({
-        try: () =>
-          session.process.request({
-            type: "prompt",
-            message: input.input ?? "",
-            ...(images.length > 0 ? { images } : {}),
-            ...(isStreaming ? { streamingBehavior: "followUp" as const } : {}),
-          }),
-        catch: (cause) =>
-          new ProviderAdapterRequestError({
-            provider: PROVIDER,
-            method: "prompt",
-            detail: toMessage(cause, "Failed to send Pi turn."),
-            cause,
-          }),
-      }).pipe(
-        Effect.tapError((error) =>
-          Effect.logError("Pi prompt RPC request failed", {
-            threadId: input.threadId,
-            turnId,
-            detail: error.detail,
-          }),
-        ),
-        Effect.tapError(() =>
-          Effect.sync(() => {
-            session.activeTurnId = undefined;
-          }),
-        ),
-      );
+    if ((!input.input || input.input.trim().length === 0) && !input.attachments?.length) {
+      return yield* new ProviderAdapterValidationError({
+        provider: PROVIDER,
+        operation: "sendTurn",
+        issue: "Pi turns require input text or at least one image attachment.",
+      });
+    }
 
-      return {
-        threadId: input.threadId,
-        turnId,
-        resumeCursor: buildResumeCursor(session),
-      } satisfies ProviderTurnStartResult;
+    if (input.modelSelection) {
+      yield* applyModelSelection({ session, modelSelection: input.modelSelection });
+    }
+
+    const turnId = TurnId.makeUnsafe(`pi-turn-${randomUUID()}`);
+    session.activeTurnId = turnId;
+    session.updatedAt = new Date().toISOString();
+    session.turns.push({ id: turnId, items: [] });
+
+    const images = yield* resolveImages(input.attachments ?? []);
+    const startedEvent = yield* deps.makeSyntheticEvent(
+      input.threadId,
+      "turn.started",
+      {
+        ...(session.model ? { model: session.model } : {}),
+        ...(session.thinkingLevel ? { effort: session.thinkingLevel } : {}),
+      },
+      { turnId },
+    );
+    const runningEvent = yield* deps.makeSyntheticEvent(input.threadId, "session.state.changed", {
+      state: "running",
+      reason: "turn.started",
     });
+    yield* deps.emit([startedEvent, runningEvent]);
+    appendTurnItems(session, [startedEvent, runningEvent]);
 
-  const interruptTurn: PiAdapterShape["interruptTurn"] = (threadId, _turnId) =>
-    Effect.gen(function* () {
+    const state = yield* refreshSessionState(session).pipe(Effect.orElseSucceed(() => undefined));
+    const isStreaming = state?.isStreaming === true;
+    yield* Effect.tryPromise({
+      try: () =>
+        session.process.request({
+          type: "prompt",
+          message: input.input ?? "",
+          ...(images.length > 0 ? { images } : {}),
+          ...(isStreaming ? { streamingBehavior: "followUp" as const } : {}),
+        }),
+      catch: (cause) =>
+        new ProviderAdapterRequestError({
+          provider: PROVIDER,
+          method: "prompt",
+          detail: toMessage(cause, "Failed to send Pi turn."),
+          cause,
+        }),
+    }).pipe(
+      Effect.tapError((error) =>
+        Effect.logError("Pi prompt RPC request failed", {
+          threadId: input.threadId,
+          turnId,
+          detail: error.detail,
+        }),
+      ),
+      Effect.tapError(() =>
+        Effect.sync(() => {
+          session.activeTurnId = undefined;
+        }),
+      ),
+    );
+
+    return {
+      threadId: input.threadId,
+      turnId,
+      resumeCursor: buildResumeCursor(session),
+    } satisfies ProviderTurnStartResult;
+  });
+
+  const interruptTurn: PiAdapterShape["interruptTurn"] = Effect.fn("interruptTurn")(
+    function* (threadId, _turnId) {
       const session = yield* requireSession(threadId);
       yield* Effect.tryPromise({
         try: () => session.process.request({ type: "abort" }),
@@ -287,7 +298,8 @@ export function makePiAdapterMethods(deps: {
             cause,
           }),
       });
-    });
+    },
+  );
 
   const respondToRequest: PiAdapterShape["respondToRequest"] = (_threadId, _requestId, _decision) =>
     Effect.fail(
@@ -299,8 +311,8 @@ export function makePiAdapterMethods(deps: {
       }),
     );
 
-  const respondToUserInput: PiAdapterShape["respondToUserInput"] = (threadId, requestId, answers) =>
-    Effect.gen(function* () {
+  const respondToUserInput: PiAdapterShape["respondToUserInput"] = Effect.fn("respondToUserInput")(
+    function* (threadId, requestId, answers) {
       const session = yield* requireSession(threadId);
       const pending = session.pendingUserInputs.get(requestId);
       if (!pending) {
@@ -374,25 +386,25 @@ export function makePiAdapterMethods(deps: {
           reason: "user-input.resolved",
         }),
       ]);
-    });
+    },
+  );
 
-  const stopSession: PiAdapterShape["stopSession"] = (threadId) =>
-    Effect.gen(function* () {
-      const session = yield* requireSession(threadId);
-      deps.sessions.delete(threadId);
-      yield* stopSessionRecord(session);
-      yield* deps.emit([
-        yield* deps.makeSyntheticEvent(threadId, "session.state.changed", {
-          state: "stopped",
-          reason: "session.stopped",
-        }),
-        yield* deps.makeSyntheticEvent(threadId, "session.exited", {
-          reason: "session.stopped",
-          recoverable: true,
-          exitKind: "graceful",
-        }),
-      ]);
-    });
+  const stopSession: PiAdapterShape["stopSession"] = Effect.fn("stopSession")(function* (threadId) {
+    const session = yield* requireSession(threadId);
+    deps.sessions.delete(threadId);
+    yield* stopSessionRecord(session);
+    yield* deps.emit([
+      yield* deps.makeSyntheticEvent(threadId, "session.state.changed", {
+        state: "stopped",
+        reason: "session.stopped",
+      }),
+      yield* deps.makeSyntheticEvent(threadId, "session.exited", {
+        reason: "session.stopped",
+        recoverable: true,
+        exitKind: "graceful",
+      }),
+    ]);
+  });
 
   const listSessions: PiAdapterShape["listSessions"] = () =>
     Effect.sync(() =>
@@ -419,11 +431,10 @@ export function makePiAdapterMethods(deps: {
   const hasSession: PiAdapterShape["hasSession"] = (threadId) =>
     Effect.succeed(deps.sessions.has(threadId));
 
-  const readThread: PiAdapterShape["readThread"] = (threadId) =>
-    Effect.gen(function* () {
-      const session = yield* requireSession(threadId);
-      return buildThreadSnapshot(session);
-    });
+  const readThread: PiAdapterShape["readThread"] = Effect.fn("readThread")(function* (threadId) {
+    const session = yield* requireSession(threadId);
+    return buildThreadSnapshot(session);
+  });
 
   const rollbackThread: PiAdapterShape["rollbackThread"] = (threadId, _numTurns) =>
     Effect.fail(
@@ -434,14 +445,18 @@ export function makePiAdapterMethods(deps: {
       }),
     ).pipe(Effect.annotateLogs({ threadId }));
 
-  const stopAll: PiAdapterShape["stopAll"] = () =>
-    Effect.forEach(
+  const stopAll: PiAdapterShape["stopAll"] = Effect.fn("stopAll")(function* () {
+    yield* Effect.forEach(
       Array.from(deps.sessions.values()),
       (session) =>
         Effect.gen(function* () {
           deps.sessions.delete(session.threadId);
           yield* stopSessionRecord(session);
           yield* deps.emit([
+            yield* deps.makeSyntheticEvent(session.threadId, "session.state.changed", {
+              state: "stopped",
+              reason: "session.stopped",
+            }),
             yield* deps.makeSyntheticEvent(session.threadId, "session.exited", {
               reason: "session.stopped",
               recoverable: true,
@@ -450,7 +465,8 @@ export function makePiAdapterMethods(deps: {
           ]);
         }),
       { concurrency: "unbounded" },
-    ).pipe(Effect.asVoid);
+    );
+  });
 
   return {
     startSession,

@@ -1,6 +1,7 @@
+import { readFile } from "node:fs/promises";
+
 import { type ChatAttachment } from "@bigcode/contracts";
 import { Effect } from "effect";
-import { readFile } from "node:fs/promises";
 
 import { resolveAttachmentPath } from "../../attachments/attachmentStore.ts";
 import { ProviderAdapterRequestError, ProviderAdapterValidationError } from "../Errors.ts";
@@ -186,6 +187,6 @@ export function makeStopSessionRecord(deps: {
           detail: toMessage(cause, "Failed to stop Pi session."),
           cause,
         }),
-    });
+    }).pipe(Effect.orElseSucceed(() => undefined));
   });
 }
