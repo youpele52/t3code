@@ -402,36 +402,53 @@ export const generatePiThreadTitleNative = (
         new Promise<string>((resolve, reject) => {
           let collectedText = "";
           let settled = false;
+          // Track whether we are inside an assistant message so we only collect
+          // text deltas from Pi's reply — not from any user-message echoes.
+          let inAssistantMessage = false;
 
           const unsubscribe = rpcProcess.subscribe((message) => {
             if (!("type" in message)) return;
             const event = message as PiRpcStdoutEvent;
 
-            if (
+            if (event.type === "message_start") {
+              const role =
+                typeof (event as { type: "message_start"; message: Record<string, unknown> })
+                  .message.role === "string"
+                  ? (event as { type: "message_start"; message: Record<string, unknown> }).message
+                      .role
+                  : undefined;
+              inAssistantMessage = role === "assistant";
+            } else if (
               event.type === "message_update" &&
               "assistantMessageEvent" in event &&
               event.assistantMessageEvent?.type === "text_delta"
             ) {
-              collectedText += event.assistantMessageEvent.delta;
+              if (inAssistantMessage) {
+                collectedText += event.assistantMessageEvent.delta;
+              }
             } else if (event.type === "message_end") {
-              // Fallback: extract text from final message if streaming deltas weren't received
               const msg = (event as { type: "message_end"; message: Record<string, unknown> })
                 .message;
-              if (collectedText.length === 0) {
-                const content = msg.content;
-                if (typeof content === "string" && content.trim().length > 0) {
-                  collectedText = content;
-                } else if (Array.isArray(content)) {
-                  for (const part of content) {
-                    if (
-                      part &&
-                      typeof part === "object" &&
-                      "type" in part &&
-                      part.type === "text" &&
-                      "text" in part &&
-                      typeof part.text === "string"
-                    ) {
-                      collectedText += part.text;
+              const role = typeof msg.role === "string" ? msg.role : undefined;
+              if (role === "assistant") {
+                inAssistantMessage = false;
+                // Fallback: extract text from final message if streaming deltas weren't received
+                if (collectedText.length === 0) {
+                  const content = msg.content;
+                  if (typeof content === "string" && content.trim().length > 0) {
+                    collectedText = content;
+                  } else if (Array.isArray(content)) {
+                    for (const part of content) {
+                      if (
+                        part &&
+                        typeof part === "object" &&
+                        "type" in part &&
+                        part.type === "text" &&
+                        "text" in part &&
+                        typeof part.text === "string"
+                      ) {
+                        collectedText += part.text;
+                      }
                     }
                   }
                 }

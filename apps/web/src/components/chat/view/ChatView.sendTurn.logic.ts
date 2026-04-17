@@ -23,6 +23,7 @@ import {
   formatOutgoingPrompt,
   readFileAsDataUrl,
   cloneComposerImageForRetry,
+  draftTitleFromMessage,
 } from "./ChatView.logic";
 import { appendTerminalContextsToPrompt } from "../../../lib/terminalContext";
 import { toastManager } from "../../ui/toast";
@@ -312,6 +313,7 @@ export function useOnSend(input: UseOnSendInput) {
       }
 
       const turnAttachments = await turnAttachmentsPromise;
+      const draftTitle = isDraft ? draftTitleFromMessage(promptForSend) : undefined;
       const bootstrap =
         isDraft || baseBranchForWorktree
           ? {
@@ -319,7 +321,7 @@ export function useOnSend(input: UseOnSendInput) {
                 ? {
                     createThread: {
                       projectId: project.id,
-                      title: thread.title,
+                      title: draftTitle ?? thread.title,
                       modelSelection: threadCreateModelSelection,
                       runtimeMode: runMode,
                       interactionMode: interactMode,
@@ -357,6 +359,7 @@ export function useOnSend(input: UseOnSendInput) {
         interactionMode: interactMode,
         ...(bootstrap ? { bootstrap } : {}),
         ...(bootstrapSourceThreadId ? { bootstrapSourceThreadId } : {}),
+        ...(draftTitle ? { titleSeed: draftTitle } : {}),
         createdAt: messageCreatedAt,
       });
       if (bootstrapSourceThreadId) {
