@@ -368,11 +368,24 @@ export const handleExtensionUiRequest = Effect.fn("handleExtensionUiRequest")(fu
   readonly sessions: Map<ThreadId, ActivePiSession>;
   readonly message: PiRpcExtensionUIRequest;
 }) {
+  if (deps.message.method === "setTitle") {
+    const { title } = deps.message;
+    yield* Effect.gen(function* () {
+      const titleEvent = yield* deps.makeSyntheticEvent(
+        deps.session.threadId,
+        "thread.metadata.updated",
+        { name: title },
+        ...(deps.session.activeTurnId ? [{ turnId: deps.session.activeTurnId }] : [{}]),
+      );
+      yield* emitWithTurnAppend({ emit: deps.emit, session: deps.session, events: [titleEvent] });
+    }).pipe(Effect.catchCause(() => Effect.void));
+    return;
+  }
+
   if (
     deps.message.method === "notify" ||
     deps.message.method === "setStatus" ||
     deps.message.method === "setWidget" ||
-    deps.message.method === "setTitle" ||
     deps.message.method === "set_editor_text"
   ) {
     return;

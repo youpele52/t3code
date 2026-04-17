@@ -217,14 +217,14 @@ export const makeProviderCommandHandlers = Effect.gen(function* () {
         ...generationInput,
       }).pipe(Effect.forkScoped);
 
-      if (
-        event.payload.modelSelection &&
-        canReplaceThreadTitle(thread.title, event.payload.titleSeed)
-      ) {
+      if (canReplaceThreadTitle(thread.title, event.payload.titleSeed)) {
+        // Fall back to the thread's own modelSelection when the turn-start event doesn't
+        // carry one (e.g. Pi, where the thread is already bound to a provider).
+        const titleModelSelection = event.payload.modelSelection ?? thread.modelSelection;
         yield* maybeGenerateThreadTitleForFirstTurn(sessionOpServices)({
           threadId: event.payload.threadId,
           cwd: generationCwd,
-          modelSelection: event.payload.modelSelection,
+          modelSelection: titleModelSelection,
           ...generationInput,
         }).pipe(Effect.forkScoped);
       }
