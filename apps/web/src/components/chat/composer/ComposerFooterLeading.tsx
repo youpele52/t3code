@@ -131,12 +131,7 @@ export const ComposerFooterLeading = forwardRef<HTMLDivElement, ComposerFooterLe
           />
         ) : (
           <>
-            {providerTraitsPicker ? (
-              <>
-                <Separator orientation="vertical" className="mx-0.5 hidden h-4 sm:block" />
-                {providerTraitsPicker}
-              </>
-            ) : null}
+            {providerTraitsPicker}
 
             <Separator orientation="vertical" className="mx-0.5 hidden h-4 sm:block" />
 
