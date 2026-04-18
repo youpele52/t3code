@@ -26,7 +26,8 @@ export function SidebarUpdatePill() {
   const state = useDesktopUpdateState().data ?? null;
   const [dismissed, setDismissed] = useState(false);
 
-  const visible = isElectron && !import.meta.env.DEV && shouldShowDesktopUpdateButton(state) && !dismissed;
+  const visible =
+    isElectron && !import.meta.env.DEV && shouldShowDesktopUpdateButton(state) && !dismissed;
   const tooltip = state ? getDesktopUpdateButtonTooltip(state) : "Update available";
   const disabled = isDesktopUpdateButtonDisabled(state);
   const action = state ? resolveDesktopUpdateButtonAction(state) : "none";

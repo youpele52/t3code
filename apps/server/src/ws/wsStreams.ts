@@ -89,9 +89,6 @@ export function makeServerConfigUpdateStream(input: {
   readonly discoveryRegistry: {
     streamChanges: Stream.Stream<ServerDiscoveryCatalog>;
   };
-  readonly discoveryRegistry: {
-    streamChanges: Stream.Stream<ServerDiscoveryCatalog>;
-  };
   readonly serverSettings: {
     streamChanges: Stream.Stream<ServerSettings>;
   };
@@ -122,13 +119,6 @@ export function makeServerConfigUpdateStream(input: {
           })),
         ),
       ),
-    );
-    const discoveryUpdates = input.discoveryRegistry.streamChanges.pipe(
-      Stream.map((discovery) => ({
-        version: 1 as const,
-        type: "discoveryUpdated" as const,
-        payload: { discovery },
-      })),
     );
     const discoveryUpdates = input.discoveryRegistry.streamChanges.pipe(
       Stream.map((discovery) => ({

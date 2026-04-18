@@ -29,6 +29,25 @@ export const MAX_HIDDEN_MOUNTED_TERMINAL_THREADS = 10;
 
 export const LastInvokedScriptByProjectSchema = Schema.Record(ProjectId, Schema.String);
 
+const DRAFT_TITLE_MAX_CHARS = 25;
+
+/**
+ * Derives a short provisional thread title from the user's first message.
+ * Takes the first non-empty line, strips leading slash-command tokens, and
+ * truncates to DRAFT_TITLE_MAX_CHARS characters so the sidebar shows something
+ * meaningful before the AI-generated title arrives.
+ */
+export function draftTitleFromMessage(messageText: string): string {
+  const firstLine = messageText.trim().split(/\r?\n/)[0]?.trim() ?? "";
+  // Strip leading slash commands (e.g. "/plan ", "/default ")
+  const stripped = firstLine.replace(/^\/\w+\s*/, "").trim();
+  const candidate = stripped.length > 0 ? stripped : firstLine;
+  if (candidate.length === 0) return "New thread";
+  return candidate.length <= DRAFT_TITLE_MAX_CHARS
+    ? candidate
+    : `${candidate.slice(0, DRAFT_TITLE_MAX_CHARS - 1).trimEnd()}…`;
+}
+
 export function buildLocalDraftThread(
   threadId: ThreadId,
   draftThread: DraftThreadState,

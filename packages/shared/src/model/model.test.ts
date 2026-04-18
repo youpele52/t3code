@@ -10,6 +10,7 @@ import {
   isClaudeUltrathinkPrompt,
   normalizeClaudeModelOptionsWithCapabilities,
   normalizeCodexModelOptionsWithCapabilities,
+  normalizePiModelOptionsWithCapabilities,
   normalizeModelSlug,
   resolveApiModelId,
   resolveContextWindow,
@@ -279,6 +280,12 @@ describe("normalize*ModelOptionsWithCapabilities", () => {
       ),
     ).toEqual({
       thinking: true,
+    });
+  });
+
+  it("preserves Pi thinking level as-is", () => {
+    expect(normalizePiModelOptionsWithCapabilities(codexCaps, { thinkingLevel: "high" })).toEqual({
+      thinkingLevel: "high",
     });
   });
 });

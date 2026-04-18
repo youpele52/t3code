@@ -47,10 +47,6 @@ import { getDefaultModelSelection } from "../../../../models/provider/provider.m
 
 const EMPTY_CHANGED_FILES_EXPANDED_BY_TURN_ID: Record<string, boolean> = {};
 
-const EMPTY_CHANGED_FILES_EXPANDED_BY_TURN_ID: Record<string, boolean> = {};
-
-const EMPTY_CHANGED_FILES_EXPANDED_BY_TURN_ID: Record<string, boolean> = {};
-
 interface ChatViewBaseStateInput {
   threadId: ThreadId;
 }

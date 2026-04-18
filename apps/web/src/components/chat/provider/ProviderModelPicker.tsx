@@ -20,7 +20,16 @@ import {
   MenuTrigger,
 } from "../../ui/menu";
 import { Searchbar } from "../../ui/Searchbar";
-import { ClaudeAI, CursorIcon, Gemini, GitHubIcon, Icon, OpenAI, OpenCodeIcon } from "../../Icons";
+import {
+  ClaudeAI,
+  CursorIcon,
+  Gemini,
+  GitHubIcon,
+  Icon,
+  OpenAI,
+  OpenCodeIcon,
+  PiIcon,
+} from "../../Icons";
 import { cn } from "~/lib/utils";
 import { getProviderSnapshot } from "../../../models/provider";
 
@@ -37,12 +46,29 @@ const PROVIDER_ICON_BY_PROVIDER: Record<ProviderPickerKind, Icon> = {
   claudeAgent: ClaudeAI,
   copilot: GitHubIcon,
   opencode: OpenCodeIcon,
+  pi: PiIcon,
   cursor: CursorIcon,
 };
 
 export const AVAILABLE_PROVIDER_OPTIONS = PROVIDER_OPTIONS.filter(isAvailableProviderOption);
 const UNAVAILABLE_PROVIDER_OPTIONS = PROVIDER_OPTIONS.filter((option) => !option.available);
 const COMING_SOON_PROVIDER_OPTIONS = [{ id: "gemini", label: "Gemini", icon: Gemini }] as const;
+
+/**
+ * Converts a model slug like "gemini-3-flash-preview" to a human-readable name "Gemini 3 Flash Preview".
+ * Used as a fallback when model options aren't loaded yet.
+ */
+function formatSlugAsDisplayName(slug: string): string {
+  return slug
+    .split("-")
+    .map((word) => {
+      // Don't capitalize pure numbers or version-like strings
+      if (/^\d+(\.\d+)*$/.test(word)) return word;
+      // Capitalize first letter of each word
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
+}
 
 function providerIconClassName(
   _provider: ProviderKind | ProviderPickerKind,
@@ -208,11 +234,16 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
   const activeProvider = props.lockedProvider ?? props.provider;
   const selectedProviderOptions = props.modelOptionsByProvider[activeProvider];
   const selectedProviderValue = props.provider === activeProvider ? props.model : "";
+  // Extract slug from model value (strip ::subProviderID suffix if present)
+  const modelSlug = props.model.includes("::")
+    ? (props.model.split("::")[0] ?? props.model)
+    : props.model;
   const selectedModelLabel =
     selectedProviderOptions.find((option) => modelOptionValue(option) === selectedProviderValue)
       ?.name ??
-    selectedProviderOptions.find((option) => option.slug === props.model)?.name ??
-    props.model;
+    selectedProviderOptions.find((option) => option.slug === modelSlug)?.name ??
+    // Fallback: format slug as readable name when options aren't loaded
+    formatSlugAsDisplayName(modelSlug);
   const ProviderIcon = PROVIDER_ICON_BY_PROVIDER[activeProvider];
 
   const handleModelChange = (provider: ProviderKind, value: string) => {
@@ -316,7 +347,11 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
                       ? "Not installed"
                       : "Unavailable";
                   return (
-                    <MenuItem key={option.value} disabled>
+                    <MenuItem
+                      key={option.value}
+                      disabled
+                      title={liveProvider.message ?? unavailableLabel}
+                    >
                       <OptionIcon
                         aria-hidden="true"
                         className={cn(
@@ -325,7 +360,7 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
                         )}
                       />
                       <span>{option.label}</span>
-                      <span className="ms-auto text-[11px] text-muted-foreground/80 uppercase tracking-[0.08em]">
+                      <span className="ms-auto shrink-0 text-[11px] text-muted-foreground/80 uppercase tracking-[0.08em]">
                         {unavailableLabel}
                       </span>
                     </MenuItem>

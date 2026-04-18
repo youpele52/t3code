@@ -14,6 +14,9 @@ export const RUNTIME_EVENT_RAW_SOURCES = [
   "copilot.sdk.synthetic",
   "opencode.sdk.session-event",
   "opencode.sdk.synthetic",
+  "pi.rpc.event",
+  "pi.rpc.response",
+  "pi.rpc.synthetic",
 ] as const;
 
 /**

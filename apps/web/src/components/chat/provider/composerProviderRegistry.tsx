@@ -13,6 +13,7 @@ import {
   normalizeCopilotModelOptionsWithCapabilities,
   normalizeCodexModelOptionsWithCapabilities,
   normalizeOpencodeModelOptionsWithCapabilities,
+  normalizePiModelOptionsWithCapabilities,
 } from "@bigcode/shared/model";
 
 export type ComposerProviderStateInput = {
@@ -66,7 +67,9 @@ function getProviderStateFromCapabilities(
         ? modelOptions?.claudeAgent
         : provider === "opencode"
           ? modelOptions?.opencode
-          : modelOptions?.copilot;
+          : provider === "pi"
+            ? modelOptions?.pi
+            : modelOptions?.copilot;
   const rawEffort = providerOptions
     ? "effort" in providerOptions
       ? providerOptions.effort
@@ -88,6 +91,8 @@ function getProviderStateFromCapabilities(
     );
   } else if (provider === "opencode") {
     normalizedOptions = normalizeOpencodeModelOptionsWithCapabilities(caps, modelOptions?.opencode);
+  } else if (provider === "pi") {
+    normalizedOptions = normalizePiModelOptionsWithCapabilities(caps, modelOptions?.pi);
   } else {
     normalizedOptions = normalizeCopilotModelOptionsWithCapabilities(caps, modelOptions?.copilot);
   }
@@ -228,6 +233,38 @@ const composerProviderRegistry: Record<ProviderKind, ProviderRegistryEntry> = {
     renderTraitsPicker: ({ threadId, model, models, modelOptions, prompt, onPromptChange }) => (
       <TraitsPicker
         provider="opencode"
+        models={models}
+        threadId={threadId}
+        model={model}
+        modelOptions={modelOptions}
+        prompt={prompt}
+        onPromptChange={onPromptChange}
+      />
+    ),
+  },
+  pi: {
+    getState: (input) => getProviderStateFromCapabilities(input),
+    renderTraitsMenuContent: ({
+      threadId,
+      model,
+      models,
+      modelOptions,
+      prompt,
+      onPromptChange,
+    }) => (
+      <TraitsMenuContent
+        provider="pi"
+        models={models}
+        threadId={threadId}
+        model={model}
+        modelOptions={modelOptions}
+        prompt={prompt}
+        onPromptChange={onPromptChange}
+      />
+    ),
+    renderTraitsPicker: ({ threadId, model, models, modelOptions, prompt, onPromptChange }) => (
+      <TraitsPicker
+        provider="pi"
         models={models}
         threadId={threadId}
         model={model}

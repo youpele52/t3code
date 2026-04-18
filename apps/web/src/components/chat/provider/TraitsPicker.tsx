@@ -3,6 +3,7 @@ import {
   type CopilotModelOptions,
   type CodexModelOptions,
   type OpencodeModelOptions,
+  type PiModelOptions,
   type ProviderKind,
   type ProviderModelOptions,
   type ServerProviderModel,
@@ -21,6 +22,7 @@ import { memo, useCallback, useState } from "react";
 import type { VariantProps } from "class-variance-authority";
 import { ChevronDownIcon } from "lucide-react";
 import { Button, buttonVariants } from "../../ui/button";
+import { Separator } from "../../ui/separator";
 import {
   Menu,
   MenuGroup,
@@ -73,6 +75,10 @@ function getRawContextWindow(
   return null;
 }
 
+function getRawThinkingLevel(modelOptions: ProviderOptions | null | undefined): string | null {
+  return trimOrNull((modelOptions as PiModelOptions | undefined)?.thinkingLevel);
+}
+
 function buildNextOptions(
   provider: ProviderKind,
   modelOptions: ProviderOptions | null | undefined,
@@ -114,6 +120,7 @@ function getSelectedTraits(
   // Resolve effort from options (provider-specific key)
   const rawEffort = getRawEffort(provider, modelOptions);
   const effort = resolveEffort(caps, rawEffort) ?? null;
+  const thinkingLevel = provider === "pi" ? getRawThinkingLevel(modelOptions) : null;
 
   // Thinking toggle (only for models that support it)
   const thinkingEnabled = caps.supportsThinkingToggle
@@ -147,6 +154,7 @@ function getSelectedTraits(
   return {
     caps,
     effort,
+    thinkingLevel,
     effortLevels,
     thinkingEnabled,
     fastModeEnabled,
@@ -181,19 +189,26 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
   ...persistence
 }: TraitsMenuContentProps & TraitsPersistence) {
   const setProviderModelOptions = useComposerDraftStore((store) => store.setProviderModelOptions);
+  const persistenceThreadId = "threadId" in persistence ? persistence.threadId : undefined;
+  const persistenceModelOptionsChange =
+    "onModelOptionsChange" in persistence ? persistence.onModelOptionsChange : undefined;
   const updateModelOptions = useCallback(
     (nextOptions: ProviderOptions | undefined) => {
-      if ("onModelOptionsChange" in persistence) {
-        persistence.onModelOptionsChange(nextOptions);
+      if (persistenceModelOptionsChange) {
+        persistenceModelOptionsChange(nextOptions);
         return;
       }
-      setProviderModelOptions(persistence.threadId, provider, nextOptions, { persistSticky: true });
+      if (!persistenceThreadId) {
+        return;
+      }
+      setProviderModelOptions(persistenceThreadId, provider, nextOptions, { persistSticky: true });
     },
-    [persistence, provider, setProviderModelOptions],
+    [persistenceModelOptionsChange, persistenceThreadId, provider, setProviderModelOptions],
   );
   const {
     caps,
     effort,
+    thinkingLevel,
     effortLevels,
     thinkingEnabled,
     fastModeEnabled,
@@ -241,13 +256,37 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
     ],
   );
 
-  if (effort === null && thinkingEnabled === null && contextWindowOptions.length <= 1) {
+  if (
+    effort === null &&
+    thinkingLevel === null &&
+    thinkingEnabled === null &&
+    contextWindowOptions.length <= 1
+  ) {
     return null;
   }
 
   return (
     <>
-      {effort ? (
+      {provider === "pi" ? (
+        <MenuGroup>
+          <div className="px-2 py-1.5 font-medium text-muted-foreground text-xs">Thinking</div>
+          <MenuRadioGroup
+            value={thinkingLevel ?? "medium"}
+            onValueChange={(value) => {
+              updateModelOptions(
+                buildNextOptions(provider, modelOptions, { thinkingLevel: value }),
+              );
+            }}
+          >
+            <MenuRadioItem value="off">Off</MenuRadioItem>
+            <MenuRadioItem value="minimal">Minimal</MenuRadioItem>
+            <MenuRadioItem value="low">Low</MenuRadioItem>
+            <MenuRadioItem value="medium">Medium</MenuRadioItem>
+            <MenuRadioItem value="high">High</MenuRadioItem>
+            <MenuRadioItem value="xhigh">Extra High</MenuRadioItem>
+          </MenuRadioGroup>
+        </MenuGroup>
+      ) : effort ? (
         <>
           <MenuGroup>
             <div className="px-2 pt-1.5 pb-1 font-medium text-muted-foreground text-xs">Effort</div>
@@ -355,6 +394,7 @@ export const TraitsPicker = memo(function TraitsPicker({
   const {
     caps,
     effort,
+    thinkingLevel,
     effortLevels,
     thinkingEnabled,
     fastModeEnabled,
@@ -367,11 +407,23 @@ export const TraitsPicker = memo(function TraitsPicker({
   const effortLabel = effort
     ? (effortLevels.find((l) => l.value === effort)?.label ?? effort)
     : null;
+  const thinkingLevelLabel =
+    provider === "pi" && thinkingLevel
+      ? {
+          off: "Thinking Off",
+          minimal: "Minimal",
+          low: "Low",
+          medium: "Medium",
+          high: "High",
+          xhigh: "Extra High",
+        }[thinkingLevel]
+      : null;
   const contextWindowLabel =
     contextWindowOptions.length > 1 && contextWindow !== defaultContextWindow
       ? (contextWindowOptions.find((o) => o.value === contextWindow)?.label ?? null)
       : null;
   const triggerLabel = [
+    provider === "pi" ? thinkingLevelLabel : null,
     ultrathinkPromptControlled
       ? "Ultrathink"
       : effortLabel
@@ -387,51 +439,64 @@ export const TraitsPicker = memo(function TraitsPicker({
 
   const isCodexStyle = provider !== "claudeAgent";
 
+  // Hide the traits picker when the model has no configurable traits
+  if (
+    effort === null &&
+    thinkingLevel === null &&
+    thinkingEnabled === null &&
+    contextWindowOptions.length <= 1
+  ) {
+    return null;
+  }
+
   return (
-    <Menu
-      open={isMenuOpen}
-      onOpenChange={(open) => {
-        setIsMenuOpen(open);
-      }}
-    >
-      <MenuTrigger
-        render={
-          <Button
-            size="sm"
-            variant={triggerVariant ?? "ghost"}
-            className={cn(
-              isCodexStyle
-                ? "min-w-0 max-w-40 shrink justify-start overflow-hidden whitespace-nowrap px-2 text-muted-foreground/70 hover:text-foreground/80 sm:max-w-48 sm:px-3 [&_svg]:mx-0"
-                : "shrink-0 whitespace-nowrap px-2 text-muted-foreground/70 hover:text-foreground/80 sm:px-3",
-              triggerClassName,
-            )}
-          />
-        }
+    <>
+      <Separator orientation="vertical" className="mx-0.5 hidden h-4 sm:block" />
+      <Menu
+        open={isMenuOpen}
+        onOpenChange={(open) => {
+          setIsMenuOpen(open);
+        }}
       >
-        {isCodexStyle ? (
-          <span className="flex min-w-0 w-full items-center gap-2 overflow-hidden">
-            {triggerLabel}
-            <ChevronDownIcon aria-hidden="true" className="size-3 shrink-0 opacity-60" />
-          </span>
-        ) : (
-          <>
-            <span>{triggerLabel}</span>
-            <ChevronDownIcon aria-hidden="true" className="size-3 opacity-60" />
-          </>
-        )}
-      </MenuTrigger>
-      <MenuPopup align="start">
-        <TraitsMenuContent
-          provider={provider}
-          models={models}
-          model={model}
-          prompt={prompt}
-          onPromptChange={onPromptChange}
-          modelOptions={modelOptions}
-          allowPromptInjectedEffort={allowPromptInjectedEffort}
-          {...persistence}
-        />
-      </MenuPopup>
-    </Menu>
+        <MenuTrigger
+          render={
+            <Button
+              size="sm"
+              variant={triggerVariant ?? "ghost"}
+              className={cn(
+                isCodexStyle
+                  ? "min-w-0 max-w-40 shrink justify-start overflow-hidden whitespace-nowrap px-2 text-muted-foreground/70 hover:text-foreground/80 sm:max-w-48 sm:px-3 [&_svg]:mx-0"
+                  : "shrink-0 whitespace-nowrap px-2 text-muted-foreground/70 hover:text-foreground/80 sm:px-3",
+                triggerClassName,
+              )}
+            />
+          }
+        >
+          {isCodexStyle ? (
+            <span className="flex min-w-0 w-full items-center gap-2 overflow-hidden">
+              {triggerLabel}
+              <ChevronDownIcon aria-hidden="true" className="size-3 shrink-0 opacity-60" />
+            </span>
+          ) : (
+            <>
+              <span>{triggerLabel}</span>
+              <ChevronDownIcon aria-hidden="true" className="size-3 opacity-60" />
+            </>
+          )}
+        </MenuTrigger>
+        <MenuPopup align="start">
+          <TraitsMenuContent
+            provider={provider}
+            models={models}
+            model={model}
+            prompt={prompt}
+            onPromptChange={onPromptChange}
+            modelOptions={modelOptions}
+            allowPromptInjectedEffort={allowPromptInjectedEffort}
+            {...persistence}
+          />
+        </MenuPopup>
+      </Menu>
+    </>
   );
 });

@@ -1,33 +1,24 @@
 import * as OS from "node:os";
-import {
-  type ProviderKind,
-  type ServerDiscoveredAgent,
-  type ServerDiscoveredSkill,
-  type ServerDiscoveryCatalog,
+import type {
+  ProviderKind,
+  ServerDiscoveredAgent,
+  ServerDiscoveredSkill,
+  ServerDiscoveryCatalog,
 } from "@bigcode/contracts";
 import { Effect, Equal, FileSystem, Layer, Path, PubSub, Ref, Stream } from "effect";
 
 import { ServerConfig } from "../../startup/config";
 import { ServerSettingsService } from "../../ws/serverSettings";
 import { DiscoveryRegistry, type DiscoveryRegistryShape } from "../Services/DiscoveryRegistry";
-
-type DiscoverySource = ServerDiscoveredAgent["source"];
-
-interface DiscoveryFileDescriptor {
-  readonly provider: ProviderKind;
-  readonly kind: "agent" | "skill";
-  readonly source: DiscoverySource;
-  readonly path: string;
-}
+import {
+  buildDiscoveryConfigDescriptors,
+  buildDiscoveryFileDescriptors,
+  type DiscoveryFileDescriptor,
+} from "./DiscoveryRegistry.descriptors.ts";
 
 interface ParsedDiscoveryFileEntry {
   readonly kind: DiscoveryFileDescriptor["kind"];
   readonly entry: ServerDiscoveredAgent | ServerDiscoveredSkill;
-}
-
-interface DiscoveryConfigDescriptor {
-  readonly provider: "opencode";
-  readonly path: string;
 }
 
 const EMPTY_DISCOVERY: ServerDiscoveryCatalog = {
@@ -52,16 +43,6 @@ const SIMPLE_DESCRIPTION_REGEX = /^description:\s*(.+)$/im;
 function trimToUndefined(value: string | undefined): string | undefined {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
-}
-
-function expandTildePath(path: Path.Path, input: string): string {
-  if (input === "~") {
-    return OS.homedir();
-  }
-  if (input.startsWith("~/") || input.startsWith("~\\")) {
-    return path.join(OS.homedir(), input.slice(2));
-  }
-  return input;
 }
 
 function inferNameFromPath(filePath: string): string {
@@ -233,7 +214,10 @@ const collectPathsRecursive = Effect.fn("DiscoveryRegistry.collectPathsRecursive
   const entries = yield* fs
     .readDirectory(rootPath, { recursive: true })
     .pipe(Effect.orElseSucceed(() => [] as Array<string>));
-  return entries.map((entry) => `${rootPath}/${entry}`.replace(/\/+/g, "/")).filter(predicate);
+  return entries
+    .map((entry) => `${rootPath}/${entry}`.replace(/\/+/g, "/"))
+    .filter((p) => !p.split("/").includes("node_modules"))
+    .filter(predicate);
 });
 
 export const haveDiscoveryChanged = (
@@ -254,171 +238,20 @@ const makeDiscoveryRegistry = Effect.gen(function* () {
   const resolveKnownFileDescriptors = () =>
     Effect.gen(function* () {
       const settings = yield* serverSettings.getSettings;
-      const codexHome = settings.providers.codex.homePath
-        ? expandTildePath(path, settings.providers.codex.homePath)
-        : path.join(OS.homedir(), ".codex");
-      const knownPaths: ReadonlyArray<DiscoveryFileDescriptor> = [
-        {
-          provider: "claudeAgent",
-          kind: "agent",
-          source: "project",
-          path: path.join(config.cwd, ".claude/agents"),
-        },
-        {
-          provider: "claudeAgent",
-          kind: "agent",
-          source: "user",
-          path: path.join(OS.homedir(), ".claude/agents"),
-        },
-        {
-          provider: "claudeAgent",
-          kind: "skill",
-          source: "project",
-          path: path.join(config.cwd, ".claude/skills"),
-        },
-        {
-          provider: "claudeAgent",
-          kind: "skill",
-          source: "user",
-          path: path.join(OS.homedir(), ".claude/skills"),
-        },
-        {
-          provider: "copilot",
-          kind: "agent",
-          source: "project",
-          path: path.join(config.cwd, ".github/agents"),
-        },
-        {
-          provider: "copilot",
-          kind: "agent",
-          source: "user",
-          path: path.join(OS.homedir(), ".copilot/agents"),
-        },
-        {
-          provider: "copilot",
-          kind: "skill",
-          source: "project",
-          path: path.join(config.cwd, ".github/skills"),
-        },
-        {
-          provider: "copilot",
-          kind: "skill",
-          source: "project",
-          path: path.join(config.cwd, ".claude/skills"),
-        },
-        {
-          provider: "copilot",
-          kind: "skill",
-          source: "project",
-          path: path.join(config.cwd, ".agents/skills"),
-        },
-        {
-          provider: "copilot",
-          kind: "skill",
-          source: "user",
-          path: path.join(OS.homedir(), ".copilot/skills"),
-        },
-        {
-          provider: "copilot",
-          kind: "skill",
-          source: "user",
-          path: path.join(OS.homedir(), ".claude/skills"),
-        },
-        {
-          provider: "copilot",
-          kind: "skill",
-          source: "user",
-          path: path.join(OS.homedir(), ".agents/skills"),
-        },
-        {
-          provider: "codex",
-          kind: "agent",
-          source: "project",
-          path: path.join(config.cwd, ".codex/agents"),
-        },
-        { provider: "codex", kind: "agent", source: "user", path: path.join(codexHome, "agents") },
-        {
-          provider: "codex",
-          kind: "skill",
-          source: "project",
-          path: path.join(config.cwd, ".agents/skills"),
-        },
-        {
-          provider: "codex",
-          kind: "skill",
-          source: "user",
-          path: path.join(OS.homedir(), ".agents/skills"),
-        },
-        { provider: "codex", kind: "skill", source: "system", path: "/etc/codex/skills" },
-        {
-          provider: "opencode",
-          kind: "agent",
-          source: "project",
-          path: path.join(config.cwd, ".opencode/agents"),
-        },
-        {
-          provider: "opencode",
-          kind: "agent",
-          source: "user",
-          path: path.join(OS.homedir(), ".config/opencode/agents"),
-        },
-        {
-          provider: "opencode",
-          kind: "skill",
-          source: "project",
-          path: path.join(config.cwd, ".opencode/skills"),
-        },
-        {
-          provider: "opencode",
-          kind: "skill",
-          source: "project",
-          path: path.join(config.cwd, ".opencode/skill"),
-        },
-        {
-          provider: "opencode",
-          kind: "skill",
-          source: "project",
-          path: path.join(config.cwd, ".claude/skills"),
-        },
-        {
-          provider: "opencode",
-          kind: "skill",
-          source: "project",
-          path: path.join(config.cwd, ".agents/skills"),
-        },
-        {
-          provider: "opencode",
-          kind: "skill",
-          source: "user",
-          path: path.join(OS.homedir(), ".config/opencode/skills"),
-        },
-        {
-          provider: "opencode",
-          kind: "skill",
-          source: "user",
-          path: path.join(OS.homedir(), ".config/opencode/skill"),
-        },
-        {
-          provider: "opencode",
-          kind: "skill",
-          source: "user",
-          path: path.join(OS.homedir(), ".claude/skills"),
-        },
-        {
-          provider: "opencode",
-          kind: "skill",
-          source: "user",
-          path: path.join(OS.homedir(), ".agents/skills"),
-        },
-      ];
-      return knownPaths;
+      return buildDiscoveryFileDescriptors({
+        path,
+        cwd: config.cwd,
+        settings,
+      });
     });
 
   const resolveConfigDescriptors = () =>
-    Effect.succeed([
-      { provider: "opencode", path: path.join(config.cwd, ".opencode/opencode.json") },
-      { provider: "opencode", path: path.join(OS.homedir(), ".config/opencode/opencode.json") },
-    ] satisfies ReadonlyArray<DiscoveryConfigDescriptor>);
+    Effect.succeed(
+      buildDiscoveryConfigDescriptors({
+        path,
+        cwd: config.cwd,
+      }),
+    );
 
   const scanDiscoveryFiles = () =>
     Effect.gen(function* () {
@@ -428,7 +261,7 @@ const makeDiscoveryRegistry = Effect.gen(function* () {
         (descriptor) =>
           collectPathsRecursive(fs, descriptor.path, (absolutePath) => {
             if (descriptor.kind === "skill") {
-              return absolutePath.endsWith("SKILL.md") || absolutePath.endsWith(".md");
+              return absolutePath.endsWith("/SKILL.md");
             }
             return /\.(md|markdown|json|toml|ya?ml)$/i.test(absolutePath);
           }).pipe(

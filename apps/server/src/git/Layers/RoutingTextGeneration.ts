@@ -18,7 +18,6 @@ import {
 import {
   TextGeneration,
   type TextGenerationProvider,
-  type ThreadTitleGenerationInput,
   type TextGenerationShape,
 } from "../Services/TextGeneration.ts";
 import { CodexTextGenerationLive } from "./CodexTextGeneration.ts";
@@ -26,6 +25,7 @@ import { ClaudeTextGenerationLive } from "./ClaudeTextGeneration.ts";
 import {
   generateCopilotThreadTitleNative,
   generateOpencodeThreadTitleNative,
+  generatePiThreadTitleNative,
 } from "./ProviderNativeThreadTitleGeneration.ts";
 import { ServerSettingsService } from "../../ws/serverSettings.ts";
 import { OpencodeServerManager } from "../../provider/Services/OpencodeServerManager.ts";
@@ -49,6 +49,7 @@ export function normalizeTextGenerationModelSelection(
     case "claudeAgent":
     case "codex":
       return modelSelection;
+    case "pi":
     case "opencode":
       return {
         provider: "claudeAgent",
@@ -109,6 +110,19 @@ const makeRoutingTextGeneration = Effect.gen(function* () {
         case "codex":
         case "claudeAgent":
           return route(input.modelSelection.provider).generateThreadTitle(input);
+        case "pi":
+          return generatePiThreadTitleNative(
+            {
+              serverSettingsService,
+              opencodeServerManager,
+            },
+            {
+              cwd: input.cwd,
+              message: input.message,
+              ...(input.attachments !== undefined ? { attachments: input.attachments } : {}),
+              modelSelection: input.modelSelection,
+            },
+          );
         case "copilot":
           return generateCopilotThreadTitleNative(
             {
@@ -116,9 +130,11 @@ const makeRoutingTextGeneration = Effect.gen(function* () {
               opencodeServerManager,
             },
             {
-              ...(input as ThreadTitleGenerationInput),
+              cwd: input.cwd,
+              message: input.message,
+              ...(input.attachments !== undefined ? { attachments: input.attachments } : {}),
               modelSelection: input.modelSelection,
-            } as ThreadTitleGenerationInput & { modelSelection: { provider: "copilot" } },
+            },
           );
         case "opencode":
           return generateOpencodeThreadTitleNative(
@@ -127,9 +143,11 @@ const makeRoutingTextGeneration = Effect.gen(function* () {
               opencodeServerManager,
             },
             {
-              ...(input as ThreadTitleGenerationInput),
+              cwd: input.cwd,
+              message: input.message,
+              ...(input.attachments !== undefined ? { attachments: input.attachments } : {}),
               modelSelection: input.modelSelection,
-            } as ThreadTitleGenerationInput & { modelSelection: { provider: "opencode" } },
+            },
           );
       }
     },

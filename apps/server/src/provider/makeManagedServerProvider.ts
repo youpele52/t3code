@@ -12,6 +12,7 @@ export const makeManagedServerProvider = Effect.fn("makeManagedServerProvider")(
   readonly streamSettings: Stream.Stream<Settings>;
   readonly haveSettingsChanged: (previous: Settings, next: Settings) => boolean;
   readonly checkProvider: Effect.Effect<ServerProvider, ServerSettingsError>;
+  readonly initialSnapshot?: ServerProvider;
   readonly refreshInterval?: Duration.Input;
 }): Effect.fn.Return<ServerProviderShape, ServerSettingsError, Scope.Scope> {
   const refreshSemaphore = yield* Semaphore.make(1);
@@ -20,7 +21,8 @@ export const makeManagedServerProvider = Effect.fn("makeManagedServerProvider")(
     PubSub.shutdown,
   );
   const initialSettings = yield* input.getSettings;
-  const initialSnapshot = yield* input.checkProvider;
+  const initialSnapshot =
+    input.initialSnapshot !== undefined ? input.initialSnapshot : yield* input.checkProvider;
   const snapshotRef = yield* Ref.make(initialSnapshot);
   const settingsRef = yield* Ref.make(initialSettings);
 
@@ -49,6 +51,13 @@ export const makeManagedServerProvider = Effect.fn("makeManagedServerProvider")(
     return yield* applySnapshot(nextSettings, { forceRefresh: true });
   });
 
+  // Seeded providers start with a cheap placeholder snapshot so construction
+  // never blocks on optional external binaries. Kick off the real probe in the
+  // background and publish once it completes.
+  if (input.initialSnapshot !== undefined) {
+    yield* refreshSnapshot().pipe(Effect.ignoreCause({ log: true }), Effect.forkScoped);
+  }
+
   yield* Stream.runForEach(input.streamSettings, (nextSettings) =>
     Effect.asVoid(applySnapshot(nextSettings)),
   ).pipe(Effect.forkScoped);
@@ -61,11 +70,16 @@ export const makeManagedServerProvider = Effect.fn("makeManagedServerProvider")(
   ).pipe(Effect.forkScoped);
 
   return {
-    getSnapshot: input.getSettings.pipe(
-      Effect.flatMap(applySnapshot),
-      Effect.tapError(Effect.logError),
-      Effect.orDie,
-    ),
+    getSnapshot: Effect.gen(function* () {
+      const nextSettings = yield* input.getSettings;
+      const previousSettings = yield* Ref.get(settingsRef);
+      if (!input.haveSettingsChanged(previousSettings, nextSettings)) {
+        yield* Ref.set(settingsRef, nextSettings);
+        return yield* Ref.get(snapshotRef);
+      }
+
+      return yield* applySnapshot(nextSettings);
+    }).pipe(Effect.tapError(Effect.logError), Effect.orDie),
     refresh: refreshSnapshot().pipe(Effect.tapError(Effect.logError), Effect.orDie),
     get streamChanges() {
       return Stream.fromPubSub(changesPubSub);

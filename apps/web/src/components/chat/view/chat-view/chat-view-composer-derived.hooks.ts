@@ -1,4 +1,8 @@
-import { type ModelSelection, type ProviderKind } from "@bigcode/contracts";
+import {
+  type ModelSelection,
+  type ProviderKind,
+  type ServerProviderModel,
+} from "@bigcode/contracts";
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
@@ -25,7 +29,11 @@ import {
 import { useEffectiveComposerModelState } from "../../../../stores/composer";
 import { AVAILABLE_PROVIDER_OPTIONS } from "../../provider/ProviderModelPicker";
 import { getComposerProviderState } from "../../provider/composerProviderRegistry";
-import { getModelSelectionSubProviderID, modelPickerValue } from "../ChatView.modelSelection.logic";
+import {
+  getModelSelectionSubProviderID,
+  modelPickerValue,
+  providerSupportsSubProviderID,
+} from "../ChatView.modelSelection.logic";
 import { COMPOSER_PATH_QUERY_DEBOUNCE_MS } from "../ChatView.constants.logic";
 import { type ComposerCommandItem } from "../../composer/ComposerCommandMenu";
 import { threadHasStarted } from "../ChatView.logic";
@@ -98,12 +106,11 @@ export function useChatViewComposerDerivedState(base: ChatViewBaseState) {
       selectedModel,
       selectedModelOptionsForDispatch,
     );
-    if (selectedProvider === "opencode") {
-      const opcModels = providerStatuses.find((p) => p.provider === "opencode")?.models ?? [];
+    if (providerSupportsSubProviderID(selectedProvider)) {
       const currentSubProviderID = getModelSelectionSubProviderID(
         selectedDraftOrThreadModelSelection,
       );
-      const matched = opcModels.find(
+      const matched = selectedProviderModels.find(
         (m) =>
           m.slug === selectedModel &&
           (currentSubProviderID === null || m.subProviderID === currentSubProviderID),
@@ -111,14 +118,20 @@ export function useChatViewComposerDerivedState(base: ChatViewBaseState) {
       if (matched?.subProviderID) {
         return { ...baseSelection, subProviderID: matched.subProviderID } as ModelSelection;
       }
+      // Fallback: if no server model matched (e.g. models not yet loaded) but the
+      // draft/thread selection already carries a subProviderID, preserve it so the
+      // picker label stays correct instead of reverting to the raw slug.
+      if (currentSubProviderID !== null) {
+        return { ...baseSelection, subProviderID: currentSubProviderID } as ModelSelection;
+      }
     }
     return baseSelection;
   }, [
-    providerStatuses,
     selectedDraftOrThreadModelSelection,
     selectedModel,
     selectedModelOptionsForDispatch,
     selectedProvider,
+    selectedProviderModels,
   ]);
 
   const selectedModelForPicker = modelPickerValue(selectedModelSelection);
@@ -142,13 +155,14 @@ export function useChatViewComposerDerivedState(base: ChatViewBaseState) {
   const availableEditors = useServerAvailableEditors();
   const discoveredAgents = useServerDiscoveredAgents() ?? EMPTY_DISCOVERED_AGENTS;
   const discoveredSkills = useServerDiscoveredSkills() ?? EMPTY_DISCOVERED_SKILLS;
-  const modelOptionsByProvider = useMemo(
+  const modelOptionsByProvider = useMemo<Record<ProviderKind, ReadonlyArray<ServerProviderModel>>>(
     () => ({
       codex: providerStatuses.find((provider) => provider.provider === "codex")?.models ?? [],
       claudeAgent:
         providerStatuses.find((provider) => provider.provider === "claudeAgent")?.models ?? [],
       copilot: providerStatuses.find((provider) => provider.provider === "copilot")?.models ?? [],
       opencode: providerStatuses.find((provider) => provider.provider === "opencode")?.models ?? [],
+      pi: providerStatuses.find((provider) => provider.provider === "pi")?.models ?? [],
     }),
     [providerStatuses],
   );

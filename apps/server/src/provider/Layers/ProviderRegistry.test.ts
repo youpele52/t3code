@@ -30,16 +30,37 @@ import {
   readCodexConfigModelProvider,
 } from "./CodexProvider";
 import { checkClaudeProviderStatus, parseClaudeAuthStatusFromOutput } from "./ClaudeProvider";
-import { haveProvidersChanged, ProviderRegistryLive } from "./ProviderRegistry";
+import { haveProvidersChanged, makeProviderRegistryLive } from "./ProviderRegistry";
 import { OpencodeServerManager } from "../Services/OpencodeServerManager";
+import { PiProvider } from "../Services/PiProvider";
 import { ServerSettingsService, type ServerSettingsShape } from "../../ws/serverSettings";
 import { ProviderRegistry } from "../Services/ProviderRegistry";
+
+const fakePiSnapshot = {
+  provider: "pi",
+  enabled: true,
+  installed: false,
+  version: null,
+  status: "error",
+  auth: { status: "unknown" },
+  checkedAt: "2026-03-25T00:00:00.000Z",
+  message: "Pi CLI (`pi`) is not installed or not on PATH.",
+  models: [],
+  slashCommands: [],
+  skills: [],
+} as const satisfies ServerProvider;
 
 // ── Test helpers ────────────────────────────────────────────────────
 
 /** Stub OpencodeServerManager — the ProviderRegistry tests don't exercise OpenCode sessions. */
 const mockOpencodeServerManagerLayer = Layer.succeed(OpencodeServerManager, {
   acquire: () => Promise.reject(new Error("OpencodeServerManager.acquire not available in tests")),
+});
+
+const fakePiProviderLayer = Layer.succeed(PiProvider, {
+  getSnapshot: Effect.succeed(fakePiSnapshot),
+  refresh: Effect.succeed(fakePiSnapshot),
+  streamChanges: Stream.empty,
 });
 
 const encoder = new TextEncoder();
@@ -572,7 +593,9 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsService.layerTest()))(
           const serverSettings = yield* makeMutableServerSettingsService();
           const scope = yield* Scope.make();
           yield* Effect.addFinalizer(() => Scope.close(scope, Exit.void));
-          const providerRegistryLayer = ProviderRegistryLive.pipe(
+          const providerRegistryLayer = makeProviderRegistryLive({
+            piProviderLayer: fakePiProviderLayer,
+          }).pipe(
             Layer.provideMerge(Layer.succeed(ServerSettingsService, serverSettings)),
             Layer.provideMerge(mockOpencodeServerManagerLayer),
             Layer.provideMerge(
@@ -634,6 +657,78 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsService.layerTest()))(
             assert.strictEqual(
               updated.find((status) => status.provider === "codex")?.status,
               "error",
+            );
+          }).pipe(Effect.provide(runtimeServices));
+        }),
+      );
+
+      it.effect("does not block initial provider snapshots when OpenCode startup fails", () =>
+        Effect.gen(function* () {
+          const serverSettings = yield* makeMutableServerSettingsService();
+          const scope = yield* Scope.make();
+          yield* Effect.addFinalizer(() => Scope.close(scope, Exit.void));
+          const providerRegistryLayer = makeProviderRegistryLive({
+            piProviderLayer: fakePiProviderLayer,
+          }).pipe(
+            Layer.provideMerge(Layer.succeed(ServerSettingsService, serverSettings)),
+            Layer.provideMerge(
+              Layer.succeed(OpencodeServerManager, {
+                acquire: () => Promise.reject(new Error("spawn opencode ENOENT")),
+              }),
+            ),
+            Layer.provideMerge(
+              mockCommandSpawnerLayer((command, args) => {
+                const joined = args.join(" ");
+                if (joined === "--version") {
+                  if (command === "codex") return { stdout: "codex 1.0.0\n", stderr: "", code: 0 };
+                  return { stdout: "", stderr: "spawn ENOENT", code: 1 };
+                }
+                if (joined === "login status") {
+                  return { stdout: "Logged in\n", stderr: "", code: 0 };
+                }
+                throw new Error(`Unexpected args: ${joined}`);
+              }),
+            ),
+          );
+          const runtimeServices = yield* Layer.build(
+            Layer.mergeAll(
+              Layer.succeed(ServerSettingsService, serverSettings),
+              providerRegistryLayer,
+            ),
+          ).pipe(Scope.provide(scope));
+
+          yield* Effect.gen(function* () {
+            const registry = yield* ProviderRegistry;
+
+            const initial = yield* registry.getProviders;
+            assert.deepStrictEqual(initial, []);
+
+            for (let attempt = 0; attempt < 20; attempt += 1) {
+              const providers = yield* registry.getProviders;
+              const codexStatus = providers.find(
+                (provider) => provider.provider === "codex",
+              )?.status;
+              const opencodeStatus = providers.find(
+                (provider) => provider.provider === "opencode",
+              )?.status;
+              if (codexStatus === "ready" && opencodeStatus === "error") {
+                return;
+              }
+              yield* Effect.promise(() => new Promise((resolve) => setTimeout(resolve, 0)));
+            }
+
+            const providers = yield* registry.getProviders;
+            assert.strictEqual(
+              providers.find((provider) => provider.provider === "codex")?.status,
+              "ready",
+            );
+            assert.strictEqual(
+              providers.find((provider) => provider.provider === "opencode")?.status,
+              "error",
+            );
+            assert.strictEqual(
+              providers.find((provider) => provider.provider === "opencode")?.message,
+              "OpenCode binary is not installed or not on PATH.",
             );
           }).pipe(Effect.provide(runtimeServices));
         }),

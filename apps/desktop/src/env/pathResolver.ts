@@ -4,7 +4,10 @@ import * as Path from "node:path";
 
 import { app, nativeImage } from "electron";
 
-import { resolveBackendModulesLinkPlan } from "./pathResolver.platform";
+import {
+  resolveBackendModulesLinkPlan,
+  resolvePackagedOpencodeBinaryPlan,
+} from "./pathResolver.platform";
 
 // ---------------------------------------------------------------------------
 // Constants passed in from main.ts
@@ -168,6 +171,13 @@ export function resolveBackendCwd(rootDir: string): string {
     return resolveAppRoot(rootDir);
   }
   return OS.homedir();
+}
+
+export function resolvePackagedOpencodeBinaryDir(): string | null {
+  if (!app.isPackaged) return null;
+
+  const plan = resolvePackagedOpencodeBinaryPlan(process.platform, process.resourcesPath);
+  return FS.existsSync(plan.binaryPath) ? plan.binDir : null;
 }
 
 /**

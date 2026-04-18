@@ -21,6 +21,7 @@ import { makeCodexAdapterLive } from "./provider/Layers/CodexAdapter";
 import { makeClaudeAdapterLive } from "./provider/Layers/ClaudeAdapter";
 import { makeCopilotAdapterLive } from "./provider/Layers/CopilotAdapter";
 import { makeOpencodeAdapterLive } from "./provider/Layers/OpencodeAdapter";
+import { makePiAdapterLive } from "./provider/Layers/PiAdapter";
 import { OpencodeServerManagerLive } from "./provider/Layers/OpencodeServerManager";
 import { ProviderAdapterRegistryLive } from "./provider/Layers/ProviderAdapterRegistry";
 import { makeProviderServiceLive } from "./provider/Layers/ProviderService";
@@ -159,11 +160,13 @@ const ProviderLayerLive = Layer.unwrap(
     const opencodeAdapterLayer = makeOpencodeAdapterLive(
       nativeEventLogger ? { nativeEventLogger } : undefined,
     );
+    const piAdapterLayer = makePiAdapterLive(nativeEventLogger ? { nativeEventLogger } : undefined);
     const adapterRegistryLayer = ProviderAdapterRegistryLive.pipe(
       Layer.provide(codexAdapterLayer),
       Layer.provide(claudeAdapterLayer),
       Layer.provide(copilotAdapterLayer),
       Layer.provide(opencodeAdapterLayer),
+      Layer.provide(piAdapterLayer),
       Layer.provideMerge(providerSessionDirectoryLayer),
     );
     return makeProviderServiceLive(
