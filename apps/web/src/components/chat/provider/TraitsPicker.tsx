@@ -22,6 +22,7 @@ import { memo, useCallback, useState } from "react";
 import type { VariantProps } from "class-variance-authority";
 import { ChevronDownIcon } from "lucide-react";
 import { Button, buttonVariants } from "../../ui/button";
+import { Separator } from "../../ui/separator";
 import {
   Menu,
   MenuGroup,
@@ -438,51 +439,64 @@ export const TraitsPicker = memo(function TraitsPicker({
 
   const isCodexStyle = provider !== "claudeAgent";
 
+  // Hide the traits picker when the model has no configurable traits
+  if (
+    effort === null &&
+    thinkingLevel === null &&
+    thinkingEnabled === null &&
+    contextWindowOptions.length <= 1
+  ) {
+    return null;
+  }
+
   return (
-    <Menu
-      open={isMenuOpen}
-      onOpenChange={(open) => {
-        setIsMenuOpen(open);
-      }}
-    >
-      <MenuTrigger
-        render={
-          <Button
-            size="sm"
-            variant={triggerVariant ?? "ghost"}
-            className={cn(
-              isCodexStyle
-                ? "min-w-0 max-w-40 shrink justify-start overflow-hidden whitespace-nowrap px-2 text-muted-foreground/70 hover:text-foreground/80 sm:max-w-48 sm:px-3 [&_svg]:mx-0"
-                : "shrink-0 whitespace-nowrap px-2 text-muted-foreground/70 hover:text-foreground/80 sm:px-3",
-              triggerClassName,
-            )}
-          />
-        }
+    <>
+      <Separator orientation="vertical" className="mx-0.5 hidden h-4 sm:block" />
+      <Menu
+        open={isMenuOpen}
+        onOpenChange={(open) => {
+          setIsMenuOpen(open);
+        }}
       >
-        {isCodexStyle ? (
-          <span className="flex min-w-0 w-full items-center gap-2 overflow-hidden">
-            {triggerLabel}
-            <ChevronDownIcon aria-hidden="true" className="size-3 shrink-0 opacity-60" />
-          </span>
-        ) : (
-          <>
-            <span>{triggerLabel}</span>
-            <ChevronDownIcon aria-hidden="true" className="size-3 opacity-60" />
-          </>
-        )}
-      </MenuTrigger>
-      <MenuPopup align="start">
-        <TraitsMenuContent
-          provider={provider}
-          models={models}
-          model={model}
-          prompt={prompt}
-          onPromptChange={onPromptChange}
-          modelOptions={modelOptions}
-          allowPromptInjectedEffort={allowPromptInjectedEffort}
-          {...persistence}
-        />
-      </MenuPopup>
-    </Menu>
+        <MenuTrigger
+          render={
+            <Button
+              size="sm"
+              variant={triggerVariant ?? "ghost"}
+              className={cn(
+                isCodexStyle
+                  ? "min-w-0 max-w-40 shrink justify-start overflow-hidden whitespace-nowrap px-2 text-muted-foreground/70 hover:text-foreground/80 sm:max-w-48 sm:px-3 [&_svg]:mx-0"
+                  : "shrink-0 whitespace-nowrap px-2 text-muted-foreground/70 hover:text-foreground/80 sm:px-3",
+                triggerClassName,
+              )}
+            />
+          }
+        >
+          {isCodexStyle ? (
+            <span className="flex min-w-0 w-full items-center gap-2 overflow-hidden">
+              {triggerLabel}
+              <ChevronDownIcon aria-hidden="true" className="size-3 shrink-0 opacity-60" />
+            </span>
+          ) : (
+            <>
+              <span>{triggerLabel}</span>
+              <ChevronDownIcon aria-hidden="true" className="size-3 opacity-60" />
+            </>
+          )}
+        </MenuTrigger>
+        <MenuPopup align="start">
+          <TraitsMenuContent
+            provider={provider}
+            models={models}
+            model={model}
+            prompt={prompt}
+            onPromptChange={onPromptChange}
+            modelOptions={modelOptions}
+            allowPromptInjectedEffort={allowPromptInjectedEffort}
+            {...persistence}
+          />
+        </MenuPopup>
+      </Menu>
+    </>
   );
 });

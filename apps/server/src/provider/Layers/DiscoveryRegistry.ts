@@ -1,9 +1,9 @@
 import * as OS from "node:os";
-import {
-  type ProviderKind,
-  type ServerDiscoveredAgent,
-  type ServerDiscoveredSkill,
-  type ServerDiscoveryCatalog,
+import type {
+  ProviderKind,
+  ServerDiscoveredAgent,
+  ServerDiscoveredSkill,
+  ServerDiscoveryCatalog,
 } from "@bigcode/contracts";
 import { Effect, Equal, FileSystem, Layer, Path, PubSub, Ref, Stream } from "effect";
 
@@ -214,7 +214,10 @@ const collectPathsRecursive = Effect.fn("DiscoveryRegistry.collectPathsRecursive
   const entries = yield* fs
     .readDirectory(rootPath, { recursive: true })
     .pipe(Effect.orElseSucceed(() => [] as Array<string>));
-  return entries.map((entry) => `${rootPath}/${entry}`.replace(/\/+/g, "/")).filter(predicate);
+  return entries
+    .map((entry) => `${rootPath}/${entry}`.replace(/\/+/g, "/"))
+    .filter((p) => !p.split("/").includes("node_modules"))
+    .filter(predicate);
 });
 
 export const haveDiscoveryChanged = (
@@ -258,7 +261,7 @@ const makeDiscoveryRegistry = Effect.gen(function* () {
         (descriptor) =>
           collectPathsRecursive(fs, descriptor.path, (absolutePath) => {
             if (descriptor.kind === "skill") {
-              return absolutePath.endsWith("SKILL.md") || absolutePath.endsWith(".md");
+              return absolutePath.endsWith("/SKILL.md");
             }
             return /\.(md|markdown|json|toml|ya?ml)$/i.test(absolutePath);
           }).pipe(

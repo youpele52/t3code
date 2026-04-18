@@ -26,6 +26,8 @@ export const PI_PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   ai21: "AI21",
   perplexity: "Perplexity",
   mistral: "Mistral",
+  opencode: "OpenCode",
+  "opencode-go": "OpenCode Go",
 };
 
 export function getPiProviderDisplayName(rawProvider: string): string {
