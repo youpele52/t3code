@@ -1,5 +1,5 @@
 import { RotateCcwIcon } from "lucide-react";
-import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
+import { Outlet, createFileRoute, redirect, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 import { useSettingsRestore } from "../components/settings/SettingsPanels";
@@ -12,6 +12,8 @@ function SettingsContentLayout() {
   const { changedSettingLabels, restoreDefaults } = useSettingsRestore(() =>
     setRestoreSignal((value) => value + 1),
   );
+  const location = useLocation();
+  const isGeneralTab = location.pathname === "/settings/general";
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -37,15 +39,17 @@ function SettingsContentLayout() {
               <SidebarTrigger className="size-7 shrink-0 md:hidden" />
               <span className="text-sm font-medium text-foreground">Settings</span>
               <div className="ms-auto flex items-center gap-2">
-                <Button
-                  size="xs"
-                  variant="outline"
-                  disabled={changedSettingLabels.length === 0}
-                  onClick={() => void restoreDefaults()}
-                >
-                  <RotateCcwIcon className="size-3.5" />
-                  Restore defaults
-                </Button>
+                {isGeneralTab && (
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    disabled={changedSettingLabels.length === 0}
+                    onClick={() => void restoreDefaults()}
+                  >
+                    <RotateCcwIcon className="size-3.5" />
+                    Restore defaults
+                  </Button>
+                )}
               </div>
             </div>
           </header>
@@ -57,15 +61,17 @@ function SettingsContentLayout() {
               Settings
             </span>
             <div className="ms-auto flex items-center gap-2">
-              <Button
-                size="xs"
-                variant="outline"
-                disabled={changedSettingLabels.length === 0}
-                onClick={() => void restoreDefaults()}
-              >
-                <RotateCcwIcon className="size-3.5" />
-                Restore defaults
-              </Button>
+              {isGeneralTab && (
+                <Button
+                  size="xs"
+                  variant="outline"
+                  disabled={changedSettingLabels.length === 0}
+                  onClick={() => void restoreDefaults()}
+                >
+                  <RotateCcwIcon className="size-3.5" />
+                  Restore defaults
+                </Button>
+              )}
             </div>
           </div>
         )}

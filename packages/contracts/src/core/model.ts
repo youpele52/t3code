@@ -61,12 +61,21 @@ export const PiModelOptions = Schema.Struct({
 });
 export type PiModelOptions = typeof PiModelOptions.Type;
 
+export const CursorModelOptions = Schema.Struct({
+  reasoning: Schema.optional(Schema.Literals(CODEX_REASONING_EFFORT_OPTIONS)),
+  contextWindow: Schema.optional(Schema.String),
+  fastMode: Schema.optional(Schema.Boolean),
+  thinking: Schema.optional(Schema.Boolean),
+});
+export type CursorModelOptions = typeof CursorModelOptions.Type;
+
 export const ProviderModelOptions = Schema.Struct({
   codex: Schema.optional(CodexModelOptions),
   claudeAgent: Schema.optional(ClaudeModelOptions),
   copilot: Schema.optional(CopilotModelOptions),
   opencode: Schema.optional(OpencodeModelOptions),
   pi: Schema.optional(PiModelOptions),
+  cursor: Schema.optional(CursorModelOptions),
 });
 export type ProviderModelOptions = typeof ProviderModelOptions.Type;
 

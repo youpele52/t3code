@@ -59,6 +59,10 @@
     "./approvals": {
       "types": "./src/approvals.ts",
       "import": "./src/approvals.ts"
+    },
+    "./toolActivity": {
+      "types": "./src/toolActivity.ts",
+      "import": "./src/toolActivity.ts"
     }
   },
   "scripts": {

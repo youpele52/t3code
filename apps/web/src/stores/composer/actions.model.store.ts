@@ -62,6 +62,12 @@ function upsertModelSelectionWithOptions(
         ? cloneModelSelection(current, { options: piOptions })
         : createModelSelection("pi", DEFAULT_MODEL_BY_PROVIDER.pi, piOptions);
     }
+    case "cursor": {
+      const cursorOptions = options as NonNullable<ProviderModelOptions["cursor"]>;
+      return current?.provider === "cursor"
+        ? cloneModelSelection(current, { options: cursorOptions })
+        : createModelSelection("cursor", DEFAULT_MODEL_BY_PROVIDER.cursor, cursorOptions);
+    }
   }
 }
 

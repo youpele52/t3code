@@ -84,6 +84,27 @@ const BUILT_IN_MODELS: ReadonlyArray<ServerProviderModel> = [
     } satisfies ModelCapabilities,
   },
   {
+    slug: "claude-opus-4-5",
+    name: "Claude Opus 4.5",
+    isCustom: false,
+    capabilities: {
+      reasoningEffortLevels: [
+        { value: "low", label: "Low" },
+        { value: "medium", label: "Medium" },
+        { value: "high", label: "High", isDefault: true },
+        { value: "max", label: "Max" },
+        { value: "ultrathink", label: "Ultrathink" },
+      ],
+      supportsFastMode: true,
+      supportsThinkingToggle: false,
+      contextWindowOptions: [
+        { value: "200k", label: "200k", isDefault: true },
+        { value: "1m", label: "1M" },
+      ],
+      promptInjectedEffortLevels: ["ultrathink"],
+    } satisfies ModelCapabilities,
+  },
+  {
     slug: "claude-haiku-4-5",
     name: "Claude Haiku 4.5",
     isCustom: false,
