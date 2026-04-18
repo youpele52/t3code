@@ -17,6 +17,8 @@ export const RUNTIME_EVENT_RAW_SOURCES = [
   "pi.rpc.event",
   "pi.rpc.response",
   "pi.rpc.synthetic",
+  "acp.jsonrpc",
+  "acp.cursor.extension",
 ] as const;
 
 /**

@@ -1346,7 +1346,7 @@ describe("PROVIDER_OPTIONS", () => {
       { value: "copilot", label: "Copilot", available: true },
       { value: "opencode", label: "OpenCode", available: true },
       { value: "pi", label: "Pi", available: true },
-      { value: "cursor", label: "Cursor", available: false },
+      { value: "cursor", label: "Cursor", available: true },
     ]);
     expect(claude).toEqual({
       value: "claudeAgent",
@@ -1366,7 +1366,7 @@ describe("PROVIDER_OPTIONS", () => {
     expect(cursor).toEqual({
       value: "cursor",
       label: "Cursor",
-      available: false,
+      available: true,
     });
   });
 });

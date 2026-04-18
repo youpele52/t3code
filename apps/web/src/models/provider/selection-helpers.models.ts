@@ -102,6 +102,10 @@ export function createModelSelection(
       const piOptions = options as ProviderModelOptions["pi"] | undefined;
       return piOptions ? { provider, model, options: piOptions } : { provider, model };
     }
+    case "cursor": {
+      const cursorOptions = options as ProviderModelOptions["cursor"] | undefined;
+      return cursorOptions ? { provider, model, options: cursorOptions } : { provider, model };
+    }
   }
 }
 

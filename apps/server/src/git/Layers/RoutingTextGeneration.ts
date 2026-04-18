@@ -56,6 +56,7 @@ export function normalizeTextGenerationModelSelection(
         model: DEFAULT_GIT_TEXT_GENERATION_MODEL_BY_PROVIDER.claudeAgent,
       };
     case "copilot":
+    case "cursor":
     default:
       return {
         provider: "codex",
@@ -136,6 +137,14 @@ const makeRoutingTextGeneration = Effect.gen(function* () {
               modelSelection: input.modelSelection,
             },
           );
+        case "cursor":
+          return route("codex").generateThreadTitle({
+            ...input,
+            modelSelection: {
+              provider: "codex",
+              model: DEFAULT_GIT_TEXT_GENERATION_MODEL_BY_PROVIDER.codex,
+            },
+          });
         case "opencode":
           return generateOpencodeThreadTitleNative(
             {

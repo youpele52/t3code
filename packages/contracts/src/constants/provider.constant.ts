@@ -6,7 +6,14 @@
  *
  * Order matters for fallback logic in some contexts.
  */
-export const PROVIDER_KINDS = ["codex", "claudeAgent", "copilot", "opencode", "pi"] as const;
+export const PROVIDER_KINDS = [
+  "codex",
+  "claudeAgent",
+  "copilot",
+  "opencode",
+  "pi",
+  "cursor",
+] as const;
 
 /**
  * Human-readable display names for each provider.
@@ -19,6 +26,7 @@ export const PROVIDER_DISPLAY_NAMES = {
   copilot: "Copilot",
   opencode: "OpenCode",
   pi: "Pi",
+  cursor: "Cursor",
 } as const;
 
 /**

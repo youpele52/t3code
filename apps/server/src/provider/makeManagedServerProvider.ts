@@ -12,8 +12,13 @@ export const makeManagedServerProvider = Effect.fn("makeManagedServerProvider")(
   readonly streamSettings: Stream.Stream<Settings>;
   readonly haveSettingsChanged: (previous: Settings, next: Settings) => boolean;
   readonly checkProvider: Effect.Effect<ServerProvider, ServerSettingsError>;
-  readonly initialSnapshot?: ServerProvider;
+  readonly initialSnapshot?: ServerProvider | ((settings: Settings) => ServerProvider);
   readonly refreshInterval?: Duration.Input;
+  readonly enrichSnapshot?: (opts: {
+    readonly settings: Settings;
+    readonly snapshot: ServerProvider;
+    readonly publishSnapshot: (snapshot: ServerProvider) => Effect.Effect<void>;
+  }) => Effect.Effect<void>;
 }): Effect.fn.Return<ServerProviderShape, ServerSettingsError, Scope.Scope> {
   const refreshSemaphore = yield* Semaphore.make(1);
   const changesPubSub = yield* Effect.acquireRelease(
@@ -21,8 +26,15 @@ export const makeManagedServerProvider = Effect.fn("makeManagedServerProvider")(
     PubSub.shutdown,
   );
   const initialSettings = yield* input.getSettings;
-  const initialSnapshot =
-    input.initialSnapshot !== undefined ? input.initialSnapshot : yield* input.checkProvider;
+  let initialSnapshot: ServerProvider;
+  if (input.initialSnapshot !== undefined) {
+    initialSnapshot =
+      typeof input.initialSnapshot === "function"
+        ? input.initialSnapshot(initialSettings)
+        : input.initialSnapshot;
+  } else {
+    initialSnapshot = yield* input.checkProvider;
+  }
   const snapshotRef = yield* Ref.make(initialSnapshot);
   const settingsRef = yield* Ref.make(initialSettings);
 
@@ -41,6 +53,18 @@ export const makeManagedServerProvider = Effect.fn("makeManagedServerProvider")(
     yield* Ref.set(settingsRef, nextSettings);
     yield* Ref.set(snapshotRef, nextSnapshot);
     yield* PubSub.publish(changesPubSub, nextSnapshot);
+
+    if (input.enrichSnapshot !== undefined) {
+      const publishSnapshot = (enriched: ServerProvider) =>
+        Ref.set(snapshotRef, enriched).pipe(
+          Effect.flatMap(() => PubSub.publish(changesPubSub, enriched)),
+          Effect.asVoid,
+        );
+      yield* input
+        .enrichSnapshot({ settings: nextSettings, snapshot: nextSnapshot, publishSnapshot })
+        .pipe(Effect.ignoreCause({ log: true }), Effect.forkDetach);
+    }
+
     return nextSnapshot;
   });
   const applySnapshot = (nextSettings: Settings, options?: { readonly forceRefresh?: boolean }) =>

@@ -120,10 +120,14 @@ export default function Sidebar() {
             <AlertDialogPopup className="max-w-sm p-0" bottomStickOnMobile={false}>
               {s.pendingProjectDeleteConfirmation ? (
                 <ConfirmationPanel
-                  title={`Remove project "${s.pendingProjectDeleteConfirmation.projectName}"?`}
-                  description="This only removes the project from bigCode, not from your system. Removing the project will also delete all its threads."
+                  title={`Delete project "${s.pendingProjectDeleteConfirmation.projectName}"?`}
+                  description={
+                    s.pendingProjectDeleteConfirmation.threadCount > 0
+                      ? `This project has ${s.pendingProjectDeleteConfirmation.threadCount} ${s.pendingProjectDeleteConfirmation.threadCount === 1 ? "thread" : "threads"} that will also be deleted. This only removes the project from bigCode, not from your system.`
+                      : "This only removes the project from bigCode, not from your system."
+                  }
                   cancelLabel="Cancel"
-                  confirmLabel="Remove"
+                  confirmLabel="Delete"
                   confirmVariant="destructive"
                   onCancel={s.dismissPendingProjectDeleteConfirmation}
                   onConfirm={() => {

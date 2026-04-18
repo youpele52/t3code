@@ -20,6 +20,7 @@ import { ProviderSessionRuntimeRepositoryLive } from "./persistence/Layers/Provi
 import { makeCodexAdapterLive } from "./provider/Layers/CodexAdapter";
 import { makeClaudeAdapterLive } from "./provider/Layers/ClaudeAdapter";
 import { makeCopilotAdapterLive } from "./provider/Layers/CopilotAdapter";
+import { makeCursorAdapterLive } from "./provider/Layers/CursorAdapter";
 import { makeOpencodeAdapterLive } from "./provider/Layers/OpencodeAdapter";
 import { makePiAdapterLive } from "./provider/Layers/PiAdapter";
 import { OpencodeServerManagerLive } from "./provider/Layers/OpencodeServerManager";
@@ -157,6 +158,9 @@ const ProviderLayerLive = Layer.unwrap(
     const copilotAdapterLayer = makeCopilotAdapterLive(
       nativeEventLogger ? { nativeEventLogger } : undefined,
     );
+    const cursorAdapterLayer = makeCursorAdapterLive(
+      nativeEventLogger ? { nativeEventLogger } : undefined,
+    );
     const opencodeAdapterLayer = makeOpencodeAdapterLive(
       nativeEventLogger ? { nativeEventLogger } : undefined,
     );
@@ -165,6 +169,7 @@ const ProviderLayerLive = Layer.unwrap(
       Layer.provide(codexAdapterLayer),
       Layer.provide(claudeAdapterLayer),
       Layer.provide(copilotAdapterLayer),
+      Layer.provide(cursorAdapterLayer),
       Layer.provide(opencodeAdapterLayer),
       Layer.provide(piAdapterLayer),
       Layer.provideMerge(providerSessionDirectoryLayer),
