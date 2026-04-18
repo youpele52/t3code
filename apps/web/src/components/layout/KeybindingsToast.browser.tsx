@@ -80,6 +80,7 @@ function createBaseServerConfig(): ServerConfig {
         copilot: { enabled: true, binaryPath: "", customModels: [] },
         opencode: { enabled: true, binaryPath: "", customModels: [] },
         pi: { enabled: true, binaryPath: "", customModels: [] },
+        cursor: { enabled: false, binaryPath: "", customModels: [], apiEndpoint: "" },
       },
     },
   };

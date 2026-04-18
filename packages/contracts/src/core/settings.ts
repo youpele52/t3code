@@ -6,6 +6,7 @@ import {
   ClaudeModelOptions,
   CodexModelOptions,
   CopilotModelOptions,
+  CursorModelOptions,
   DEFAULT_GIT_TEXT_GENERATION_MODEL_BY_PROVIDER,
   OpencodeModelOptions,
   PiModelOptions,
@@ -131,6 +132,14 @@ export const PiSettings = Schema.Struct({
 });
 export type PiSettings = typeof PiSettings.Type;
 
+export const CursorSettings = Schema.Struct({
+  enabled: Schema.Boolean.pipe(Schema.withDecodingDefault(() => false)),
+  binaryPath: makeBinaryPathSetting("cursor"),
+  apiEndpoint: TrimmedString.pipe(Schema.withDecodingDefault(() => "")),
+  customModels: Schema.Array(Schema.String).pipe(Schema.withDecodingDefault(() => [])),
+});
+export type CursorSettings = typeof CursorSettings.Type;
+
 export const ObservabilitySettings = Schema.Struct({
   otlpTracesUrl: TrimmedString.pipe(Schema.withDecodingDefault(() => "")),
   otlpMetricsUrl: TrimmedString.pipe(Schema.withDecodingDefault(() => "")),
@@ -156,6 +165,7 @@ export const ServerSettings = Schema.Struct({
     copilot: CopilotSettings.pipe(Schema.withDecodingDefault(() => ({}))),
     opencode: OpencodeSettings.pipe(Schema.withDecodingDefault(() => ({}))),
     pi: PiSettings.pipe(Schema.withDecodingDefault(() => ({}))),
+    cursor: CursorSettings.pipe(Schema.withDecodingDefault(() => ({}))),
   }).pipe(Schema.withDecodingDefault(() => ({}))),
   observability: ObservabilitySettings.pipe(Schema.withDecodingDefault(() => ({}))),
 });
@@ -210,6 +220,13 @@ const PiModelOptionsPatch = Schema.Struct({
   thinkingLevel: Schema.optionalKey(PiModelOptions.fields.thinkingLevel),
 });
 
+const CursorModelOptionsPatch = Schema.Struct({
+  reasoning: Schema.optionalKey(CursorModelOptions.fields.reasoning),
+  contextWindow: Schema.optionalKey(CursorModelOptions.fields.contextWindow),
+  fastMode: Schema.optionalKey(CursorModelOptions.fields.fastMode),
+  thinking: Schema.optionalKey(CursorModelOptions.fields.thinking),
+});
+
 const ModelSelectionPatch = Schema.Union([
   Schema.Struct({
     provider: Schema.optionalKey(Schema.Literal("codex")),
@@ -235,6 +252,11 @@ const ModelSelectionPatch = Schema.Union([
     provider: Schema.optionalKey(Schema.Literal("pi")),
     model: Schema.optionalKey(TrimmedNonEmptyString),
     options: Schema.optionalKey(PiModelOptionsPatch),
+  }),
+  Schema.Struct({
+    provider: Schema.optionalKey(Schema.Literal("cursor")),
+    model: Schema.optionalKey(TrimmedNonEmptyString),
+    options: Schema.optionalKey(CursorModelOptionsPatch),
   }),
 ]);
 
@@ -269,6 +291,13 @@ const PiSettingsPatch = Schema.Struct({
   customModels: Schema.optionalKey(Schema.Array(Schema.String)),
 });
 
+const CursorSettingsPatch = Schema.Struct({
+  enabled: Schema.optionalKey(Schema.Boolean),
+  binaryPath: Schema.optionalKey(Schema.String),
+  apiEndpoint: Schema.optionalKey(Schema.String),
+  customModels: Schema.optionalKey(Schema.Array(Schema.String)),
+});
+
 export const ServerSettingsPatch = Schema.Struct({
   enableAssistantStreaming: Schema.optionalKey(Schema.Boolean),
   defaultThreadEnvMode: Schema.optionalKey(ThreadEnvMode),
@@ -286,6 +315,7 @@ export const ServerSettingsPatch = Schema.Struct({
       copilot: Schema.optionalKey(CopilotSettingsPatch),
       opencode: Schema.optionalKey(OpencodeSettingsPatch),
       pi: Schema.optionalKey(PiSettingsPatch),
+      cursor: Schema.optionalKey(CursorSettingsPatch),
     }),
   ),
 });

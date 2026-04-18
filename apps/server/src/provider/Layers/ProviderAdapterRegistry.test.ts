@@ -9,6 +9,7 @@ import { CopilotAdapter, CopilotAdapterShape } from "../Services/CopilotAdapter.
 import { CodexAdapter, CodexAdapterShape } from "../Services/CodexAdapter.ts";
 import { OpencodeAdapter, OpencodeAdapterShape } from "../Services/OpencodeAdapter.ts";
 import { PiAdapter, PiAdapterShape } from "../Services/PiAdapter.ts";
+import { CursorAdapter, CursorAdapterShape } from "../Services/CursorAdapter.ts";
 import { ProviderAdapterRegistry } from "../Services/ProviderAdapterRegistry.ts";
 import { ProviderAdapterRegistryLive } from "./ProviderAdapterRegistry.ts";
 import { ProviderUnsupportedError } from "../Errors.ts";
@@ -99,6 +100,23 @@ const fakePiAdapter: PiAdapterShape = {
   streamEvents: Stream.empty,
 };
 
+const fakeCursorAdapter: CursorAdapterShape = {
+  provider: "cursor",
+  capabilities: { sessionModelSwitch: "in-session" },
+  startSession: vi.fn(),
+  sendTurn: vi.fn(),
+  interruptTurn: vi.fn(),
+  respondToRequest: vi.fn(),
+  respondToUserInput: vi.fn(),
+  stopSession: vi.fn(),
+  listSessions: vi.fn(),
+  hasSession: vi.fn(),
+  readThread: vi.fn(),
+  rollbackThread: vi.fn(),
+  stopAll: vi.fn(),
+  streamEvents: Stream.empty,
+};
+
 const layer = it.layer(
   Layer.mergeAll(
     Layer.provide(
@@ -109,6 +127,7 @@ const layer = it.layer(
         Layer.succeed(CopilotAdapter, fakeCopilotAdapter),
         Layer.succeed(OpencodeAdapter, fakeOpencodeAdapter),
         Layer.succeed(PiAdapter, fakePiAdapter),
+        Layer.succeed(CursorAdapter, fakeCursorAdapter),
       ),
     ),
     NodeServices.layer,
@@ -131,7 +150,7 @@ layer("ProviderAdapterRegistryLive", (it) => {
       assert.equal(pi, fakePiAdapter);
 
       const providers = yield* registry.listProviders();
-      assert.deepEqual(providers, ["codex", "claudeAgent", "copilot", "opencode", "pi"]);
+      assert.deepEqual(providers, ["codex", "claudeAgent", "copilot", "cursor", "opencode", "pi"]);
     }),
   );
 

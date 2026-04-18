@@ -224,7 +224,7 @@ export function SidebarThreadRow(props: SidebarThreadRowProps) {
           </button>
         </div>
         <SidebarMenuSubButton
-          render={<button type="button" />}
+          render={<div role="button" tabIndex={0} />}
           size="sm"
           isActive={isActive}
           data-testid={`thread-row-${thread.id}`}

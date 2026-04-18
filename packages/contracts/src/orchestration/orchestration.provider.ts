@@ -3,6 +3,7 @@ import {
   ClaudeModelOptions,
   CodexModelOptions,
   CopilotModelOptions,
+  CursorModelOptions,
   OpencodeModelOptions,
   PiModelOptions,
 } from "../core/model";
@@ -72,12 +73,20 @@ export const PiModelSelection = Schema.Struct({
 });
 export type PiModelSelection = typeof PiModelSelection.Type;
 
+export const CursorModelSelection = Schema.Struct({
+  provider: Schema.Literal("cursor"),
+  model: TrimmedNonEmptyString,
+  options: Schema.optionalKey(CursorModelOptions),
+});
+export type CursorModelSelection = typeof CursorModelSelection.Type;
+
 export const ModelSelection = Schema.Union([
   CodexModelSelection,
   ClaudeModelSelection,
   CopilotModelSelection,
   OpencodeModelSelection,
   PiModelSelection,
+  CursorModelSelection,
 ]);
 export type ModelSelection = typeof ModelSelection.Type;
 

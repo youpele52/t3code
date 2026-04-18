@@ -14,6 +14,7 @@ import { Deferred, Effect, Equal, Layer, Option, PubSub, Ref, Stream } from "eff
 import { ClaudeProviderLive } from "./ClaudeProvider";
 import { CopilotProviderLive } from "./CopilotProvider";
 import { CodexProviderLive } from "./CodexProvider";
+import { CursorProviderLive } from "./CursorProvider";
 import { OpencodeProviderLive } from "./OpencodeProvider";
 import { PiProviderLive } from "./PiProvider";
 import type { ClaudeProviderShape } from "../Services/ClaudeProvider";
@@ -22,6 +23,8 @@ import type { CopilotProviderShape } from "../Services/CopilotProvider";
 import { CopilotProvider } from "../Services/CopilotProvider";
 import type { CodexProviderShape } from "../Services/CodexProvider";
 import { CodexProvider } from "../Services/CodexProvider";
+import type { CursorProviderShape } from "../Services/CursorProvider";
+import { CursorProvider } from "../Services/CursorProvider";
 import type { OpencodeProviderShape } from "../Services/OpencodeProvider";
 import { OpencodeProvider } from "../Services/OpencodeProvider";
 import type { PiProviderShape } from "../Services/PiProvider";
@@ -32,16 +35,25 @@ const loadProviders = (
   codexProvider: CodexProviderShape,
   claudeProvider: ClaudeProviderShape,
   copilotProvider: CopilotProviderShape,
+  cursorProvider: CursorProviderShape,
   opencodeProvider: OpencodeProviderShape,
   piProvider: PiProviderShape,
 ): Effect.Effect<
-  readonly [ServerProvider, ServerProvider, ServerProvider, ServerProvider, ServerProvider]
+  readonly [
+    ServerProvider,
+    ServerProvider,
+    ServerProvider,
+    ServerProvider,
+    ServerProvider,
+    ServerProvider,
+  ]
 > =>
   Effect.all(
     [
       codexProvider.getSnapshot,
       claudeProvider.getSnapshot,
       copilotProvider.getSnapshot,
+      cursorProvider.getSnapshot,
       opencodeProvider.getSnapshot,
       piProvider.getSnapshot,
     ],
@@ -69,6 +81,7 @@ const makeProviderRegistryLayer = Layer.effect(
     const codexProvider = yield* CodexProvider;
     const claudeProvider = yield* ClaudeProvider;
     const copilotProvider = yield* CopilotProvider;
+    const cursorProvider = yield* CursorProvider;
     const opencodeProvider = yield* OpencodeProvider;
     const piProvider = yield* PiProvider;
     const changesPubSub = yield* Effect.acquireRelease(
@@ -91,6 +104,7 @@ const makeProviderRegistryLayer = Layer.effect(
         codexProvider,
         claudeProvider,
         copilotProvider,
+        cursorProvider,
         opencodeProvider,
         piProvider,
       );
@@ -126,6 +140,9 @@ const makeProviderRegistryLayer = Layer.effect(
     yield* Stream.runForEach(copilotProvider.streamChanges, () => syncProviders()).pipe(
       Effect.forkScoped,
     );
+    yield* Stream.runForEach(cursorProvider.streamChanges, () => syncProviders()).pipe(
+      Effect.forkScoped,
+    );
     yield* Stream.runForEach(opencodeProvider.streamChanges, () => syncProviders()).pipe(
       Effect.forkScoped,
     );
@@ -144,6 +161,9 @@ const makeProviderRegistryLayer = Layer.effect(
         case "copilot":
           yield* copilotProvider.refresh;
           break;
+        case "cursor":
+          yield* cursorProvider.refresh;
+          break;
         case "opencode":
           yield* opencodeProvider.refresh;
           break;
@@ -156,6 +176,7 @@ const makeProviderRegistryLayer = Layer.effect(
               codexProvider.refresh,
               claudeProvider.refresh,
               copilotProvider.refresh,
+              cursorProvider.refresh,
               opencodeProvider.refresh,
               piProvider.refresh,
             ],
@@ -192,6 +213,7 @@ export const ProviderRegistryLive = makeProviderRegistryLayer.pipe(
   Layer.provideMerge(CodexProviderLive),
   Layer.provideMerge(ClaudeProviderLive),
   Layer.provideMerge(CopilotProviderLive),
+  Layer.provideMerge(CursorProviderLive),
   Layer.provideMerge(OpencodeProviderLive),
   Layer.provideMerge(PiProviderLive),
 );
@@ -203,6 +225,7 @@ export function makeProviderRegistryLive(options?: {
     Layer.provideMerge(CodexProviderLive),
     Layer.provideMerge(ClaudeProviderLive),
     Layer.provideMerge(CopilotProviderLive),
+    Layer.provideMerge(CursorProviderLive),
     Layer.provideMerge(OpencodeProviderLive),
     Layer.provideMerge(options?.piProviderLayer ?? PiProviderLive),
   );

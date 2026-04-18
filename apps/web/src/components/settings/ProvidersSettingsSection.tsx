@@ -62,6 +62,12 @@ const PROVIDER_SETTINGS: readonly InstallProviderSettings[] = [
     binaryPlaceholder: "Pi binary path",
     binaryDescription: "Path to the Pi binary",
   },
+  {
+    provider: "cursor",
+    title: "Cursor",
+    binaryPlaceholder: "Cursor agent binary path",
+    binaryDescription: "Path to the Cursor agent binary (agent CLI)",
+  },
 ] as const;
 
 const PROVIDER_STATUS_STYLES = {
@@ -182,10 +188,15 @@ export function ProvidersSettingsSection() {
       settings.providers.pi.binaryPath !== DEFAULT_UNIFIED_SETTINGS.providers.pi.binaryPath ||
       settings.providers.pi.customModels.length > 0,
     ),
+    cursor: Boolean(
+      settings.providers.cursor.binaryPath !==
+        DEFAULT_UNIFIED_SETTINGS.providers.cursor.binaryPath ||
+      settings.providers.cursor.customModels.length > 0,
+    ),
   });
   const [customModelInputByProvider, setCustomModelInputByProvider] = useState<
     Record<ProviderKind, string>
-  >({ codex: "", claudeAgent: "", copilot: "", opencode: "", pi: "" });
+  >({ codex: "", claudeAgent: "", copilot: "", opencode: "", pi: "", cursor: "" });
   const [customModelErrorByProvider, setCustomModelErrorByProvider] = useState<
     Partial<Record<ProviderKind, string | null>>
   >({});

@@ -41,6 +41,8 @@ interface ChatViewRuntimeInput {
 }
 
 export function useChatViewRuntime({ base, thread, composer, timeline }: ChatViewRuntimeInput) {
+  const { setPullRequestDialogState } = base;
+
   const openPullRequestDialog = useCallback(
     (reference?: string) => {
       if (!base.canCheckoutPullRequestIntoThread) {
@@ -56,8 +58,8 @@ export function useChatViewRuntime({ base, thread, composer, timeline }: ChatVie
   );
 
   const closePullRequestDialog = useCallback(() => {
-    base.setPullRequestDialogState(null);
-  }, [base]);
+    setPullRequestDialogState(null);
+  }, [setPullRequestDialogState]);
 
   const openOrReuseProjectDraftThread = useCallback(
     async (input: {
