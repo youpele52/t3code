@@ -41,7 +41,7 @@ import { Searchbar } from "../ui/Searchbar";
 import { toastManager } from "../ui/toast";
 
 interface BranchToolbarBranchSelectorProps {
-  activeProjectCwd: string;
+  activeProjectCwd: string | null;
   activeThreadBranch: string | null;
   activeWorktreePath: string | null;
   branchCwd: string | null;

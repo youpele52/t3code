@@ -1,3 +1,4 @@
+import { BUILT_IN_CHATS_PROJECT_ID, isBuiltInChatsProject } from "@bigcode/contracts";
 import { useNavigate } from "@tanstack/react-router";
 import {
   FolderIcon,
@@ -9,7 +10,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useHandleNewThread } from "../../hooks/useHandleNewThread";
-import { resolveContextualNewThreadOptions } from "../../hooks/useHandleNewThread";
+import { resolveNewChatOptions } from "../../hooks/useHandleNewThread";
 import { useSettings } from "../../hooks/useSettings";
 import { isTerminalFocused } from "../../lib/terminalFocus";
 import { resolveShortcutCommand, shortcutLabelForCommand } from "../../models/keybindings";
@@ -72,38 +73,42 @@ function CommandPaletteDialogContent() {
     const actionItems: PaletteItem[] = [];
     const effectiveProjectId =
       activeThread?.projectId ?? activeDraftThread?.projectId ?? defaultProjectId;
+    const chatsProject = projects.find((project) => isBuiltInChatsProject(project.id)) ?? null;
+    const visibleProjects = projects.filter((project) => !isBuiltInChatsProject(project.id));
+    const recentChatThreads = threads.filter(
+      (thread) => thread.archivedAt === null && isBuiltInChatsProject(thread.projectId),
+    );
     const paletteShortcut = shortcutLabelForCommand(keybindings, "commandPalette.toggle");
 
     if (effectiveProjectId) {
       actionItems.push({
         id: "action:new-thread",
-        label: "New thread",
-        description: "Create a new thread in the current project",
+        label: "New chat",
+        description: "Create a fresh chat in the Chats section",
         group: "actions",
-        keywords: "new thread chat create current project",
+        keywords: "new chat create chats",
         shortcut: shortcutLabelForCommand(keybindings, "chat.new"),
         icon: <SquarePenIcon className="size-4" />,
         onSelect: async () => {
-          await handleNewThread(
-            effectiveProjectId,
-            resolveContextualNewThreadOptions({ activeDraftThread, activeThread }),
-          );
+          await handleNewThread(BUILT_IN_CHATS_PROJECT_ID, resolveNewChatOptions());
         },
       });
-      actionItems.push({
-        id: "action:new-thread-local",
-        label: "New local thread",
-        description: "Create a new thread using the default environment mode",
-        group: "actions",
-        keywords: "new local thread chat create default environment",
-        shortcut: shortcutLabelForCommand(keybindings, "chat.newLocal"),
-        icon: <SquarePenIcon className="size-4" />,
-        onSelect: async () => {
-          await handleNewThread(effectiveProjectId, {
-            envMode: settings.defaultThreadEnvMode,
-          });
-        },
-      });
+      if (!isBuiltInChatsProject(effectiveProjectId)) {
+        actionItems.push({
+          id: "action:new-thread-local",
+          label: "New local thread",
+          description: "Create a new thread using the default environment mode",
+          group: "actions",
+          keywords: "new local thread chat create default environment",
+          shortcut: shortcutLabelForCommand(keybindings, "chat.newLocal"),
+          icon: <SquarePenIcon className="size-4" />,
+          onSelect: async () => {
+            await handleNewThread(effectiveProjectId, {
+              envMode: settings.defaultThreadEnvMode,
+            });
+          },
+        });
+      }
     }
 
     actionItems.push({
@@ -128,12 +133,12 @@ function CommandPaletteDialogContent() {
       onSelect: () => undefined,
     });
 
-    const projectItems = projects.map<PaletteItem>((project) => ({
+    const projectItems = visibleProjects.map<PaletteItem>((project) => ({
       id: `project:${project.id}`,
       label: project.name,
-      description: project.cwd,
+      description: project.cwd ?? "Project",
       group: "projects",
-      keywords: `${project.name} ${project.cwd}`.toLowerCase(),
+      keywords: `${project.name} ${project.cwd ?? ""}`.toLowerCase(),
       icon: <FolderIcon className="size-4" />,
       onSelect: async () => {
         const latestThread = threads
@@ -153,8 +158,27 @@ function CommandPaletteDialogContent() {
       },
     }));
 
+    const chatItems = recentChatThreads
+      .toSorted((left, right) => {
+        const rightTime = Date.parse(right.updatedAt ?? right.createdAt);
+        const leftTime = Date.parse(left.updatedAt ?? left.createdAt);
+        return rightTime - leftTime;
+      })
+      .slice(0, 12)
+      .map<PaletteItem>((thread) => ({
+        id: `chat:${thread.id}`,
+        label: thread.title,
+        description: chatsProject?.name ?? "Chats",
+        group: "threads",
+        keywords: `${thread.title} chats`.toLowerCase(),
+        icon: <MessageSquareIcon className="size-4" />,
+        onSelect: async () => {
+          await navigate({ to: "/$threadId", params: { threadId: thread.id } });
+        },
+      }));
+
     const threadItems = threads
-      .filter((thread) => thread.archivedAt === null)
+      .filter((thread) => thread.archivedAt === null && !isBuiltInChatsProject(thread.projectId))
       .toSorted((left, right) => {
         const rightTime = Date.parse(right.updatedAt ?? right.createdAt);
         const leftTime = Date.parse(left.updatedAt ?? left.createdAt);
@@ -177,7 +201,7 @@ function CommandPaletteDialogContent() {
         };
       });
 
-    return [...actionItems, ...projectItems, ...threadItems];
+    return [...actionItems, ...projectItems, ...chatItems, ...threadItems];
   }, [
     activeDraftThread,
     activeThread,
@@ -258,7 +282,7 @@ function CommandPaletteDialogContent() {
               ) : null}
               {groupedItems.threads.length > 0 ? (
                 <CommandGroup>
-                  <CommandGroupLabel>Recent Threads</CommandGroupLabel>
+                  <CommandGroupLabel>Recent Chats</CommandGroupLabel>
                   {groupedItems.threads.map(renderItem)}
                 </CommandGroup>
               ) : null}

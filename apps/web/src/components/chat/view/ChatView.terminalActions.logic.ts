@@ -166,6 +166,10 @@ export function useTerminalActions(input: UseTerminalActionsInput): UseTerminalA
         });
       }
       const targetCwd = options?.cwd ?? gitCwd ?? activeProject.cwd;
+      if (!targetCwd) {
+        setThreadError(activeThreadId, "This chat does not have a runnable workspace path.");
+        return;
+      }
       const baseTerminalId =
         terminalState.activeTerminalId ||
         terminalState.terminalIds[0] ||

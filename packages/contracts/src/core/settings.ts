@@ -23,6 +23,8 @@ import {
 } from "../constants/settings.constant";
 import { DEFAULT_PROVIDER_KIND } from "../constants/provider.constant";
 
+const DEFAULT_CHAT_CWD = "~/Documents";
+
 export {
   TIMESTAMP_FORMATS,
   DEFAULT_TIMESTAMP_FORMAT,
@@ -63,6 +65,9 @@ export const ClientSettingsSchema = Schema.Struct({
     Schema.withDecodingDefault(() => DEFAULT_SIDEBAR_PROJECT_SORT_ORDER),
   ),
   sidebarThreadSortOrder: SidebarThreadSortOrder.pipe(
+    Schema.withDecodingDefault(() => DEFAULT_SIDEBAR_THREAD_SORT_ORDER),
+  ),
+  sidebarChatsSortOrder: SidebarThreadSortOrder.pipe(
     Schema.withDecodingDefault(() => DEFAULT_SIDEBAR_THREAD_SORT_ORDER),
   ),
   timestampFormat: TimestampFormat.pipe(Schema.withDecodingDefault(() => DEFAULT_TIMESTAMP_FORMAT)),
@@ -151,6 +156,7 @@ export const ServerSettings = Schema.Struct({
   defaultThreadEnvMode: ThreadEnvMode.pipe(
     Schema.withDecodingDefault(() => "local" as const satisfies ThreadEnvMode),
   ),
+  defaultChatCwd: TrimmedString.pipe(Schema.withDecodingDefault(() => DEFAULT_CHAT_CWD)),
   textGenerationModelSelection: ModelSelection.pipe(
     Schema.withDecodingDefault(() => ({
       provider: DEFAULT_PROVIDER_KIND,
@@ -301,6 +307,7 @@ const CursorSettingsPatch = Schema.Struct({
 export const ServerSettingsPatch = Schema.Struct({
   enableAssistantStreaming: Schema.optionalKey(Schema.Boolean),
   defaultThreadEnvMode: Schema.optionalKey(ThreadEnvMode),
+  defaultChatCwd: Schema.optionalKey(Schema.String),
   textGenerationModelSelection: Schema.optionalKey(ModelSelectionPatch),
   observability: Schema.optionalKey(
     Schema.Struct({

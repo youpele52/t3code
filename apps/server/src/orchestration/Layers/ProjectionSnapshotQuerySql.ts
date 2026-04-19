@@ -103,7 +103,7 @@ export const ProjectionThreadIdLookupRowSchema = Schema.Struct({
 export const ProjectionThreadCheckpointContextThreadRowSchema = Schema.Struct({
   threadId: ThreadId,
   projectId: ProjectId,
-  workspaceRoot: Schema.String,
+  workspaceRoot: Schema.NullOr(Schema.String),
   worktreePath: Schema.NullOr(Schema.String),
 });
 

@@ -27,7 +27,7 @@ export interface ProjectionSnapshotCounts {
 export interface ProjectionThreadCheckpointContext {
   readonly threadId: ThreadId;
   readonly projectId: ProjectId;
-  readonly workspaceRoot: string;
+  readonly workspaceRoot: string | null;
   readonly worktreePath: string | null;
   readonly checkpoints: ReadonlyArray<OrchestrationCheckpointSummary>;
 }

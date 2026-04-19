@@ -1,4 +1,10 @@
-import { DEFAULT_RUNTIME_MODE, type ProjectId, ThreadId } from "@bigcode/contracts";
+import {
+  BUILT_IN_CHATS_PROJECT_ID,
+  DEFAULT_RUNTIME_MODE,
+  isBuiltInChatsProject,
+  type ProjectId,
+  ThreadId,
+} from "@bigcode/contracts";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useCallback, useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
@@ -39,6 +45,18 @@ export function resolveContextualNewThreadOptions(input: {
   };
 }
 
+export function resolveNewChatOptions(): {
+  branch: null;
+  worktreePath: null;
+  envMode: "local";
+} {
+  return {
+    branch: null,
+    worktreePath: null,
+    envMode: "local",
+  };
+}
+
 export function useHandleNewThread() {
   const projectIds = useStore(useShallow((store) => store.projects.map((project) => project.id)));
   const projectOrder = useUiStateStore((store) => store.projectOrder);
@@ -68,6 +86,9 @@ export function useHandleNewThread() {
         envMode?: DraftThreadEnvMode;
       },
     ): Promise<void> => {
+      const normalizedOptions = isBuiltInChatsProject(projectId)
+        ? resolveNewChatOptions()
+        : options;
       const {
         clearProjectDraftThreadId,
         getDraftThread,
@@ -76,9 +97,9 @@ export function useHandleNewThread() {
         setDraftThreadContext,
         setProjectDraftThreadId,
       } = useComposerDraftStore.getState();
-      const hasBranchOption = options?.branch !== undefined;
-      const hasWorktreePathOption = options?.worktreePath !== undefined;
-      const hasEnvModeOption = options?.envMode !== undefined;
+      const hasBranchOption = normalizedOptions?.branch !== undefined;
+      const hasWorktreePathOption = normalizedOptions?.worktreePath !== undefined;
+      const hasEnvModeOption = normalizedOptions?.envMode !== undefined;
       const storedDraftThread = getDraftThreadByProjectId(projectId);
       const latestActiveDraftThread: DraftThreadState | null = routeThreadId
         ? getDraftThread(routeThreadId)
@@ -87,9 +108,11 @@ export function useHandleNewThread() {
         return (async () => {
           if (hasBranchOption || hasWorktreePathOption || hasEnvModeOption) {
             setDraftThreadContext(storedDraftThread.threadId, {
-              ...(hasBranchOption ? { branch: options?.branch ?? null } : {}),
-              ...(hasWorktreePathOption ? { worktreePath: options?.worktreePath ?? null } : {}),
-              ...(hasEnvModeOption ? { envMode: options?.envMode } : {}),
+              ...(hasBranchOption ? { branch: normalizedOptions?.branch ?? null } : {}),
+              ...(hasWorktreePathOption
+                ? { worktreePath: normalizedOptions?.worktreePath ?? null }
+                : {}),
+              ...(hasEnvModeOption ? { envMode: normalizedOptions?.envMode } : {}),
             });
           }
           setProjectDraftThreadId(projectId, storedDraftThread.threadId);
@@ -113,9 +136,11 @@ export function useHandleNewThread() {
       ) {
         if (hasBranchOption || hasWorktreePathOption || hasEnvModeOption) {
           setDraftThreadContext(routeThreadId, {
-            ...(hasBranchOption ? { branch: options?.branch ?? null } : {}),
-            ...(hasWorktreePathOption ? { worktreePath: options?.worktreePath ?? null } : {}),
-            ...(hasEnvModeOption ? { envMode: options?.envMode } : {}),
+            ...(hasBranchOption ? { branch: normalizedOptions?.branch ?? null } : {}),
+            ...(hasWorktreePathOption
+              ? { worktreePath: normalizedOptions?.worktreePath ?? null }
+              : {}),
+            ...(hasEnvModeOption ? { envMode: normalizedOptions?.envMode } : {}),
           });
         }
         setProjectDraftThreadId(projectId, routeThreadId);
@@ -127,9 +152,9 @@ export function useHandleNewThread() {
       return (async () => {
         setProjectDraftThreadId(projectId, threadId, {
           createdAt,
-          branch: options?.branch ?? null,
-          worktreePath: options?.worktreePath ?? null,
-          envMode: options?.envMode ?? "local",
+          branch: normalizedOptions?.branch ?? null,
+          worktreePath: normalizedOptions?.worktreePath ?? null,
+          envMode: normalizedOptions?.envMode ?? "local",
           runtimeMode: DEFAULT_RUNTIME_MODE,
         });
         applyStickyState(threadId);
@@ -146,7 +171,11 @@ export function useHandleNewThread() {
   return {
     activeDraftThread,
     activeThread,
-    defaultProjectId: orderedProjects[0] ?? null,
+    defaultProjectId:
+      orderedProjects.find((projectId) => isBuiltInChatsProject(projectId)) ??
+      orderedProjects[0] ??
+      null,
+    chatsProjectId: projectIds.find((projectId) => projectId === BUILT_IN_CHATS_PROJECT_ID) ?? null,
     handleNewThread,
     routeThreadId,
   };

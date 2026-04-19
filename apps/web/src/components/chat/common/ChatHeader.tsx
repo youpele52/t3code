@@ -110,7 +110,7 @@ export const ChatHeader = memo(function ChatHeader({
         )}
       </div>
       <div className="flex shrink-0 items-center justify-end gap-2 @3xl/header-actions:gap-3">
-        {activeProjectScripts && (
+        {activeProjectScripts && activeProjectScripts.length > 0 && openInCwd && (
           <ProjectScriptsControl
             scripts={activeProjectScripts}
             keybindings={keybindings}
@@ -121,14 +121,16 @@ export const ChatHeader = memo(function ChatHeader({
             onDeleteScript={onDeleteProjectScript}
           />
         )}
-        {activeProjectName && (
+        {activeProjectName && openInCwd && (
           <OpenInPicker
             keybindings={keybindings}
             availableEditors={availableEditors}
             openInCwd={openInCwd}
           />
         )}
-        {activeProjectName && <GitActionsControl gitCwd={gitCwd} activeThreadId={activeThreadId} />}
+        {activeProjectName && gitCwd && (
+          <GitActionsControl gitCwd={gitCwd} activeThreadId={activeThreadId} />
+        )}
         <Tooltip>
           <TooltipTrigger
             render={

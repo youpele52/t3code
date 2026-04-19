@@ -1,4 +1,5 @@
 import { type MessageId, type TurnId } from "@bigcode/contracts";
+import { BigCodeLogo } from "../../sidebar/SidebarProjectItem";
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   measureElement as measureVirtualElement,
@@ -278,9 +279,7 @@ export const MessagesTimeline = memo(function MessagesTimeline({
   if (rows.length === 0 && !isWorking) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-sm text-muted-foreground/30">
-          Send a message to start the conversation.
-        </p>
+        <BigCodeLogo className="h-8 opacity-70" />
       </div>
     );
   }

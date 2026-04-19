@@ -37,7 +37,7 @@ export interface UiState extends UiProjectState, UiThreadState {}
 
 export interface SyncProjectInput {
   id: ProjectId;
-  cwd: string;
+  cwd: string | null;
 }
 
 export interface SyncThreadInput {
@@ -54,7 +54,7 @@ const initialState: UiState = {
 
 const persistedExpandedProjectCwds = new Set<string>();
 const persistedProjectOrderCwds: string[] = [];
-const currentProjectCwdById = new Map<ProjectId, string>();
+const currentProjectCwdById = new Map<ProjectId, string | null>();
 let legacyKeysCleanedUp = false;
 
 function readPersistedState(): UiState {
@@ -214,7 +214,9 @@ function nestedBooleanRecordsEqual(
 export function syncProjects(state: UiState, projects: readonly SyncProjectInput[]): UiState {
   const previousProjectCwdById = new Map(currentProjectCwdById);
   const previousProjectIdByCwd = new Map(
-    [...previousProjectCwdById.entries()].map(([projectId, cwd]) => [cwd, projectId] as const),
+    [...previousProjectCwdById.entries()].flatMap(([projectId, cwd]) =>
+      cwd ? ([[cwd, projectId]] as const) : [],
+    ),
   );
   currentProjectCwdById.clear();
   for (const project of projects) {
@@ -230,11 +232,13 @@ export function syncProjects(state: UiState, projects: readonly SyncProjectInput
     persistedProjectOrderCwds.map((cwd, index) => [cwd, index] as const),
   );
   const mappedProjects = projects.map((project, index) => {
-    const previousProjectIdForCwd = previousProjectIdByCwd.get(project.cwd);
+    const previousProjectIdForCwd = project.cwd
+      ? previousProjectIdByCwd.get(project.cwd)
+      : undefined;
     const expanded =
       previousExpandedById[project.id] ??
       (previousProjectIdForCwd ? previousExpandedById[previousProjectIdForCwd] : undefined) ??
-      (persistedExpandedProjectCwds.size > 0
+      (project.cwd && persistedExpandedProjectCwds.size > 0
         ? persistedExpandedProjectCwds.has(project.cwd)
         : true);
     nextExpandedById[project.id] = expanded;
@@ -249,7 +253,9 @@ export function syncProjects(state: UiState, projects: readonly SyncProjectInput
     state.projectOrder.length > 0
       ? (() => {
           const nextProjectIdByCwd = new Map(
-            mappedProjects.map((project) => [project.cwd, project.id] as const),
+            mappedProjects.flatMap((project) =>
+              project.cwd ? ([[project.cwd, project.id]] as const) : [],
+            ),
           );
           const usedProjectIds = new Set<ProjectId>();
           const orderedProjectIds: ProjectId[] = [];
@@ -282,7 +288,7 @@ export function syncProjects(state: UiState, projects: readonly SyncProjectInput
             id: project.id,
             incomingIndex: project.incomingIndex,
             orderIndex:
-              persistedOrderByCwd.get(project.cwd) ??
+              (project.cwd ? persistedOrderByCwd.get(project.cwd) : undefined) ??
               persistedProjectOrderCwds.length + project.incomingIndex,
           }))
           .toSorted((left, right) => {

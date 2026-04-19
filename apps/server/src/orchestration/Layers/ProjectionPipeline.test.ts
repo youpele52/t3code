@@ -137,7 +137,8 @@ it.layer(BaseTestLayer)("OrchestrationProjectionPipeline", (it) => {
           scripts_json AS "scriptsJson"
         FROM projection_projects
       `;
-      assert.deepEqual(projectRows, [
+      const userProjectRows = projectRows.filter((r) => r.projectId !== "__chats__");
+      assert.deepEqual(userProjectRows, [
         { projectId: "project-1", title: "Project 1", scriptsJson: "[]" },
       ]);
 

@@ -9,6 +9,7 @@ import { useTerminalStateStore } from "../../../stores/terminal";
 import ThreadTerminalDrawer from "../../terminal/ThreadTerminalDrawer";
 import type { TerminalContextSelection } from "../../../lib/terminalContext";
 import { readNativeApi } from "../../../rpc/nativeApi";
+import { useDefaultChatCwd } from "../../../rpc/serverState";
 
 interface PersistentThreadTerminalDrawerProps {
   threadId: ThreadId;
@@ -41,6 +42,7 @@ export function PersistentThreadTerminalDrawer({
     (store) => store.draftThreadsByThreadId[threadId] ?? null,
   );
   const project = useProjectById(serverThread?.projectId ?? draftThread?.projectId);
+  const defaultChatCwd = useDefaultChatCwd();
   const terminalState = useTerminalStateStore((state) =>
     selectThreadTerminalState(state.terminalStateByThreadId, threadId),
   );
@@ -65,8 +67,9 @@ export function PersistentThreadTerminalDrawer({
             project: { cwd: project.cwd },
             worktreePath: effectiveWorktreePath,
           })
-        : null),
-    [effectiveWorktreePath, launchContext?.cwd, project],
+        : null) ??
+      defaultChatCwd,
+    [defaultChatCwd, effectiveWorktreePath, launchContext?.cwd, project],
   );
   const runtimeEnv = useMemo(
     () =>

@@ -75,7 +75,7 @@ export function resolveBranchToolbarValue(input: {
 }
 
 export function resolveBranchSelectionTarget(input: {
-  activeProjectCwd: string;
+  activeProjectCwd: string | null;
   activeWorktreePath: string | null;
   branch: Pick<GitBranch, "isDefault" | "worktreePath">;
 }): {
@@ -84,6 +84,10 @@ export function resolveBranchSelectionTarget(input: {
   reuseExistingWorktree: boolean;
 } {
   const { activeProjectCwd, activeWorktreePath, branch } = input;
+
+  if (!activeProjectCwd) {
+    throw new Error("Branch selection requires a project folder.");
+  }
 
   if (branch.worktreePath) {
     return {

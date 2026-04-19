@@ -18,6 +18,7 @@ import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../
 import { Switch } from "../ui/switch";
 import { SettingResetButton, SettingsRow, SettingsSection } from "./settingsLayout";
 import { useTheme } from "../../hooks/useTheme";
+import { Input } from "../ui/input";
 
 const THEME_OPTIONS = [
   {
@@ -322,6 +323,32 @@ export function GeneralSettingsSection() {
               </SelectItem>
             </SelectPopup>
           </Select>
+        }
+      />
+
+      <SettingsRow
+        title="Default chat folder"
+        description="Used as the working directory for chats in the Chats section when they are not tied to a project folder."
+        resetAction={
+          settings.defaultChatCwd !== DEFAULT_UNIFIED_SETTINGS.defaultChatCwd ? (
+            <SettingResetButton
+              label="default chat folder"
+              onClick={() =>
+                updateSettings({
+                  defaultChatCwd: DEFAULT_UNIFIED_SETTINGS.defaultChatCwd,
+                })
+              }
+            />
+          ) : null
+        }
+        control={
+          <Input
+            value={settings.defaultChatCwd}
+            onChange={(event) => updateSettings({ defaultChatCwd: event.target.value })}
+            aria-label="Default chat folder"
+            className="w-full sm:w-64"
+            placeholder="~/Documents"
+          />
         }
       />
 

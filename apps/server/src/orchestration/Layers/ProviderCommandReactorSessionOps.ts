@@ -8,6 +8,7 @@
  */
 import {
   type ChatAttachment,
+  DEFAULT_SERVER_SETTINGS,
   type ModelSelection,
   type OrchestrationMessage,
   type OrchestrationSession,
@@ -27,7 +28,7 @@ import type { TextGenerationShape } from "../../git/Services/TextGeneration.ts";
 import type { OrchestrationEngineShape } from "../Services/OrchestrationEngine.ts";
 import type { ProviderServiceShape } from "../../provider/Services/ProviderService.ts";
 import { ProviderValidationError } from "../../provider/Errors.ts";
-import type { ServerSettingsShape } from "../../ws/serverSettings.ts";
+import { resolveDefaultChatCwd, type ServerSettingsShape } from "../../ws/serverSettings.ts";
 import { OrchestrationCommandInvariantError, type OrchestrationDispatchError } from "../Errors.ts";
 import {
   buildGeneratedWorktreeBranchName,
@@ -138,10 +139,14 @@ export const ensureSessionForThread = (services: SessionOpServices) =>
         issue: `Thread '${threadId}' cannot switch to '${requestedModelSelection.provider}' while bound to '${threadProvider}'.`,
       });
     }
-    const effectiveCwd = resolveThreadWorkspaceCwd({
-      thread,
-      projects: readModel.projects,
-    });
+    const serverSettings = yield* services.serverSettingsService.getSettings.pipe(
+      Effect.catch(() => Effect.succeed(DEFAULT_SERVER_SETTINGS)),
+    );
+    const effectiveCwd =
+      resolveThreadWorkspaceCwd({
+        thread,
+        projects: readModel.projects,
+      }) ?? resolveDefaultChatCwd(serverSettings);
 
     const resolveActiveSession = (tId: ThreadId) =>
       providerService

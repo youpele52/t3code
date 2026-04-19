@@ -230,6 +230,13 @@ export function useOnSend(input: UseOnSendInput) {
       );
       return;
     }
+    if (shouldCreateWorktree && !project.cwd) {
+      inputRef.current.setStoreThreadError(
+        threadIdForSend,
+        "New worktree mode is unavailable for chats without a project folder.",
+      );
+      return;
+    }
 
     inFlightRef.current = true;
     inputRef.current.beginLocalDispatch({ preparingWorktree: Boolean(baseBranchForWorktree) });
@@ -334,7 +341,7 @@ export function useOnSend(input: UseOnSendInput) {
               ...(baseBranchForWorktree
                 ? {
                     prepareWorktree: {
-                      projectCwd: project.cwd,
+                      projectCwd: project.cwd!,
                       baseBranch: baseBranchForWorktree,
                       branch: buildTemporaryWorktreeBranchName(),
                     },

@@ -8,7 +8,12 @@ import {
 } from "react";
 import type React from "react";
 import { type DragCancelEvent, type DragStartEvent, type DragEndEvent } from "@dnd-kit/core";
-import { ThreadId, type ProjectId, type ThreadId as ThreadIdType } from "@bigcode/contracts";
+import {
+  isBuiltInChatsProject,
+  ThreadId,
+  type ProjectId,
+  type ThreadId as ThreadIdType,
+} from "@bigcode/contracts";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { isNonEmpty as isNonEmptyString } from "effect/String";
 import { isMacPlatform, newCommandId, newProjectId } from "../../lib/utils";
@@ -465,15 +470,16 @@ export function useSidebarProjectActions({
       if (!api) return;
       const project = projects.find((entry) => entry.id === projectId);
       if (!project) return;
+      if (isBuiltInChatsProject(projectId)) {
+        return;
+      }
 
-      const clicked = await api.contextMenu.show(
-        [
-          { id: "rename", label: "Rename project" },
-          { id: "copy-path", label: "Copy Project Path" },
-          { id: "delete", label: "Remove project", destructive: true },
-        ],
-        position,
-      );
+      const menuItems = [
+        { id: "rename", label: "Rename project" },
+        ...(project.cwd ? ([{ id: "copy-path", label: "Copy Project Path" }] as const) : []),
+        { id: "delete", label: "Remove project", destructive: true },
+      ];
+      const clicked = await api.contextMenu.show(menuItems, position);
       if (clicked === "rename") {
         cancelThreadRename();
         setRenamingProjectId(projectId);
@@ -482,6 +488,9 @@ export function useSidebarProjectActions({
         return;
       }
       if (clicked === "copy-path") {
+        if (!project.cwd) {
+          return;
+        }
         copyPathToClipboard(project.cwd, { path: project.cwd });
         return;
       }

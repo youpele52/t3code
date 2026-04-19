@@ -13,6 +13,7 @@ import {
 import { SettingsIcon } from "lucide-react";
 import { SidebarUpdatePill } from "./SidebarUpdatePill";
 import { SidebarAppHeader } from "./SidebarHeader";
+import { SidebarChatsSection } from "./Sidebar.chatsSection";
 import { SidebarProjectsSection } from "./Sidebar.projectsSection";
 import { useSidebarState } from "./Sidebar.state";
 
@@ -28,6 +29,20 @@ export default function Sidebar() {
         <SettingsSidebarNav pathname={s.pathname} />
       ) : (
         <>
+          <SidebarChatsSection
+            renderedChats={s.renderedChats}
+            onNewChat={() => {
+              void s.handleNewChat();
+            }}
+            newThreadShortcutLabel={s.newThreadShortcutLabel}
+            sharedProjectItemProps={s.sharedProjectItemProps}
+            chatsSortOrder={s.appSettings.sidebarChatsSortOrder}
+            onChatsSortOrderChange={(sortOrder) => {
+              s.updateSettings({ sidebarChatsSortOrder: sortOrder });
+            }}
+            bootstrapComplete={s.bootstrapComplete}
+          />
+
           <SidebarProjectsSection
             showArm64IntelBuildWarning={s.showArm64IntelBuildWarning}
             arm64IntelBuildWarningDescription={s.arm64IntelBuildWarningDescription}

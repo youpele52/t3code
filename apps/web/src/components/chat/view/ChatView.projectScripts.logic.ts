@@ -16,7 +16,7 @@ export interface UseProjectScriptsInput {
 export interface UseProjectScriptsResult {
   persistProjectScripts: (input: {
     projectId: ProjectId;
-    projectCwd: string;
+    projectCwd: string | null;
     previousScripts: ProjectScript[];
     nextScripts: ProjectScript[];
     keybinding?: string | null;
@@ -33,7 +33,7 @@ export function useProjectScripts(input: UseProjectScriptsInput): UseProjectScri
   const persistProjectScripts = useCallback(
     async (persistInput: {
       projectId: ProjectId;
-      projectCwd: string;
+      projectCwd: string | null;
       previousScripts: ProjectScript[];
       nextScripts: ProjectScript[];
       keybinding?: string | null;
@@ -64,6 +64,9 @@ export function useProjectScripts(input: UseProjectScriptsInput): UseProjectScri
   const saveProjectScript = useCallback(
     async (saveInput: NewProjectScriptInput) => {
       if (!activeProject) return;
+      if (!activeProject.cwd) {
+        throw new Error("Project actions are unavailable for chats without a project folder.");
+      }
       const nextId = nextProjectScriptId(
         saveInput.name,
         activeProject.scripts.map((script) => script.id),
@@ -99,6 +102,9 @@ export function useProjectScripts(input: UseProjectScriptsInput): UseProjectScri
   const updateProjectScript = useCallback(
     async (scriptId: string, updateInput: NewProjectScriptInput) => {
       if (!activeProject) return;
+      if (!activeProject.cwd) {
+        throw new Error("Project actions are unavailable for chats without a project folder.");
+      }
       const existingScript = activeProject.scripts.find((script) => script.id === scriptId);
       if (!existingScript) {
         throw new Error("Script not found.");
@@ -134,6 +140,9 @@ export function useProjectScripts(input: UseProjectScriptsInput): UseProjectScri
   const deleteProjectScript = useCallback(
     async (scriptId: string) => {
       if (!activeProject) return;
+      if (!activeProject.cwd) {
+        throw new Error("Project actions are unavailable for chats without a project folder.");
+      }
       const nextScripts = activeProject.scripts.filter((script) => script.id !== scriptId);
 
       const deletedName = activeProject.scripts.find((s) => s.id === scriptId)?.name;

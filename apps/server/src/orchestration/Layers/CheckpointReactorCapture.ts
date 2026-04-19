@@ -165,7 +165,10 @@ export function makeResolveCheckpointCwd(
   return Effect.fn("resolveCheckpointCwd")(function* (input: {
     readonly threadId: ThreadId;
     readonly thread: { readonly projectId: ProjectId; readonly worktreePath: string | null };
-    readonly projects: ReadonlyArray<{ readonly id: ProjectId; readonly workspaceRoot: string }>;
+    readonly projects: ReadonlyArray<{
+      readonly id: ProjectId;
+      readonly workspaceRoot: string | null;
+    }>;
     readonly preferSessionRuntime: boolean;
   }): Effect.fn.Return<string | undefined, never> {
     const fromSession = yield* resolveSessionRuntimeForThread(input.threadId);
@@ -342,7 +345,10 @@ export function makeCaptureCheckpointFromTurnCompletion(
   resolveCheckpointCwd: (input: {
     readonly threadId: ThreadId;
     readonly thread: { readonly projectId: ProjectId; readonly worktreePath: string | null };
-    readonly projects: ReadonlyArray<{ readonly id: ProjectId; readonly workspaceRoot: string }>;
+    readonly projects: ReadonlyArray<{
+      readonly id: ProjectId;
+      readonly workspaceRoot: string | null;
+    }>;
     readonly preferSessionRuntime: boolean;
   }) => Effect.Effect<string | undefined, never>,
   captureAndDispatchCheckpoint: (input: {
@@ -419,7 +425,10 @@ export function makeCaptureCheckpointFromPlaceholder(
   resolveCheckpointCwd: (input: {
     readonly threadId: ThreadId;
     readonly thread: { readonly projectId: ProjectId; readonly worktreePath: string | null };
-    readonly projects: ReadonlyArray<{ readonly id: ProjectId; readonly workspaceRoot: string }>;
+    readonly projects: ReadonlyArray<{
+      readonly id: ProjectId;
+      readonly workspaceRoot: string | null;
+    }>;
     readonly preferSessionRuntime: boolean;
   }) => Effect.Effect<string | undefined, never>,
   captureAndDispatchCheckpoint: (input: {

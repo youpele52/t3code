@@ -1,5 +1,5 @@
 import { ArchiveIcon, ArchiveX } from "lucide-react";
-import { type ThreadId } from "@bigcode/contracts";
+import { isBuiltInChatsProject, type ThreadId } from "@bigcode/contracts";
 import { useCallback, useMemo, useState } from "react";
 import { useSettings } from "../../hooks/useSettings";
 import { useStore } from "../../stores/main";
@@ -98,7 +98,9 @@ export function ArchivedThreadsPanel() {
           <SettingsSection
             key={project.id}
             title={project.name}
-            icon={<ProjectFavicon cwd={project.cwd} />}
+            icon={
+              isBuiltInChatsProject(project.id) ? undefined : <ProjectFavicon cwd={project.cwd} />
+            }
           >
             {projectThreads.map((thread) => (
               <fieldset

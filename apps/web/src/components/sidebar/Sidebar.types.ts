@@ -103,11 +103,18 @@ export interface SharedProjectItemProps {
   collapseThreadListForProject: (projectId: ProjectId) => void;
 }
 
+export interface SidebarRenderedThreadEntry {
+  threadId: ThreadId;
+  orderedThreadIds: readonly ThreadId[];
+}
+
 /** All state and callbacks returned by `useSidebarState`. */
 export interface SidebarState {
   // Data
   projects: ReturnType<typeof useStore<Project[]>>;
   bootstrapComplete: boolean;
+  chatsProject: Project | null;
+  renderedChats: SidebarRenderedThreadEntry[];
   renderedProjects: RenderedProjectEntry[];
   isManualProjectSorting: boolean;
   isOnSettings: boolean;
@@ -213,6 +220,7 @@ export interface SidebarState {
     position: { x: number; y: number },
   ) => Promise<void>;
   openPrLink: (event: MouseEvent<HTMLElement>, prUrl: string) => void;
+  handleNewChat: () => Promise<void>;
   handleNewThread: ReturnType<typeof useHandleNewThread>["handleNewThread"];
   // Thread list expand/collapse
   expandThreadListForProject: (projectId: ProjectId) => void;

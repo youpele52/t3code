@@ -20,21 +20,19 @@ function ChatIndexRouteView() {
       )}
 
       {isElectron && (
-        <div className="drag-region flex h-[52px] shrink-0 items-center border-b border-border px-5">
-          <span className="text-xs text-muted-foreground/50">No active thread</span>
-        </div>
+        <div className="drag-region flex h-[52px] shrink-0 items-center border-b border-border px-5" />
       )}
 
       <div className="flex flex-1 items-center justify-center">
-        {!bootstrapComplete ? (
-          <div className="flex flex-col items-center justify-center gap-4">
-            <BigCodeLogo className="h-6 animate-pulse-slow text-muted-foreground/50" />
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center gap-4 opacity-40">
-            <BigCodeLogo className="h-8" />
-          </div>
-        )}
+        <div className="flex flex-col items-center justify-center gap-4">
+          <BigCodeLogo
+            className={
+              !bootstrapComplete
+                ? "h-6 animate-pulse-slow text-muted-foreground/50"
+                : "h-8 opacity-70"
+            }
+          />
+        </div>
       </div>
     </div>
   );

@@ -87,7 +87,8 @@ export function useThreadActions() {
       const displayWorktreePath = orphanedWorktreePath
         ? formatWorktreePathForDisplay(orphanedWorktreePath)
         : null;
-      const canDeleteWorktree = orphanedWorktreePath !== null && threadProject !== undefined;
+      const canDeleteWorktree =
+        orphanedWorktreePath !== null && threadProject !== undefined && threadProject.cwd !== null;
       const shouldDeleteWorktree =
         canDeleteWorktree &&
         (await api.dialogs.confirm(
@@ -151,7 +152,7 @@ export function useThreadActions() {
 
       try {
         await removeWorktreeMutation.mutateAsync({
-          cwd: threadProject.cwd,
+          cwd: threadProject.cwd!,
           path: orphanedWorktreePath,
           force: true,
         });

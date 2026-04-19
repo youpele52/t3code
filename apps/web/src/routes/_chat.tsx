@@ -1,7 +1,12 @@
+import { BUILT_IN_CHATS_PROJECT_ID, isBuiltInChatsProject } from "@bigcode/contracts";
 import { Outlet, createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
 
-import { resolveContextualNewThreadOptions, useHandleNewThread } from "../hooks/useHandleNewThread";
+import {
+  resolveContextualNewThreadOptions,
+  resolveNewChatOptions,
+  useHandleNewThread,
+} from "../hooks/useHandleNewThread";
 import { isTerminalFocused } from "../lib/terminalFocus";
 import { resolveShortcutCommand } from "../models/keybindings";
 import { selectThreadTerminalState } from "../stores/terminal";
@@ -54,10 +59,10 @@ function ChatRouteGlobalShortcuts() {
         return;
       }
 
-      const projectId = activeThread?.projectId ?? activeDraftThread?.projectId ?? defaultProjectId;
-      if (!projectId) return;
-
       if (command === "chat.newLocal") {
+        const projectId =
+          activeThread?.projectId ?? activeDraftThread?.projectId ?? defaultProjectId ?? null;
+        if (!projectId) return;
         event.preventDefault();
         event.stopPropagation();
         void handleNewThread(projectId, {
@@ -71,9 +76,17 @@ function ChatRouteGlobalShortcuts() {
       if (command === "chat.new") {
         event.preventDefault();
         event.stopPropagation();
+        const projectId =
+          activeThread?.projectId ?? activeDraftThread?.projectId ?? defaultProjectId ?? null;
+        const targetProjectId =
+          projectId && !isBuiltInChatsProject(projectId)
+            ? BUILT_IN_CHATS_PROJECT_ID
+            : (projectId ?? BUILT_IN_CHATS_PROJECT_ID);
         void handleNewThread(
-          projectId,
-          resolveContextualNewThreadOptions({ activeDraftThread, activeThread }),
+          targetProjectId,
+          isBuiltInChatsProject(targetProjectId)
+            ? resolveNewChatOptions()
+            : resolveContextualNewThreadOptions({ activeDraftThread, activeThread }),
         );
         return;
       }
