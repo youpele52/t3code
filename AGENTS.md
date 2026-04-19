@@ -96,6 +96,15 @@ Key server files:
 - Complex server modules are split by concern with dot-notation: `FooAdapter.ts`, `FooAdapter.session.ts`, `FooAdapter.stream.ts`, `FooAdapter.stream.mapEvent.ts`, etc.
 - New packages must use explicit subpath exports only — no barrel index.
 
+## UI Conventions
+
+**Font sizes:** All shadcn/ui components must use `text-sm` (14px) as the default font size. This matches the app's base font size of 14px set in `apps/web/src/index.css`.
+
+- Buttons: `text-sm` (default in `apps/web/src/components/ui/button.tsx`)
+- Inputs, selects, menus: `text-sm`
+- Secondary/muted text: `text-xs` (12px) for labels, captions, and helper text
+- Never use `text-base` (16px) in UI components — it will appear too large
+
 ## Keybindings
 
 Default keybindings (defined in `apps/server/src/keybindings/keybindings.ts`):

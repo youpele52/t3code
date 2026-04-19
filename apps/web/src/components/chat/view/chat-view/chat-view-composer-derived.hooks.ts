@@ -431,7 +431,7 @@ export function useChatViewComposerDerivedState(base: ChatViewBaseState) {
     () => new Set(base.nonPersistedComposerImageIds),
     [base.nonPersistedComposerImageIds],
   );
-  const isGitRepo = gitStatusQuery.data?.isRepo ?? true;
+  const isGitRepo = gitCwd !== null && gitStatusQuery.data?.isRepo === true;
   const terminalShortcutLabelOptions = useMemo(
     () => ({
       context: { terminalFocus: true, terminalOpen: Boolean(base.terminalState.terminalOpen) },

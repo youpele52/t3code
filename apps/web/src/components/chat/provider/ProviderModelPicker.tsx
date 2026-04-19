@@ -167,7 +167,7 @@ function ModelList({
             event.stopPropagation();
           }}
           placeholder="Search models"
-          className="min-w-0 flex-1 bg-transparent py-0.5 text-xs tracking-tight text-foreground placeholder:text-xs placeholder:tracking-tight placeholder:text-muted-foreground/50 focus:outline-none"
+          className="min-w-0 flex-1 bg-transparent py-0.5 text-[11px] tracking-tight text-foreground placeholder:text-[11px] placeholder:tracking-tight placeholder:text-muted-foreground/50 focus:outline-none"
         />
       </Searchbar>
 
@@ -299,7 +299,7 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
         >
           <span
             className={cn(
-              "flex min-w-0 w-full box-border items-center gap-2 overflow-hidden",
+              "flex min-w-0 w-full box-border items-center gap-2 overflow-hidden text-xs",
               props.compact ? "max-w-36 sm:pl-1" : undefined,
             )}
           >
