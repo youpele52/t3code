@@ -114,6 +114,7 @@ export function ChatViewContent({
           terminalToggleShortcutLabel={composer.terminalToggleShortcutLabel}
           diffToggleShortcutLabel={composer.diffPanelShortcutLabel}
           sidebarToggleShortcutLabel={composer.sidebarToggleShortcutLabel}
+          searchToggleShortcutLabel={composer.searchToggleShortcutLabel}
           gitCwd={composer.gitCwd}
           diffOpen={base.diffOpen}
           onRunProjectScript={(script) => {
@@ -124,6 +125,7 @@ export function ChatViewContent({
           onDeleteProjectScript={runtime.projectScripts.deleteProjectScript}
           onToggleTerminal={runtime.terminalActions.toggleTerminalVisibility}
           onToggleDiff={runtime.onToggleDiff}
+          onToggleSearch={runtime.onToggleSearch}
         />
       </header>
 

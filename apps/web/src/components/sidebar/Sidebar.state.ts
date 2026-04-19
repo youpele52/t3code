@@ -1,13 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { type ProjectId, ThreadId } from "@bigcode/contracts";
+import {
+  BUILT_IN_CHATS_PROJECT_ID,
+  isBuiltInChatsProject,
+  type ProjectId,
+  ThreadId,
+} from "@bigcode/contracts";
 import { useLocation, useNavigate, useParams } from "@tanstack/react-router";
 import { isElectron } from "../../config/env";
 import { isLinuxPlatform } from "../../lib/utils";
 import { useStore } from "../../stores/main";
 import { useUiStateStore } from "../../stores/ui";
 import { useSidebarGitStatus } from "../../hooks/useSidebarGitStatus";
-import { useHandleNewThread } from "../../hooks/useHandleNewThread";
+import { resolveNewChatOptions, useHandleNewThread } from "../../hooks/useHandleNewThread";
 import { useDesktopUpdateState } from "../../hooks/useDesktopUpdateState";
 import { useSettings, useUpdateSettings } from "../../hooks/useSettings";
 import {
@@ -52,6 +57,7 @@ export function useSidebarState(): SidebarState {
   const {
     activeDraftThread,
     activeThread: activeThreadFull,
+    chatsProjectId,
     handleNewThread,
   } = useHandleNewThread();
 
@@ -83,11 +89,16 @@ export function useSidebarState(): SidebarState {
   const orderedProjects = useMemo(
     () =>
       orderItemsByPreferredIds({
-        items: projects,
+        items: projects.filter((project) => !isBuiltInChatsProject(project.id)),
         preferredIds: projectOrder,
         getId: (project) => project.id,
       }),
     [projectOrder, projects],
+  );
+
+  const chatsProject = useMemo(
+    () => projects.find((project) => isBuiltInChatsProject(project.id)) ?? null,
+    [projects],
   );
 
   const sidebarProjects = useMemo<SidebarProjectSnapshot[]>(
@@ -126,6 +137,10 @@ export function useSidebarState(): SidebarState {
   const visibleThreads = useMemo(
     () => sidebarThreads.filter((thread) => thread.archivedAt === null),
     [sidebarThreads],
+  );
+  const visibleChatThreads = useMemo(
+    () => visibleThreads.filter((thread) => isBuiltInChatsProject(thread.projectId)),
+    [visibleThreads],
   );
   const sortedProjects = useMemo(
     () =>
@@ -180,6 +195,11 @@ export function useSidebarState(): SidebarState {
     },
     [navigate],
   );
+
+  const handleNewChat = useCallback(() => {
+    const projectId = chatsProjectId ?? BUILT_IN_CHATS_PROJECT_ID;
+    return handleNewThread(projectId, resolveNewChatOptions());
+  }, [chatsProjectId, handleNewThread]);
 
   // ── Stable forwarder refs for cross-hook cancellation ─────────────────────
   // These break the circular initialisation order between thread and project sub-hooks
@@ -242,6 +262,17 @@ export function useSidebarState(): SidebarState {
     navigateToThread: threadActions.navigateToThread,
     platform,
   });
+
+  const renderedChats = useMemo(
+    () =>
+      sortThreadsForSidebar(visibleChatThreads, appSettings.sidebarChatsSortOrder).map(
+        (thread) => ({
+          threadId: thread.id,
+          orderedThreadIds: visibleChatThreads.map((entry) => entry.id),
+        }),
+      ),
+    [appSettings.sidebarChatsSortOrder, visibleChatThreads],
+  );
 
   // ── Global mousedown handler to clear thread selection ────────────────────
   useEffect(() => {
@@ -339,6 +370,8 @@ export function useSidebarState(): SidebarState {
   return {
     projects,
     bootstrapComplete,
+    chatsProject,
+    renderedChats,
     renderedProjects: renderedProjectsState.renderedProjects,
     isManualProjectSorting,
     isOnSettings,
@@ -406,6 +439,7 @@ export function useSidebarState(): SidebarState {
     handleMultiSelectContextMenu: threadActions.handleMultiSelectContextMenu,
     handleThreadContextMenu: threadActions.handleThreadContextMenu,
     openPrLink: threadActions.openPrLink,
+    handleNewChat,
     handleNewThread,
     expandThreadListForProject: renderedProjectsState.expandThreadListForProject,
     collapseThreadListForProject: renderedProjectsState.collapseThreadListForProject,

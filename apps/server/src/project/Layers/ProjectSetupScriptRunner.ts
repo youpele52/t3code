@@ -27,6 +27,11 @@ const makeProjectSetupScriptRunner = Effect.gen(function* () {
       if (!project) {
         return yield* Effect.fail(new Error("Project was not found for setup script execution."));
       }
+      if (!project.workspaceRoot) {
+        return {
+          status: "no-script",
+        } as const;
+      }
 
       const script = setupProjectScript(project.scripts);
       if (!script) {

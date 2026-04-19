@@ -262,6 +262,7 @@ export const ServerLifecycleWelcomePayload = Schema.Struct({
   projectName: TrimmedNonEmptyString,
   bootstrapProjectId: Schema.optional(ProjectId),
   bootstrapThreadId: Schema.optional(ThreadId),
+  defaultChatCwd: Schema.optional(TrimmedNonEmptyString),
 });
 export type ServerLifecycleWelcomePayload = typeof ServerLifecycleWelcomePayload.Type;
 

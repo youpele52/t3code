@@ -12,7 +12,7 @@ import type { SidebarThreadSummary } from "../../models/types";
 
 export interface SidebarThreadActionsInput {
   sidebarThreadsById: Record<ThreadId, SidebarThreadSummary | undefined>;
-  projectCwdById: Map<ProjectId, string>;
+  projectCwdById: Map<ProjectId, string | null>;
   appSettings: ReturnType<typeof useSettings>;
   /** Navigates to a thread route and clears multi-selection. */
   navigateToThreadRoute: (threadId: ThreadId) => void;

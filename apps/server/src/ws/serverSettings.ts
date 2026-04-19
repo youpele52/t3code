@@ -118,6 +118,21 @@ function resolveTextGenerationProvider(settings: ServerSettings): ServerSettings
   };
 }
 
+function expandTildePath(input: string): string {
+  if (input === "~") {
+    return `${process.env.HOME ?? process.cwd()}`;
+  }
+  if (input.startsWith("~/")) {
+    return `${process.env.HOME ?? process.cwd()}/${input.slice(2)}`;
+  }
+  return input;
+}
+
+export function resolveDefaultChatCwd(settings: ServerSettings): string {
+  const candidate = settings.defaultChatCwd.trim();
+  return expandTildePath(candidate.length > 0 ? candidate : DEFAULT_SERVER_SETTINGS.defaultChatCwd);
+}
+
 // Values under these keys are compared as a whole — never stripped field-by-field.
 const ATOMIC_SETTINGS_KEYS: ReadonlySet<string> = new Set(["textGenerationModelSelection"]);
 

@@ -3,10 +3,11 @@
  *
  * Handles: project.create, project.meta.update, project.delete
  */
-import type {
-  OrchestrationCommand,
-  OrchestrationEvent,
-  OrchestrationReadModel,
+import {
+  BUILT_IN_CHATS_PROJECT_ID,
+  type OrchestrationCommand,
+  type OrchestrationEvent,
+  type OrchestrationReadModel,
 } from "@bigcode/contracts";
 import { Effect } from "effect";
 
@@ -88,6 +89,12 @@ export const decideProjectCommand = Effect.fn("decideProjectCommand")(function* 
     }
 
     case "project.delete": {
+      if (command.projectId === BUILT_IN_CHATS_PROJECT_ID) {
+        return yield* new OrchestrationCommandInvariantError({
+          commandType: command.type,
+          detail: "The built-in Chats project cannot be deleted.",
+        });
+      }
       yield* requireProject({
         readModel,
         command,

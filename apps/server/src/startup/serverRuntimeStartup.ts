@@ -1,4 +1,6 @@
 import {
+  BUILT_IN_CHATS_PROJECT_ID,
+  BUILT_IN_CHATS_PROJECT_TITLE,
   CommandId,
   DEFAULT_MODEL_BY_PROVIDER,
   DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -28,7 +30,7 @@ import { OrchestrationEngineService } from "../orchestration/Services/Orchestrat
 import { ProjectionSnapshotQuery } from "../orchestration/Services/ProjectionSnapshotQuery";
 import { OrchestrationReactor } from "../orchestration/Services/OrchestrationReactor";
 import { ServerLifecycleEvents } from "./serverLifecycleEvents";
-import { ServerSettingsService } from "../ws/serverSettings";
+import { resolveDefaultChatCwd, ServerSettingsService } from "../ws/serverSettings";
 import { AnalyticsService } from "../telemetry/Services/AnalyticsService";
 import { ProviderRegistry } from "../provider/Services/ProviderRegistry";
 
@@ -183,6 +185,26 @@ const autoBootstrapWelcome = Effect.gen(function* () {
   let bootstrapProjectId: ProjectId | undefined;
   let bootstrapThreadId: ThreadId | undefined;
 
+  const chatsProject = yield* orchestrationEngine
+    .getReadModel()
+    .pipe(
+      Effect.map((readModel) =>
+        readModel.projects.find((project) => project.id === BUILT_IN_CHATS_PROJECT_ID),
+      ),
+    );
+  if (!chatsProject) {
+    const createdAt = new Date(0).toISOString();
+    yield* orchestrationEngine.dispatch({
+      type: "project.create",
+      commandId: CommandId.makeUnsafe(crypto.randomUUID()),
+      projectId: BUILT_IN_CHATS_PROJECT_ID,
+      title: BUILT_IN_CHATS_PROJECT_TITLE,
+      workspaceRoot: null,
+      defaultModelSelection: null,
+      createdAt,
+    });
+  }
+
   if (serverConfig.autoBootstrapProjectFromCwd) {
     yield* Effect.gen(function* () {
       const existingProject = yield* projectionReadModelQuery.getActiveProjectByWorkspaceRoot(
@@ -243,9 +265,14 @@ const autoBootstrapWelcome = Effect.gen(function* () {
   const segments = serverConfig.cwd.split(/[/\\]/).filter(Boolean);
   const projectName = segments[segments.length - 1] ?? "project";
 
+  const serverSettings = yield* ServerSettingsService;
+  const settings = yield* serverSettings.getSettings;
+  const defaultChatCwd = resolveDefaultChatCwd(settings);
+
   return {
     cwd: serverConfig.cwd,
     projectName,
+    defaultChatCwd,
     ...(bootstrapProjectId ? { bootstrapProjectId } : {}),
     ...(bootstrapThreadId ? { bootstrapThreadId } : {}),
   } as const;

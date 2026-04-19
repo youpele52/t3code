@@ -35,7 +35,10 @@ export function applyOrchestrationEvent(state: AppState, event: OrchestrationEve
     case "project.created": {
       const existingIndex = state.projects.findIndex(
         (project) =>
-          project.id === event.payload.projectId || project.cwd === event.payload.workspaceRoot,
+          project.id === event.payload.projectId ||
+          (project.cwd !== null &&
+            event.payload.workspaceRoot !== null &&
+            project.cwd === event.payload.workspaceRoot),
       );
       const nextProject = mapProject({
         id: event.payload.projectId,

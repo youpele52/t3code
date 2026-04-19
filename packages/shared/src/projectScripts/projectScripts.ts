@@ -2,7 +2,7 @@ import type { ProjectScript } from "@bigcode/contracts";
 
 interface ProjectScriptRuntimeEnvInput {
   project: {
-    cwd: string;
+    cwd: string | null;
   };
   worktreePath?: string | null;
   extraEnv?: Record<string, string>;
@@ -10,19 +10,20 @@ interface ProjectScriptRuntimeEnvInput {
 
 export function projectScriptCwd(input: {
   project: {
-    cwd: string;
+    cwd: string | null;
   };
   worktreePath?: string | null;
-}): string {
+}): string | null {
   return input.worktreePath ?? input.project.cwd;
 }
 
 export function projectScriptRuntimeEnv(
   input: ProjectScriptRuntimeEnvInput,
 ): Record<string, string> {
-  const env: Record<string, string> = {
-    T3CODE_PROJECT_ROOT: input.project.cwd,
-  };
+  const env: Record<string, string> = {};
+  if (input.project.cwd) {
+    env.T3CODE_PROJECT_ROOT = input.project.cwd;
+  }
   if (input.worktreePath) {
     env.T3CODE_WORKTREE_PATH = input.worktreePath;
   }

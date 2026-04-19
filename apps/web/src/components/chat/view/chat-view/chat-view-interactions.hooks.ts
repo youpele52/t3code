@@ -532,6 +532,7 @@ export function useChatViewInteractions({
     closeTerminal: runtime.terminalActions.closeTerminal,
     createNewTerminal: runtime.terminalActions.createNewTerminal,
     onToggleDiff: runtime.onToggleDiff,
+    onToggleSearch: runtime.onToggleSearch,
     runProjectScript: runtime.terminalActions.runProjectScript,
   });
 

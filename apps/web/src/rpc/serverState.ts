@@ -332,6 +332,11 @@ export function useServerObservability(): ServerConfig["observability"] | null {
   return useAtomValue(serverConfigAtom, selectObservability);
 }
 
+export function useDefaultChatCwd(): string | null {
+  const welcome = useAtomValue(welcomeAtom);
+  return welcome?.defaultChatCwd ?? null;
+}
+
 export function useServerWelcomeSubscription(
   listener: (payload: ServerLifecycleWelcomePayload) => void,
 ): void {

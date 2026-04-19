@@ -3,6 +3,7 @@ export * from "./constants/branding.constant";
 export * from "./constants/git.constant";
 export * from "./constants/model.constant";
 export * from "./constants/provider.constant";
+export * from "./constants/project.constant";
 export * from "./constants/providerRuntime.constant";
 export * from "./constants/runtime.constant";
 export * from "./constants/settings.constant";

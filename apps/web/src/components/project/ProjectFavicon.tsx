@@ -4,7 +4,13 @@ import { resolveServerUrl } from "~/lib/utils";
 
 const loadedProjectFaviconSrcs = new Set<string>();
 
-export function ProjectFavicon({ cwd, className }: { cwd: string; className?: string }) {
+export function ProjectFavicon({ cwd, className }: { cwd: string | null; className?: string }) {
+  if (!cwd) {
+    return (
+      <FolderIcon className={`size-3.5 shrink-0 text-muted-foreground/50 ${className ?? ""}`} />
+    );
+  }
+
   const src = resolveServerUrl({
     protocol: "http",
     pathname: "/api/project-favicon",

@@ -1,3 +1,4 @@
+import { BUILT_IN_CHATS_PROJECT_ID } from "@bigcode/contracts";
 import {
   OrchestrationEvent,
   type ServerLifecycleWelcomePayload,
@@ -24,6 +25,7 @@ import {
   clearPromotedDraftThreads,
   useComposerDraftStore,
 } from "../stores/composer";
+import { useHandleNewThread } from "../hooks/useHandleNewThread";
 import { useStore } from "../stores/main";
 import { useThreadSelectionStore } from "../stores/thread";
 import { useUiStateStore } from "../stores/ui";
@@ -37,6 +39,7 @@ import { createOrchestrationRecoveryCoordinator } from "../logic/orchestration";
 import { deriveReplayRetryDecision } from "../logic/orchestration";
 import { retryTransportRecoveryOperation } from "../logic/orchestration";
 import { getWsRpcClient } from "../rpc/wsRpcClient";
+import { resolveNewChatOptions } from "../hooks/useHandleNewThread";
 
 const REPLAY_RECOVERY_RETRY_DELAY_MS = 100;
 const MAX_NO_PROGRESS_REPLAY_RETRIES = 3;
@@ -101,9 +104,11 @@ export function EventRouter() {
   const applyTerminalEvent = useTerminalStateStore((store) => store.applyTerminalEvent);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { handleNewThread } = useHandleNewThread();
   const pathname = useLocation({ select: (loc) => loc.pathname });
   const readPathname = useEffectEvent(() => pathname);
   const handledBootstrapThreadIdRef = useRef<string | null>(null);
+  const startedFreshChatRef = useRef(false);
   const seenServerConfigUpdateIdRef = useRef(getServerConfigUpdatedNotification()?.id ?? 0);
   const disposedRef = useRef(false);
   const bootstrapFromSnapshotRef = useRef<() => Promise<void>>(async () => undefined);
@@ -120,6 +125,11 @@ export function EventRouter() {
       }
 
       if (!payload.bootstrapProjectId || !payload.bootstrapThreadId) {
+        if (readPathname() !== "/" || startedFreshChatRef.current) {
+          return;
+        }
+        startedFreshChatRef.current = true;
+        await handleNewThread(BUILT_IN_CHATS_PROJECT_ID, resolveNewChatOptions());
         return;
       }
       setProjectExpanded(payload.bootstrapProjectId, true);

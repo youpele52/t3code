@@ -1,19 +1,29 @@
+import { BUILT_IN_CHATS_PROJECT_ID, isBuiltInChatsProject } from "@bigcode/contracts";
 import { Outlet, createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
 
-import { resolveContextualNewThreadOptions, useHandleNewThread } from "../hooks/useHandleNewThread";
+import {
+  resolveContextualNewThreadOptions,
+  resolveNewChatOptions,
+  useHandleNewThread,
+} from "../hooks/useHandleNewThread";
 import { isTerminalFocused } from "../lib/terminalFocus";
 import { resolveShortcutCommand } from "../models/keybindings";
 import { selectThreadTerminalState } from "../stores/terminal";
 import { useTerminalStateStore } from "../stores/terminal";
 import { useThreadSelectionStore } from "../stores/thread";
-import { useCommandPaletteStore } from "../stores/ui";
+import { useCommandPaletteStore, useSearchStore } from "../stores/ui";
 import { resolveSidebarNewThreadEnvMode } from "~/components/sidebar/Sidebar.logic";
 import { useSidebar } from "~/components/ui/sidebar";
 import { useSettings } from "~/hooks/useSettings";
 import { useServerKeybindings } from "~/rpc/serverState";
+import { SearchPalette } from "~/components/layout/SearchPalette";
 
-function ChatRouteGlobalShortcuts() {
+interface ChatRouteGlobalShortcutsProps {
+  onToggleSearch: () => void;
+}
+
+function ChatRouteGlobalShortcuts({ onToggleSearch }: ChatRouteGlobalShortcutsProps) {
   const clearSelection = useThreadSelectionStore((state) => state.clearSelection);
   const selectedThreadIdsSize = useThreadSelectionStore((state) => state.selectedThreadIds.size);
   const { activeDraftThread, activeThread, defaultProjectId, handleNewThread, routeThreadId } =
@@ -54,10 +64,10 @@ function ChatRouteGlobalShortcuts() {
         return;
       }
 
-      const projectId = activeThread?.projectId ?? activeDraftThread?.projectId ?? defaultProjectId;
-      if (!projectId) return;
-
       if (command === "chat.newLocal") {
+        const projectId =
+          activeThread?.projectId ?? activeDraftThread?.projectId ?? defaultProjectId ?? null;
+        if (!projectId) return;
         event.preventDefault();
         event.stopPropagation();
         void handleNewThread(projectId, {
@@ -71,10 +81,25 @@ function ChatRouteGlobalShortcuts() {
       if (command === "chat.new") {
         event.preventDefault();
         event.stopPropagation();
+        const projectId =
+          activeThread?.projectId ?? activeDraftThread?.projectId ?? defaultProjectId ?? null;
+        const targetProjectId =
+          projectId && !isBuiltInChatsProject(projectId)
+            ? BUILT_IN_CHATS_PROJECT_ID
+            : (projectId ?? BUILT_IN_CHATS_PROJECT_ID);
         void handleNewThread(
-          projectId,
-          resolveContextualNewThreadOptions({ activeDraftThread, activeThread }),
+          targetProjectId,
+          isBuiltInChatsProject(targetProjectId)
+            ? resolveNewChatOptions()
+            : resolveContextualNewThreadOptions({ activeDraftThread, activeThread }),
         );
+        return;
+      }
+
+      if (command === "search.toggle") {
+        event.preventDefault();
+        event.stopPropagation();
+        onToggleSearch();
         return;
       }
     };
@@ -95,15 +120,20 @@ function ChatRouteGlobalShortcuts() {
     appSettings.defaultThreadEnvMode,
     commandPaletteOpen,
     toggleSidebar,
+    onToggleSearch,
   ]);
 
   return null;
 }
 
 function ChatRouteLayout() {
+  const { routeThreadId } = useHandleNewThread();
+  const toggleSearchOpen = useSearchStore((state) => state.toggleSearchOpen);
+
   return (
     <>
-      <ChatRouteGlobalShortcuts />
+      <ChatRouteGlobalShortcuts onToggleSearch={toggleSearchOpen} />
+      <SearchPalette activeThreadId={routeThreadId ?? null} />
       <Outlet />
     </>
   );

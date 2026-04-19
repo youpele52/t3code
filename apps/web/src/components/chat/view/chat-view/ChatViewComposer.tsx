@@ -125,7 +125,7 @@ export function ChatViewComposer({
                     : thread.showPlanFollowUpPrompt && thread.activeProposedPlan
                       ? "Add feedback to refine the plan, or leave this blank to implement it"
                       : thread.phase === "disconnected"
-                        ? "Ask for follow-up changes or attach images"
+                        ? "What are we working on?"
                         : "Ask anything, @tag files/folders, or use / to show available commands"
               }
               disabled={base.isConnecting || thread.isComposerApprovalState}

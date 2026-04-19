@@ -14,12 +14,10 @@ export function ChatViewEmptyState() {
         </header>
       )}
       {isElectron && (
-        <div className="drag-region flex h-[52px] shrink-0 items-center border-b border-border px-5">
-          <span className="text-xs text-muted-foreground/50">No active thread</span>
-        </div>
+        <div className="drag-region flex h-[52px] shrink-0 items-center border-b border-border px-5" />
       )}
       <div className="flex flex-1 items-center justify-center">
-        <div className="flex flex-col items-center justify-center gap-4 opacity-40">
+        <div className="flex flex-col items-center justify-center gap-3 opacity-70">
           <BigCodeLogo className="h-8" />
         </div>
       </div>

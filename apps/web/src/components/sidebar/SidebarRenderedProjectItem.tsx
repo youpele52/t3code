@@ -1,6 +1,14 @@
-import { ChevronRightIcon, GripVerticalIcon, SquarePenIcon, Trash2Icon } from "lucide-react";
+import {
+  ChevronRightIcon,
+  FolderIcon,
+  FolderOpenIcon,
+  GripVerticalIcon,
+  SquarePenIcon,
+  Trash2Icon,
+} from "lucide-react";
 import {
   useCallback,
+  useState,
   type Dispatch,
   type KeyboardEvent,
   type MouseEvent,
@@ -8,8 +16,8 @@ import {
   type PointerEvent,
   type SetStateAction,
 } from "react";
-import type { ProjectId, ThreadId } from "@bigcode/contracts";
-import { ProjectFavicon } from "../project/ProjectFavicon";
+import { isBuiltInChatsProject, type ProjectId, type ThreadId } from "@bigcode/contracts";
+
 import {
   resolveSidebarNewThreadEnvMode,
   resolveSidebarNewThreadSeedContext,
@@ -18,7 +26,6 @@ import {
 } from "./Sidebar.logic";
 import type { SortableProjectHandleProps } from "./SidebarProjectItem";
 import { SidebarThreadRow, type ThreadPr } from "./SidebarThreadRow";
-import { SidebarThreadStatusLabel } from "./SidebarThreadStatusLabel";
 import {
   SidebarMenuButton,
   SidebarMenuAction,
@@ -30,6 +37,8 @@ import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { useSwipeRevealAction } from "./useSwipeRevealAction";
 
 type ProjectStatusIndicator = NonNullable<ReturnType<typeof resolveThreadStatusPill>>;
+
+const INITIAL_VISIBLE_THREAD_COUNT = 5;
 
 export interface RenderedProjectData {
   hasHiddenThreads: boolean;
@@ -140,15 +149,14 @@ export interface SidebarRenderedProjectItemProps extends RenderedProjectData {
 export function SidebarRenderedProjectItem({
   dragHandleProps,
   isManualProjectSorting,
-  hasHiddenThreads,
-  hiddenThreadStatus,
+
   orderedProjectThreadIds,
   project,
   projectStatus,
   renderedThreadIds,
   showEmptyThreadState,
   shouldShowThreadPanel,
-  isThreadListExpanded,
+
   newThreadShortcutLabel,
   showThreadJumpHints,
   threadJumpLabelById,
@@ -193,13 +201,20 @@ export function SidebarRenderedProjectItem({
   openPrLink,
   prByThreadId,
   handleNewThread,
-  expandThreadListForProject,
-  collapseThreadListForProject,
 }: SidebarRenderedProjectItemProps) {
+  const isChatsProject = isBuiltInChatsProject(project.id);
+  const [showAllThreads, setShowAllThreads] = useState(false);
   const swipeReveal = useSwipeRevealAction<HTMLButtonElement>({
     itemId: project.id,
-    disabled: renamingProjectId === project.id,
+    disabled: renamingProjectId === project.id || isChatsProject,
   });
+
+  // Calculate visible threads with "See more" limit
+  const hasMoreThreads = renderedThreadIds.length > INITIAL_VISIBLE_THREAD_COUNT;
+  const visibleThreadIds = showAllThreads
+    ? renderedThreadIds
+    : renderedThreadIds.slice(0, INITIAL_VISIBLE_THREAD_COUNT);
+  const hiddenThreadCount = renderedThreadIds.length - INITIAL_VISIBLE_THREAD_COUNT;
 
   const handleProjectDeleteAction = useCallback(
     (event: MouseEvent<HTMLButtonElement>) => {
@@ -338,7 +353,11 @@ export function SidebarRenderedProjectItem({
                   }`}
                 />
               )}
-              <ProjectFavicon cwd={project.cwd} />
+              {project.expanded ? (
+                <FolderOpenIcon className="size-3.5 shrink-0 text-muted-foreground/70" />
+              ) : (
+                <FolderIcon className="size-3.5 shrink-0 text-muted-foreground/70" />
+              )}
               {renamingProjectId === project.id ? (
                 <input
                   ref={onProjectRenamingInputMount}
@@ -374,7 +393,7 @@ export function SidebarRenderedProjectItem({
             </button>
           </SidebarMenuButton>
         </div>
-        {!swipeReveal.isActionVisible ? (
+        {!swipeReveal.isActionVisible && !isChatsProject ? (
           <Tooltip>
             <TooltipTrigger
               render={
@@ -449,7 +468,7 @@ export function SidebarRenderedProjectItem({
           </SidebarMenuSubItem>
         ) : null}
         {shouldShowThreadPanel &&
-          renderedThreadIds.map((threadId) => (
+          visibleThreadIds.map((threadId) => (
             <SidebarThreadRow
               key={threadId}
               threadId={threadId}
@@ -482,38 +501,23 @@ export function SidebarRenderedProjectItem({
             />
           ))}
 
-        {project.expanded && hasHiddenThreads && !isThreadListExpanded && (
+        {/* See more / Show less for thread count limit */}
+        {project.expanded && hasMoreThreads && (
           <SidebarMenuSubItem className="w-full">
             <SidebarMenuSubButton
               render={<button type="button" />}
               data-thread-selection-safe
               size="sm"
               className="h-6 w-full translate-x-0 justify-start px-2 text-left text-[10px] text-muted-foreground/60 hover:bg-accent hover:text-muted-foreground/80"
-              onClick={() => {
-                expandThreadListForProject(project.id);
-              }}
+              onClick={() => setShowAllThreads(!showAllThreads)}
             >
               <span className="flex min-w-0 flex-1 items-center gap-2">
-                {hiddenThreadStatus && (
-                  <SidebarThreadStatusLabel status={hiddenThreadStatus} compact />
+                {showAllThreads ? (
+                  <span>Show less</span>
+                ) : (
+                  <span>{`See more (${hiddenThreadCount})`}</span>
                 )}
-                <span>Show more</span>
               </span>
-            </SidebarMenuSubButton>
-          </SidebarMenuSubItem>
-        )}
-        {project.expanded && hasHiddenThreads && isThreadListExpanded && (
-          <SidebarMenuSubItem className="w-full">
-            <SidebarMenuSubButton
-              render={<button type="button" />}
-              data-thread-selection-safe
-              size="sm"
-              className="h-6 w-full translate-x-0 justify-start px-2 text-left text-[10px] text-muted-foreground/60 hover:bg-accent hover:text-muted-foreground/80"
-              onClick={() => {
-                collapseThreadListForProject(project.id);
-              }}
-            >
-              <span>Show less</span>
             </SidebarMenuSubButton>
           </SidebarMenuSubItem>
         )}

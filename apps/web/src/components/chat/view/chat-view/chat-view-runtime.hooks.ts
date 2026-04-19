@@ -23,6 +23,7 @@ import {
   shouldUseCompactComposerPrimaryActions,
 } from "../composerFooterLayout";
 import { stripDiffSearchParams } from "../../../../utils/diff";
+import { useSearchStore } from "../../../../stores/ui";
 import {
   insertInlineTerminalContextPlaceholder,
   type TerminalContextSelection,
@@ -129,6 +130,11 @@ export function useChatViewRuntime({ base, thread, composer, timeline }: ChatVie
       },
     });
   }, [base]);
+
+  const toggleSearchOpen = useSearchStore((state) => state.toggleSearchOpen);
+  const onToggleSearch = useCallback(() => {
+    toggleSearchOpen();
+  }, [toggleSearchOpen]);
 
   const setThreadError = useCallback(
     (targetThreadId: ThreadId | null, error: string | null) => {
@@ -376,6 +382,7 @@ export function useChatViewRuntime({ base, thread, composer, timeline }: ChatVie
     closePullRequestDialog,
     handlePreparedPullRequestThread,
     onToggleDiff,
+    onToggleSearch,
     setThreadError,
     turnActions,
     activePendingIsResponding,

@@ -5,6 +5,7 @@
  * ProviderCommandReactor.ts after events arrive from the orchestration stream.
  */
 import {
+  DEFAULT_SERVER_SETTINGS,
   EventId,
   type ModelSelection,
   type OrchestrationSession,
@@ -20,7 +21,7 @@ import { ProviderService } from "../../provider/Services/ProviderService.ts";
 import { DiscoveryRegistry } from "../../provider/Services/DiscoveryRegistry.ts";
 import { TextGeneration } from "../../git/Services/TextGeneration.ts";
 import { OrchestrationEngineService } from "../Services/OrchestrationEngine.ts";
-import { ServerSettingsService } from "../../ws/serverSettings.ts";
+import { resolveDefaultChatCwd, ServerSettingsService } from "../../ws/serverSettings.ts";
 import { WorkspacePaths } from "../../workspace/Services/WorkspacePaths.ts";
 import {
   canReplaceThreadTitle,
@@ -199,11 +200,14 @@ export const makeProviderCommandHandlers = Effect.gen(function* () {
     });
 
     if (isFirstUserMessageTurn) {
+      const serverSettings = yield* serverSettingsService.getSettings.pipe(
+        Effect.catch(() => Effect.succeed(DEFAULT_SERVER_SETTINGS)),
+      );
       const generationCwd =
         resolveThreadWorkspaceCwd({
           thread,
           projects: (yield* orchestrationEngine.getReadModel()).projects,
-        }) ?? process.cwd();
+        }) ?? resolveDefaultChatCwd(serverSettings);
       const generationInput = {
         messageText: message.text,
         ...(message.attachments !== undefined ? { attachments: message.attachments } : {}),

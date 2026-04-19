@@ -6,7 +6,13 @@ import type {
 } from "@bigcode/contracts";
 import { memo } from "react";
 import GitActionsControl from "../../git/GitActionsControl";
-import { DiffIcon, PanelLeftCloseIcon, PanelLeftIcon, TerminalSquareIcon } from "lucide-react";
+import {
+  DiffIcon,
+  PanelLeftCloseIcon,
+  PanelLeftIcon,
+  SearchIcon,
+  TerminalSquareIcon,
+} from "lucide-react";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import ProjectScriptsControl, {
   type NewProjectScriptInput,
@@ -32,6 +38,7 @@ interface ChatHeaderProps {
   terminalToggleShortcutLabel: string | null;
   diffToggleShortcutLabel: string | null;
   sidebarToggleShortcutLabel: string | null;
+  searchToggleShortcutLabel: string | null;
   gitCwd: string | null;
   diffOpen: boolean;
   onRunProjectScript: (script: ProjectScript) => void;
@@ -40,6 +47,7 @@ interface ChatHeaderProps {
   onDeleteProjectScript: (scriptId: string) => Promise<void>;
   onToggleTerminal: () => void;
   onToggleDiff: () => void;
+  onToggleSearch: () => void;
 }
 
 export const ChatHeader = memo(function ChatHeader({
@@ -57,6 +65,7 @@ export const ChatHeader = memo(function ChatHeader({
   terminalToggleShortcutLabel,
   diffToggleShortcutLabel,
   sidebarToggleShortcutLabel,
+  searchToggleShortcutLabel,
   gitCwd,
   diffOpen,
   onRunProjectScript,
@@ -65,6 +74,7 @@ export const ChatHeader = memo(function ChatHeader({
   onDeleteProjectScript,
   onToggleTerminal,
   onToggleDiff,
+  onToggleSearch,
 }: ChatHeaderProps) {
   const isThreadRunning = useIsThreadRunning(activeThreadId);
   const { open, toggleSidebar } = useSidebar();
@@ -110,7 +120,7 @@ export const ChatHeader = memo(function ChatHeader({
         )}
       </div>
       <div className="flex shrink-0 items-center justify-end gap-2 @3xl/header-actions:gap-3">
-        {activeProjectScripts && (
+        {activeProjectScripts && activeProjectScripts.length > 0 && openInCwd && (
           <ProjectScriptsControl
             scripts={activeProjectScripts}
             keybindings={keybindings}
@@ -121,14 +131,36 @@ export const ChatHeader = memo(function ChatHeader({
             onDeleteScript={onDeleteProjectScript}
           />
         )}
-        {activeProjectName && (
+        {activeProjectName && openInCwd && (
           <OpenInPicker
             keybindings={keybindings}
             availableEditors={availableEditors}
             openInCwd={openInCwd}
           />
         )}
-        {activeProjectName && <GitActionsControl gitCwd={gitCwd} activeThreadId={activeThreadId} />}
+        {activeProjectName && gitCwd && (
+          <GitActionsControl gitCwd={gitCwd} activeThreadId={activeThreadId} />
+        )}
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Toggle
+                className="shrink-0"
+                pressed={false}
+                onPressedChange={onToggleSearch}
+                aria-label="Search"
+                variant="outline"
+                size="xs"
+              >
+                <SearchIcon className="size-3" />
+              </Toggle>
+            }
+          />
+          <TooltipPopup side="bottom">
+            Search
+            {searchToggleShortcutLabel && <> ({searchToggleShortcutLabel})</>}
+          </TooltipPopup>
+        </Tooltip>
         <Tooltip>
           <TooltipTrigger
             render={
