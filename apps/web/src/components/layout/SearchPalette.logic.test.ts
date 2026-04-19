@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  normalizeQuery,
-  getSnippet,
-  highlightMatch,
-} from "./SearchPalette.logic";
+import { normalizeQuery, getSnippet, highlightMatch } from "./SearchPalette.logic";
 
 describe("normalizeQuery", () => {
   it("trims whitespace from query", () => {
@@ -25,9 +21,6 @@ describe("normalizeQuery", () => {
 });
 
 describe("getSnippet", () => {
-  const longText =
-    "This is a very long text that needs to be snipped because it contains too many characters to display in a search result snippet.";
-
   it("returns full text when shorter than snippet length", () => {
     const shortText = "Short text";
     expect(getSnippet(shortText, 0, 70)).toBe(shortText);

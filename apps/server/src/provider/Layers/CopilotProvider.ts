@@ -60,7 +60,7 @@ const BUILT_IN_MODELS: ReadonlyArray<ServerProviderModel> = [
 ];
 
 function mapCopilotModelCapabilities(model: ModelInfo): ModelCapabilities {
-  const supportsReasoningEffort = model.capabilities.supports.reasoningEffort;
+  const supportsReasoningEffort = model.capabilities.supports?.reasoningEffort ?? false;
   const defaultReasoningEffort = model.defaultReasoningEffort;
   return {
     reasoningEffortLevels:

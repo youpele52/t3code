@@ -263,12 +263,16 @@ export const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* 
   // Use npm (not bun) for the server directory so node_modules follows the
   // standard flat layout that Node.js expects. Bun's symlink-based hoisting
   // does not survive electron-builder's file copy to extraResources.
+  // Do NOT use --no-optional: @github/copilot declares platform-specific
+  // CLI binaries (@github/copilot-darwin-arm64, etc.) as optionalDependencies.
+  // Without them the Copilot SDK has no CLI to spawn and listModels() returns
+  // incomplete model shapes that crash at runtime.
   yield* runCommand(
     ChildProcess.make({
       cwd: stageServerDir,
       ...commandOutputOptions(options.verbose),
       shell: shellOptionForPlatform(options.platform),
-    })`npm install --production --no-optional`,
+    })`npm install --production`,
   );
 
   // electron-builder silently strips node_modules from extraResources copies.

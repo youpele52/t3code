@@ -135,7 +135,11 @@ jobs:
           node-version-file: package.json
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        # The Linux quality job already validates install-time scripts. The
+        # release-style build matrix only needs dependencies on disk, and
+        # skipping lifecycle scripts avoids a Windows-only effect-language-
+        # service patch crash.
+        run: bun install --frozen-lockfile --ignore-scripts
 
       - name: Build desktop artifact
         shell: bash
