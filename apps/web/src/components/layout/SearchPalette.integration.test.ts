@@ -1,4 +1,4 @@
-import { ProjectId, ThreadId } from "@bigcode/contracts";
+import { ProjectId, ThreadId, MessageId } from "@bigcode/contracts";
 import { describe, expect, it } from "vitest";
 
 import type { Thread } from "../../models/types";
@@ -10,45 +10,46 @@ import type { Project } from "../../models/types";
  */
 
 function createMockThread(overrides: Partial<Thread> & { id: string }): Thread {
-  return {
+  const baseThread: Thread = {
     id: overrides.id as ThreadId,
     codexThreadId: null,
     projectId: (overrides.projectId ?? "project-1") as ProjectId,
     title: overrides.title ?? "Untitled Thread",
-    modelSelection: { provider: "openai", model: "gpt-4" },
-    runtimeMode: "agent",
-    interactionMode: "fullyAutomatic",
+    modelSelection: { provider: "codex", model: "gpt-4o" },
+    runtimeMode: "auto-accept-edits",
+    interactionMode: "default",
     session: null,
-    messages: overrides.messages ?? [],
+    messages: [],
     proposedPlans: [],
     error: null,
     createdAt: "2026-01-01T00:00:00Z",
-    archivedAt: overrides.archivedAt ?? null,
-    updatedAt: overrides.updatedAt,
+    archivedAt: null,
     latestTurn: null,
     branch: null,
     worktreePath: null,
     turnDiffSummaries: [],
     activities: [],
-    ...overrides,
   };
+
+  return { ...baseThread, ...overrides };
 }
 
 function createMockProject(overrides: Partial<Project> & { id: string }): Project {
-  return {
+  const baseProject: Project = {
     id: overrides.id as ProjectId,
     name: overrides.name ?? "Test Project",
     cwd: overrides.cwd ?? "/test/path",
-    defaultModelSelection: { provider: "openai", model: "gpt-4" },
+    defaultModelSelection: { provider: "codex", model: "gpt-4o" },
     scripts: [],
-    ...overrides,
   };
+
+  return { ...baseProject, ...overrides };
 }
 
 function filterThreadsByQuery(
   threads: Thread[],
   projects: Project[],
-  query: string
+  query: string,
 ): Array<{ thread: Thread; projectName: string }> {
   const normalizedQuery = query.trim().toLowerCase();
   if (!normalizedQuery) return [];
@@ -61,16 +62,14 @@ function filterThreadsByQuery(
     })
     .map((thread) => {
       const project = projects.find((p) => p.id === thread.projectId);
-      const projectName =
-        project?.name ??
-        (thread.projectId === "__chats__" ? "Chats" : "Project");
+      const projectName = project?.name ?? (thread.projectId === "__chats__" ? "Chats" : "Project");
       return { thread, projectName };
     });
 }
 
 function searchMessagesInThread(
   thread: Thread | null,
-  query: string
+  query: string,
 ): Array<{
   messageId: string;
   text: string;
@@ -113,17 +112,29 @@ function searchMessagesInThread(
 describe("Search integration", () => {
   describe("filterThreadsByQuery", () => {
     const projects = [
-      createMockProject({ id: "project-1", name: "Server Project" }),
-      createMockProject({ id: "project-2", name: "Web Project" }),
+      createMockProject({ id: "project-1" as ProjectId, name: "Server Project" }),
+      createMockProject({ id: "project-2" as ProjectId, name: "Web Project" }),
     ];
 
     const threads = [
-      createMockThread({ id: "thread-1", projectId: "project-1", title: "API Design Project" }),
-      createMockThread({ id: "thread-2", projectId: "project-1", title: "Database Schema" }),
-      createMockThread({ id: "thread-3", projectId: "project-2", title: "Component Library Project" }),
       createMockThread({
-        id: "thread-4",
-        projectId: "__chats__",
+        id: "thread-1" as ThreadId,
+        projectId: "project-1" as ProjectId,
+        title: "API Design Project",
+      }),
+      createMockThread({
+        id: "thread-2" as ThreadId,
+        projectId: "project-1" as ProjectId,
+        title: "Database Schema",
+      }),
+      createMockThread({
+        id: "thread-3" as ThreadId,
+        projectId: "project-2" as ProjectId,
+        title: "Component Library Project",
+      }),
+      createMockThread({
+        id: "thread-4" as ThreadId,
+        projectId: "__chats__" as ProjectId,
         title: "Random Chat",
       }),
     ];
@@ -131,7 +142,7 @@ describe("Search integration", () => {
     it("filters threads by title query", () => {
       const results = filterThreadsByQuery(threads, projects, "api");
       expect(results).toHaveLength(1);
-      expect(results[0].thread.title).toBe("API Design Project");
+      expect(results[0]?.thread.title).toBe("API Design Project");
     });
 
     it("returns multiple matching threads", () => {
@@ -142,14 +153,14 @@ describe("Search integration", () => {
     it("is case-insensitive", () => {
       const results = filterThreadsByQuery(threads, projects, "API");
       expect(results).toHaveLength(1);
-      expect(results[0].thread.title).toBe("API Design Project");
+      expect(results[0]?.thread.title).toBe("API Design Project");
     });
 
     it("excludes archived threads", () => {
       const threadsWithArchived = [
         ...threads,
         createMockThread({
-          id: "thread-5",
+          id: "thread-5" as ThreadId,
           title: "Old API Discussion",
           archivedAt: "2026-01-01T00:00:00Z",
         }),
@@ -161,13 +172,13 @@ describe("Search integration", () => {
     it("includes project name in results", () => {
       const results = filterThreadsByQuery(threads, projects, "component");
       expect(results).toHaveLength(1);
-      expect(results[0].projectName).toBe("Web Project");
+      expect(results[0]?.projectName).toBe("Web Project");
     });
 
     it("handles chats project correctly", () => {
       const results = filterThreadsByQuery(threads, projects, "random");
       expect(results).toHaveLength(1);
-      expect(results[0].projectName).toBe("Chats");
+      expect(results[0]?.projectName).toBe("Chats");
     });
 
     it("returns empty array for no matches", () => {
@@ -188,29 +199,32 @@ describe("Search integration", () => {
 
   describe("searchMessagesInThread", () => {
     const thread = createMockThread({
-      id: "thread-1",
+      id: "thread-1" as ThreadId,
       title: "Test Thread",
       messages: [
         {
-          id: "msg-1",
+          id: "msg-1" as MessageId,
           role: "user",
           text: "How do I implement user authentication?",
           createdAt: "2026-01-01T00:00:00Z",
           attachments: [],
+          streaming: false,
         },
         {
-          id: "msg-2",
+          id: "msg-2" as MessageId,
           role: "assistant",
           text: "You can use JWT tokens for secure login. Here's an example implementation.",
           createdAt: "2026-01-01T00:01:00Z",
           attachments: [],
+          streaming: false,
         },
         {
-          id: "msg-3",
+          id: "msg-3" as MessageId,
           role: "user",
           text: "Thanks! That helps a lot.",
           createdAt: "2026-01-01T00:02:00Z",
           attachments: [],
+          streaming: false,
         },
       ],
     });
@@ -218,7 +232,7 @@ describe("Search integration", () => {
     it("finds messages containing query", () => {
       const results = searchMessagesInThread(thread, "authentication");
       expect(results).toHaveLength(1);
-      expect(results[0].messageId).toBe("msg-1");
+      expect(results[0]?.messageId).toBe("msg-1");
     });
 
     it("finds multiple messages with same query", () => {
@@ -234,8 +248,8 @@ describe("Search integration", () => {
     it("generates snippet around match", () => {
       const results = searchMessagesInThread(thread, "JWT");
       expect(results).toHaveLength(1);
-      expect(results[0].snippet).toContain("JWT");
-      expect(results[0].snippet.length).toBeLessThanOrEqual(80); // 70 + ellipsis
+      expect(results[0]?.snippet).toContain("JWT");
+      expect(results[0]?.snippet.length).toBeLessThanOrEqual(80); // 70 + ellipsis
     });
 
     it("returns empty array for null thread", () => {
@@ -255,15 +269,16 @@ describe("Search integration", () => {
 
     it("handles messages with empty text", () => {
       const threadWithEmptyMessage = createMockThread({
-        id: "thread-2",
+        id: "thread-2" as ThreadId,
         title: "Empty Message Thread",
         messages: [
           {
-            id: "msg-empty",
+            id: "msg-empty" as MessageId,
             role: "user",
             text: "",
             createdAt: "2026-01-01T00:00:00Z",
             attachments: [],
+            streaming: false,
           },
         ],
       });
@@ -273,24 +288,27 @@ describe("Search integration", () => {
 
     it("handles very long messages with proper snippet", () => {
       const longText =
-        "This is a very long message. ".repeat(20) + "SEARCH_TARGET" + " More text here.".repeat(20);
+        "This is a very long message. ".repeat(20) +
+        "SEARCH_TARGET" +
+        " More text here.".repeat(20);
       const threadWithLongMessage = createMockThread({
-        id: "thread-3",
+        id: "thread-3" as ThreadId,
         title: "Long Message Thread",
         messages: [
           {
-            id: "msg-long",
+            id: "msg-long" as MessageId,
             role: "user",
             text: longText,
             createdAt: "2026-01-01T00:00:00Z",
             attachments: [],
+            streaming: false,
           },
         ],
       });
       const results = searchMessagesInThread(threadWithLongMessage, "SEARCH_TARGET");
       expect(results).toHaveLength(1);
-      expect(results[0].snippet.length).toBeLessThanOrEqual(80);
-      expect(results[0].snippet).toContain("SEARCH_TARGET");
+      expect(results[0]?.snippet.length).toBeLessThanOrEqual(80);
+      expect(results[0]?.snippet).toContain("SEARCH_TARGET");
     });
   });
 });

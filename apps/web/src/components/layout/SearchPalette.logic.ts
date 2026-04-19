@@ -7,11 +7,7 @@ export function normalizeQuery(value: string): string {
   return value.trim().toLowerCase();
 }
 
-export function getSnippet(
-  text: string,
-  matchIndex: number,
-  snippetLength = 70
-): string {
+export function getSnippet(text: string, matchIndex: number, snippetLength = 70): string {
   const start = Math.max(0, matchIndex - Math.floor(snippetLength / 2));
   const end = Math.min(text.length, start + snippetLength);
   let snippet = text.slice(start, end);
