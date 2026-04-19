@@ -232,15 +232,15 @@ export function ChatViewContent({
               <div className="pointer-events-none absolute bottom-1 left-0 right-0 flex justify-center px-5">
                 <div className="mx-auto w-full max-w-3xl px-1 py-0.5">
                   <div className="flex items-center gap-2 pt-1 text-[11px] text-muted-foreground/70 px-7 ">
-                    <span className="">{thread.workingVerb}</span>
-                    <span className="inline-flex items-center gap-[3px]">
+                    <span className="leading-none">{thread.workingVerb}</span>
+                    <span className="inline-flex items-center gap-[3px] leading-none">
                       <span className="h-1 w-1 animate-pulse rounded-full bg-muted-foreground/30" />
                       <span className="h-1 w-1 animate-pulse rounded-full bg-muted-foreground/30 [animation-delay:200ms]" />
                       <span className="h-1 w-1 animate-pulse rounded-full bg-muted-foreground/30 [animation-delay:400ms]" />
                     </span>
                     <span className="flex-1" />
                     {thread.activeWorkStartedAt ? (
-                      <span className="">
+                      <span className="leading-none">
                         {formatWorkingTimer(thread.activeWorkStartedAt, thread.nowIso) ?? "0s"}
                       </span>
                     ) : null}
@@ -250,12 +250,7 @@ export function ChatViewContent({
             ) : null}
           </div>
 
-          <div
-            className={cn(
-              "px-3 pt-1.5 sm:px-5 sm:pt-2",
-              composer.isGitRepo ? "pb-1" : "pb-3 sm:pb-4",
-            )}
-          >
+          <div className="px-3 pt-1.5 pb-1 sm:px-5 sm:pt-2">
             <ChatViewComposer
               base={base}
               composer={composer}
@@ -265,18 +260,17 @@ export function ChatViewContent({
             />
           </div>
 
-          {composer.isGitRepo ? (
-            <BranchToolbar
-              threadId={base.activeThread!.id}
-              envLocked={runtime.envLocked}
-              onComposerFocusRequest={runtime.scheduleComposerFocus}
-              {...(base.canCheckoutPullRequestIntoThread
-                ? {
-                    onCheckoutPullRequestRequest: runtime.openPullRequestDialog,
-                  }
-                : {})}
-            />
-          ) : null}
+          <BranchToolbar
+            threadId={base.activeThread!.id}
+            envLocked={runtime.envLocked}
+            isGitRepo={composer.isGitRepo}
+            onComposerFocusRequest={runtime.scheduleComposerFocus}
+            {...(base.canCheckoutPullRequestIntoThread
+              ? {
+                  onCheckoutPullRequestRequest: runtime.openPullRequestDialog,
+                }
+              : {})}
+          />
 
           {base.pullRequestDialogState ? (
             <PullRequestThreadDialog

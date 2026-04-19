@@ -30,6 +30,7 @@ import { toastManager } from "../ui/toast";
 import { useSidebarProjectActions } from "./Sidebar.projectActions";
 import { useSidebarThreadActions } from "./Sidebar.threadActions";
 import { useSidebarRenderedProjects } from "./Sidebar.renderedProjects";
+import { registerSidebarAddProjectHandlers } from "./SidebarAddProjectBridge";
 import type { SharedProjectItemProps, SidebarProjectSnapshot, SidebarState } from "./Sidebar.types";
 
 /** Thin composition hook — wires sub-hooks together and assembles `SidebarState`. */
@@ -250,6 +251,15 @@ export function useSidebarState(): SidebarState {
     handleNewThread,
     cancelThreadRename: forwardCancelThreadRename,
   });
+
+  useEffect(
+    () =>
+      registerSidebarAddProjectHandlers({
+        handleStartAddProject: projectActions.handleStartAddProject,
+        isFlowVisible: () => shouldShowProjectPathEntry,
+      }),
+    [projectActions.handleStartAddProject, shouldShowProjectPathEntry],
+  );
 
   // Populate the forwarder refs after both sub-hooks are initialised.
   cancelProjectRenameRef.current = projectActions.cancelProjectRename;
