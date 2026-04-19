@@ -13,6 +13,9 @@ A coding workspace for running AI coding agents through a fast desktop or web UI
 - **Real-time streaming** — Live output with file changes, terminal commands, and reasoning
 - **Full access mode** — Auto-approve commands and file edits for autonomous coding
 - **Built-in terminal** — Integrated shell access alongside your agent conversations
+- **Chat threads** — Have normal conversations with any agent without starting a new project
+- **System control** — Tell agents to execute commands and perform tasks on your PC/Mac
+- **Thread forking** — Switch providers or harnesses mid-conversation to compare responses
 
 <p align="center">
   <img src="docs/images/screenshot-chat.png" alt="bigCode Chat Interface" width="100%" />
@@ -114,19 +117,6 @@ bun dist:desktop:dmg:x64     # macOS Intel
 bun dist:desktop:linux       # Linux AppImage
 bun dist:desktop:win         # Windows NSIS installer
 ```
-
-### Publishing a Release
-
-Releases are published automatically when you push a version tag:
-
-```bash
-git tag v0.1.611
-git push origin v0.1.611
-```
-
-The `.github/workflows/release.yml` workflow builds artifacts for all platforms and creates a GitHub Release. Manual triggers available via GitHub Actions UI.
-
-See [docs/release.md](./docs/release.md) for detailed setup.
 
 ## Status
 
