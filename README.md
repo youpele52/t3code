@@ -48,7 +48,7 @@ bun install
 bun dev
 ```
 
-Open `http://localhost:5733` in your browser.
+Open [`http://localhost:5733`](http://localhost:5733) in your browser.
 
 For desktop development:
 
@@ -124,4 +124,3 @@ Early alpha — expect breaking changes.
 
 We're not accepting contributions yet. See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
 
-Need help? Join the [Discord](https://discord.gg/jn4EGJjrvv).
