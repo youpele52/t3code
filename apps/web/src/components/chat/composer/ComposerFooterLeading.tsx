@@ -137,7 +137,7 @@ export const ComposerFooterLeading = forwardRef<HTMLDivElement, ComposerFooterLe
 
             <Button
               variant="ghost"
-              className="shrink-0 whitespace-nowrap px-2 text-muted-foreground/70 hover:text-foreground/80 sm:px-3"
+              className="shrink-0 whitespace-nowrap px-2 text-xs text-muted-foreground/70 hover:text-foreground/80 sm:px-3"
               size="sm"
               type="button"
               onClick={onToggleInteractionMode}
@@ -157,7 +157,7 @@ export const ComposerFooterLeading = forwardRef<HTMLDivElement, ComposerFooterLe
 
             <Button
               variant="ghost"
-              className="shrink-0 whitespace-nowrap px-2 text-muted-foreground/70 hover:text-foreground/80 sm:px-3"
+              className="shrink-0 whitespace-nowrap px-2 text-xs text-muted-foreground/70 hover:text-foreground/80 sm:px-3"
               size="sm"
               type="button"
               onClick={() =>
@@ -177,7 +177,7 @@ export const ComposerFooterLeading = forwardRef<HTMLDivElement, ComposerFooterLe
                 <Button
                   variant="ghost"
                   className={cn(
-                    "shrink-0 whitespace-nowrap px-2 sm:px-3",
+                    "shrink-0 whitespace-nowrap px-2 sm:px-3 text-xs",
                     planSidebarOpen
                       ? "text-info-foreground hover:text-foreground"
                       : "text-muted-foreground/70 hover:text-foreground/80",
