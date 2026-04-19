@@ -12,13 +12,18 @@ import { resolveShortcutCommand } from "../models/keybindings";
 import { selectThreadTerminalState } from "../stores/terminal";
 import { useTerminalStateStore } from "../stores/terminal";
 import { useThreadSelectionStore } from "../stores/thread";
-import { useCommandPaletteStore } from "../stores/ui";
+import { useCommandPaletteStore, useSearchStore } from "../stores/ui";
 import { resolveSidebarNewThreadEnvMode } from "~/components/sidebar/Sidebar.logic";
 import { useSidebar } from "~/components/ui/sidebar";
 import { useSettings } from "~/hooks/useSettings";
 import { useServerKeybindings } from "~/rpc/serverState";
+import { SearchPalette } from "~/components/layout/SearchPalette";
 
-function ChatRouteGlobalShortcuts() {
+interface ChatRouteGlobalShortcutsProps {
+  onToggleSearch: () => void;
+}
+
+function ChatRouteGlobalShortcuts({ onToggleSearch }: ChatRouteGlobalShortcutsProps) {
   const clearSelection = useThreadSelectionStore((state) => state.clearSelection);
   const selectedThreadIdsSize = useThreadSelectionStore((state) => state.selectedThreadIds.size);
   const { activeDraftThread, activeThread, defaultProjectId, handleNewThread, routeThreadId } =
@@ -90,6 +95,13 @@ function ChatRouteGlobalShortcuts() {
         );
         return;
       }
+
+      if (command === "search.toggle") {
+        event.preventDefault();
+        event.stopPropagation();
+        onToggleSearch();
+        return;
+      }
     };
 
     window.addEventListener("keydown", onWindowKeyDown, { capture: true });
@@ -108,15 +120,20 @@ function ChatRouteGlobalShortcuts() {
     appSettings.defaultThreadEnvMode,
     commandPaletteOpen,
     toggleSidebar,
+    onToggleSearch,
   ]);
 
   return null;
 }
 
 function ChatRouteLayout() {
+  const { routeThreadId } = useHandleNewThread();
+  const toggleSearchOpen = useSearchStore((state) => state.toggleSearchOpen);
+
   return (
     <>
-      <ChatRouteGlobalShortcuts />
+      <ChatRouteGlobalShortcuts onToggleSearch={toggleSearchOpen} />
+      <SearchPalette activeThreadId={routeThreadId ?? null} />
       <Outlet />
     </>
   );

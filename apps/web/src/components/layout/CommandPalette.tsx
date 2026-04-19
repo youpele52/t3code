@@ -261,6 +261,7 @@ function CommandPaletteDialogContent() {
       <CommandDialogPopup
         aria-label="Command palette"
         className="overflow-hidden p-0"
+        viewportClassName="items-start justify-start py-[max(--spacing(4),4vh)] sm:py-[10vh]"
         data-testid="command-palette"
       >
         <Command value={query} onValueChange={setQuery}>
