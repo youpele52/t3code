@@ -21,7 +21,6 @@ describe("normalizeQuery", () => {
 });
 
 describe("getSnippet", () => {
-
   it("returns full text when shorter than snippet length", () => {
     const shortText = "Short text";
     expect(getSnippet(shortText, 0, 70)).toBe(shortText);
