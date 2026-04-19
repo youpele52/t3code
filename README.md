@@ -1,28 +1,26 @@
 # bigCode
 
-bigCode is a coding workspace for running coding agents through a fast web UI or desktop shell.
+<p align="center">
+  <img src="apps/desktop/resources/icon.png" alt="bigCode logo" width="80">
+</p>
 
-## Supported Providers
+A coding workspace for running AI coding agents through a fast desktop or web UI.
 
-- **Codex** (OpenAI) — install [Codex CLI](https://github.com/openai/codex) and run `codex login`
-- **Claude** (Anthropic) — install Claude Code and run `claude auth login`
-- **Copilot** (GitHub) — authenticate via GitHub CLI or VS Code
-- **OpenCode** — see [OpenCode docs](https://opencode.ai)
+## Features
 
-## Installation
+- **Multi-provider support** — Switch between Codex, Claude, Copilot, OpenCode, Pi, Cursor, and more
+- **Desktop & Web** — Native Electron desktop app or lightweight web UI
+- **Real-time streaming** — Live output with file changes, terminal commands, and reasoning
+- **Full access mode** — Auto-approve commands and file edits for autonomous coding
+- **Built-in terminal** — Integrated shell access alongside your agent conversations
 
-### Prerequisites
+<p align="center">
+  <img src="docs/images/screenshot-chat.png" alt="bigCode Chat Interface" width="100%" />
+</p>
 
-Install and authenticate at least one provider:
-
-- **Codex**: install [Codex CLI](https://github.com/openai/codex) and run `codex login`
-- **Claude**: install Claude Code and run `claude auth login`
-- **Copilot**: authenticate via GitHub CLI or VS Code
-- **OpenCode**: see [OpenCode docs](https://opencode.ai)
+## Quick Install
 
 ### Desktop App
-
-Install the desktop app directly from GitHub Releases.
 
 #### macOS / Linux
 
@@ -36,27 +34,7 @@ curl -fsSL https://raw.githubusercontent.com/youpele52/bigCode/main/apps/marketi
 powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/youpele52/bigCode/main/apps/marketing/public/install.ps1 | iex"
 ```
 
-#### Publishing a Release
-
-Releases are published automatically via GitHub Actions when you push a version tag:
-
-```bash
-# Create and push a version tag to trigger a release
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-The release workflow (`.github/workflows/release.yml`) will:
-
-1. Run quality checks (format, lint, typecheck, tests)
-2. Build desktop artifacts for all platforms (macOS arm64/x64, Linux x64, Windows x64)
-3. Create a GitHub Release with all binaries attached
-
-You can also trigger a release manually via the GitHub Actions UI using `workflow_dispatch`.
-
-**Note:** The installer scripts above require at least one published GitHub Release. If no release exists, the installer will fail with a GitHub Releases error.
-
-See [`docs/release.md`](./docs/release.md) for detailed release workflow documentation, signing setup, and troubleshooting.
+Or download directly from [GitHub Releases](https://github.com/youpele52/bigCode/releases).
 
 ### From Source
 
@@ -67,68 +45,93 @@ bun install
 bun dev
 ```
 
-Open the web app at `http://localhost:5733`.
+Open `http://localhost:5733` in your browser.
 
-To run the desktop shell in development:
+For desktop development:
 
 ```bash
 bun dev:desktop
 ```
 
-### Package Managers (Coming Soon)
+## Provider Setup
 
-Homebrew, winget, and AUR packages are planned but not yet available.
+bigCode supports multiple AI coding agents. Configure at least one in **Settings → Providers**:
+
+| Provider | Setup |
+|----------|-------|
+| **Claude** | Install Claude Code: `npm i -g @anthropic-ai/claude-code`, then `claude auth login` |
+| **Copilot** | Authenticate via GitHub CLI: `gh auth login` |
+| **Codex** | Install Codex CLI and run `codex login` |
+| **OpenCode** | See [OpenCode docs](https://opencode.ai) |
+| **Pi** | Bundled — no additional setup needed |
+| **Cursor** | Install [Cursor](https://cursor.sh) |
+
+Provider status is checked in real-time and displayed in Settings. Each provider can be toggled on or off independently.
+
+<p align="center">
+  <img src="docs/images/screenshot-settings.png" alt="bigCode Provider Settings" width="100%" />
+</p>
+
+## Desktop vs Web
+
+| | Desktop | Web |
+|---|---|---|
+| **Installation** | Native installer | `bun dev` or self-hosted |
+| **Server** | Bundled — runs locally | Requires separate server |
+| **Native features** | OS notifications, system tray | Browser-based only |
+| **Best for** | Everyday use | Development, self-hosting |
+
+## Documentation
+
+- [AGENTS.md](./AGENTS.md) — Development guide
+- [CONTRIBUTING.md](./CONTRIBUTING.md) — Contribution guidelines
+- [docs/release.md](./docs/release.md) — Release workflow & signing
+- [docs/observability.md](./docs/observability.md) — Observability setup
 
 ## Development
 
-This is a Bun monorepo with a server app, React/Vite web app, desktop shell, shared contracts, and runtime utilities.
-
 ```bash
-# Install dependencies
-bun install
-
-# Start full dev stack (server + web)
+# Full dev stack (server + web)
 bun dev
 
-# Start desktop development
-bun dev:desktop
-
-# Start individual apps
+# Individual apps
 bun dev:server
 bun dev:web
+bun dev:desktop
 
 # Run checks
 bun fmt
 bun lint
 bun typecheck
-bun run test
+bun run test   # Use this, not "bun test"
 ```
 
-Desktop packaging commands:
+### Desktop Packaging
 
 ```bash
-bun dist:desktop:dmg
-bun dist:desktop:dmg:arm64
-bun dist:desktop:dmg:x64
-bun dist:desktop:linux
-bun dist:desktop:win
+bun dist:desktop:dmg:arm64   # macOS Apple Silicon
+bun dist:desktop:dmg:x64     # macOS Intel
+bun dist:desktop:linux       # Linux AppImage
+bun dist:desktop:win         # Windows NSIS installer
 ```
 
-Important test note: use `bun run test`, not `bun test`.
+### Publishing a Release
 
-See [AGENTS.md](./AGENTS.md) for detailed development guidance, toolchain quirks, and architecture notes.
+Releases are published automatically when you push a version tag:
+
+```bash
+git tag v0.1.611
+git push origin v0.1.611
+```
+
+The `.github/workflows/release.yml` workflow builds artifacts for all platforms and creates a GitHub Release. Manual triggers available via GitHub Actions UI.
+
+See [docs/release.md](./docs/release.md) for detailed setup.
 
 ## Status
 
-This project is early and evolving rapidly. Expect breaking changes.
+Early alpha — expect breaking changes.
 
-We are not accepting contributions yet. Read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening issues or PRs.
+We're not accepting contributions yet. See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
 
-Need support? Join the [Discord](https://discord.gg/jn4EGJjrvv).
-
-## Documentation
-
-- [AGENTS.md](./AGENTS.md) — Development guide for contributors
-- [CONTRIBUTING.md](./CONTRIBUTING.md) — Contribution guidelines
-- [docs/observability.md](./docs/observability.md) — Observability guide
-- [packages/contracts/README.md](./packages/contracts/README.md) — Contracts package import guidance
+Need help? Join the [Discord](https://discord.gg/jn4EGJjrvv).
