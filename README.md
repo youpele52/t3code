@@ -60,14 +60,14 @@ bun dev:desktop
 
 bigCode supports multiple AI coding agents. Configure at least one in **Settings → Providers**:
 
-| Provider | Setup |
-|----------|-------|
-| **Claude** | Install Claude Code: `npm i -g @anthropic-ai/claude-code`, then `claude auth login` |
-| **Copilot** | Authenticate via GitHub CLI: `gh auth login` |
-| **Codex** | Install Codex CLI and run `codex login` |
-| **OpenCode** | See [OpenCode docs](https://opencode.ai) |
-| **Pi** | Bundled — no additional setup needed |
-| **Cursor** | Install [Cursor](https://cursor.sh) |
+| Provider     | Setup                                                                               |
+| ------------ | ----------------------------------------------------------------------------------- |
+| **Claude**   | Install Claude Code: `npm i -g @anthropic-ai/claude-code`, then `claude auth login` |
+| **Copilot**  | Authenticate via GitHub CLI: `gh auth login`                                        |
+| **Codex**    | Install Codex CLI and run `codex login`                                             |
+| **OpenCode** | See [OpenCode docs](https://opencode.ai)                                            |
+| **Pi**       | Bundled — no additional setup needed                                                |
+| **Cursor**   | Install [Cursor](https://cursor.sh)                                                 |
 
 Provider status is checked in real-time and displayed in Settings. Each provider can be toggled on or off independently.
 
@@ -77,12 +77,12 @@ Provider status is checked in real-time and displayed in Settings. Each provider
 
 ## Desktop vs Web
 
-| | Desktop | Web |
-|---|---|---|
-| **Installation** | Native installer | `bun dev` or self-hosted |
-| **Server** | Bundled — runs locally | Requires separate server |
-| **Native features** | OS notifications, system tray | Browser-based only |
-| **Best for** | Everyday use | Development, self-hosting |
+|                     | Desktop                       | Web                       |
+| ------------------- | ----------------------------- | ------------------------- |
+| **Installation**    | Native installer              | `bun dev` or self-hosted  |
+| **Server**          | Bundled — runs locally        | Requires separate server  |
+| **Native features** | OS notifications, system tray | Browser-based only        |
+| **Best for**        | Everyday use                  | Development, self-hosting |
 
 ## Documentation
 
@@ -123,4 +123,3 @@ bun dist:desktop:win         # Windows NSIS installer
 Early alpha — expect breaking changes.
 
 We're not accepting contributions yet. See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
-
